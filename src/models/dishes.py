@@ -3,8 +3,8 @@ import uuid
 from sqlalchemy import String, ForeignKey, Integer, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from core.base_model import Base
 from core import constants as cs
+from core.base_model import Base
 
 
 class Dishes(Base):

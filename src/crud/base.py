@@ -62,6 +62,9 @@ class CRUDBase:
         db_obj,
         session: AsyncSession
     ):
-        # TODO: Нужно переделать remove. Должен менять значение
-        # поля `active` на False.
-        pass
+        db_obj.is_active = False
+
+        session.add(db_obj)
+        await session.commit()
+        await session.refresh(db_obj)
+        return db_obj

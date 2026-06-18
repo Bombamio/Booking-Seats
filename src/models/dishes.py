@@ -12,15 +12,15 @@ class Dishes(Base):
     Модель Dishes. Информация о блюдах в меню.
 
     Поля:
-    `id` - uuid4, primary_key;
-    `name` - str, unique;
-    `description` - str;
-    `cafe_id` - int, ForeignKey;
-    `photo_id` - uuid4, ForeignKey;
-    `price` - int,
-    `created_at` - datetime,
-    `updated_at` - datetime,
-    `active` - boole.
+    * `id` - uuid4, primary_key;
+    * `name` - str, unique;
+    * `description` - str;
+    * `cafe_id` - int, ForeignKey;
+    * `photo_id` - uuid4, ForeignKey;
+    * `price` - int,
+    * `created_at` - datetime,
+    * `updated_at` - datetime,
+    * `active` - boole.
     """
 
     name: Mapped[str] = mapped_column(
@@ -34,8 +34,6 @@ class Dishes(Base):
         ForeignKey('cafe.id', name='fk_reservation_cafe_id_cafe'),
         nullable=True
     )
-    # TODO: Наставники говорили что апи должен возвращать сам
-    # файл, а не путь. Нужно уточнить.
     photo_id: Mapped[uuid.UUID] = mapped_column(
         UUID,
         ForeignKey('photo.id', name='fk_reservation_photo_id_photo'),

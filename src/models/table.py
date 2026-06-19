@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import uuid
 
 from sqlalchemy import ForeignKey, String
@@ -7,7 +5,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.schema import CheckConstraint
 
 from src.core.base_model import Base
-from src.core.constants import MIN_SEATS
+from src.core.constants import DESCRIPTION_LENGTH, MIN_SEATS
 
 
 class Table(Base):
@@ -19,11 +17,11 @@ class Table(Base):
     )
     cafe_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey('cafes.id'),
-        nullable=False,
+        ondelete='CASCADE',
         index=True,
     )
-    seat_number: Mapped[int] = mapped_column(nullable=False)
-    description: Mapped[str | None] = mapped_column(String(255))
+    seat_number: Mapped[int]
+    description: Mapped[str | None] = mapped_column(String(DESCRIPTION_LENGTH))
 
     cafe: Mapped['Cafe'] = relationship(back_populates='tables')
     bookings: Mapped[list['Booking']] = relationship(back_populates='table')

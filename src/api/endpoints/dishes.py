@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api import validators as validate
-from crud import dishes_crud, cafe_crud
+from crud import dishes_crud, cafes_crud
 from core.db import get_session
 from core.user import current_user
 from schemas import dishes as schema
@@ -30,18 +30,146 @@ async def get_dishes_list(
     GET `/dishes` - Получение списка блюд.
     """
 
-    # Проверка на существование кафе.
     if cafe_id is not None:
         await validate.check_data_exists(
-            crud=cafe_crud,
+            crud=cafes_crud,
             data_id=cafe_id,
             session=session
         )
 
-    result = await dishes_crud.get_by_user(
+    result = await dishes_crud.get_list_by_user(
         user=user,
         cafe_id=cafe_id,
         session=session,
         show_active=show_active
+    )
+    return result
+
+
+@router.post(
+    '/',
+    response_model=[schema.DishInfo],
+    response_model_exclude_none=True,
+)
+async def create_dishes(
+    obj_in: schema.DishCreate,
+    user: Annotated[User, Depends(validate.current_admin_or_mnager)],
+    session: SessionDep,
+):
+    """
+    POST `/dishes` - Создает новое блюда.
+    """
+
+    for cafe_id in obj_in.cafes_id:
+        cafe = await validate.check_data_exists(
+            crud=cafes_crud,
+            data_id=cafe_id,
+            session=session
+        )
+        await validate.check_data_is_active(
+            crud=cafes_crud,
+            data_id=cafe.id,
+            session=session
+        )
+        await validate.check_name_duplicate(
+            crud=dishes_crud,
+            name=obj_in.name,
+            cafe_id=cafe.id,
+            session=session
+        )
+        await validate.check_cafe_manager(
+            crud=cafes_crud,
+            user=user,
+            cafe_id=cafe.id,
+            session=session
+        )
+
+    result = await dishes_crud.create(obj_in, session)
+    return result
+
+
+@router.get(
+    '/{dish_id}',
+    response_model=schema.DishInfo,
+    response_model_exclude_none=True,
+)
+async def get_dish_by_id(
+    dish_id: int,
+    user: Annotated[User, Depends(current_user)],
+    session: SessionDep,
+):
+    """
+    GET `/dishes/{dish_id}` - Получение информации о блюде по его ID.
+    """
+
+    dish = await validate.check_data_exists(
+        crud=dishes_crud,
+        data_id=dish_id,
+        session=session
+    )
+    # Если обычный залогиненый пользователь - проверит блюдо на активность.
+    if not user.role.superuser and not user.role.manager:
+        await validate.check_data_is_active(
+            crud=dishes_crud,
+            data_id=dish.id,
+            session=session
+        )
+    elif user.role.manager:
+        # TODO: Абсалютная неуверенность по этому валидатору.
+        await validate.check_dish_manager(
+            crud=cafes_crud,
+            user=user,
+            dish=dish,
+            session=session
+        )
+    result = await dishes_crud.get_by_user(
+        user=user,
+        dish=dish,
+        session=session,
+    )
+    return result
+
+
+@router.patch(
+    '/{dish_id}',
+    response_model=schema.DishInfo,
+    response_model_exclude_none=True,
+)
+async def update_dishe(
+    dish_id: int,
+    obj_in: schema.DishUpdate,
+    user: Annotated[User, Depends(validate.current_admin_or_mnager)],
+    session: SessionDep,
+):
+    """
+    PATCH `/dishes/{dish_id}` - обновление информации о блюде по его ID.
+    """
+
+    dish = await validate.check_data_exists(
+        crud=dishes_crud,
+        data_id=dish_id,
+        session=session
+    )
+
+    if obj_in.cafes_id is not None:
+        for cafe_id in obj_in.cafes_id:
+            await validate.check_data_exists(
+                crud=cafes_crud,
+                data_id=cafe_id,
+                session=session
+            )
+
+            if user.role.manager:
+                await validate.check_cafe_manager(
+                    crud=cafes_crud,
+                    user=user,
+                    cafe_id=cafe_id,
+                    session=session
+                )
+
+    result = await dishes_crud.update(
+        db_obj=dish,
+        obj_in=obj_in,
+        session=session
     )
     return result

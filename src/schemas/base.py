@@ -42,5 +42,5 @@ class BaseProjectInfo(BaseProjectShortInfo):
     __abstract__ = True
 
     is_active: bool
-    create_date: datetime
-    update_date: Optional[datetime]
+    created_at: datetime
+    updated_at: datetime

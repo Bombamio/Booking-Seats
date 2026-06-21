@@ -40,6 +40,8 @@ class BaseProjectShortInfo(BaseProjectCreate):
 class BaseProjectInfo(BaseProjectShortInfo):
     """Базовая абстрактная модель для сериализаторов db."""
 
+    Поля: `id`, `description`.
+    """
     __abstract__ = True
 
     is_active: bool

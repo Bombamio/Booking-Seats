@@ -3,7 +3,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
-# Круд из прошлых уроков. TODO: Нуждается в дороботках!
 class CRUDBase:
 
     def __init__(self, model):

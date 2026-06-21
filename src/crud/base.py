@@ -11,7 +11,7 @@ class CRUDBase:
     async def get(
         self,
         obj_id: int,
-        session: AsyncSession
+        session: AsyncSession,
     ):
         result = await session.execute(
             select(self.model).where(self.model.id == obj_id)

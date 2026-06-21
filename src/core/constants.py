@@ -1,1 +1,5 @@
-# TODO: В этот файл будем скидывать все константы!
+MAX_LENGTH_EMAIL = 254
+MAX_LENGTH_USERNAME = 32
+MAX_LENGTH_PASS_HASH = 255
+MAX_LENGTH_PHONE = 16
+MAX_LENGTH_TG_ID = 32

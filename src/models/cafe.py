@@ -40,11 +40,11 @@ class Cafe(Base):
     description: Mapped[str | None] = mapped_column(String, nullable=True)
     photo_id: Mapped[uuid.UUID | None] = mapped_column(UUID, nullable=True)
 
-    managers: Mapped[list : [User]] = relationship(
+    managers: Mapped[list[User]] = relationship(
         back_populates='cafe',
     )
 
-    tables: Mapped[list : [Table]] = relationship(
+    tables: Mapped[list[Table]] = relationship(
         back_populates='cafe',
     )
 
@@ -52,12 +52,12 @@ class Cafe(Base):
         back_populates='cafe',
     )
 
-    dishes: Mapped[list : [Dish]] = relationship(
+    dishes: Mapped[list[Dish]] = relationship(
         secondary=cafe_dishes,
         back_populates='cafes',
     )
 
-    actions: Mapped[list : [Action]] = relationship(
+    actions: Mapped[list[Action]] = relationship(
         secondary=cafe_actions,
         back_populates='cafes',
     )

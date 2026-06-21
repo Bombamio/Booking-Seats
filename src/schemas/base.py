@@ -38,7 +38,8 @@ class BaseProjectShortInfo(BaseProjectCreate):
 
 # Не подходит для User и Booking.
 class BaseProjectInfo(BaseProjectShortInfo):
-    """Базовая абстрактная модель для сериализаторов db."""
+    """
+    Базовая абстрактная модель для сериализаторов db.
 
     Поля: `id`, `description`.
     """

@@ -27,15 +27,15 @@ class CRUDCafes(CRUDBase):
         self,
         manager_id: int,
         session: AsyncSession
-    ) -> list[Optional[int]]:
+    ) -> Optional[int]:
         """
-        Возвращает список id кафе связанных с определённым менеджером.
+        Возвращает id кафе связанное с определённым менеджером.
         """
 
         result = await session.execute(select(self.model.id).where(
             self.model.managers.id == manager_id,
         ))
-        return list(result.scalars().all())
+        return result.scalars().first()
 
 
 cafes_crud = CRUDCafes(Cafes)

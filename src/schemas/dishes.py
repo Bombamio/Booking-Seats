@@ -8,14 +8,14 @@ from pydantic import Field
 from schemas.base import (
     BaseProjectCreate, BaseProjectInfo
 )
-from core import constants as cs
+from core import constants as ct
 
 
 class DishBase(BaseProjectCreate):
     name: Optional[str] = Field(
         None,
-        max_length=cs.DISHES_MAX_NAME_LEN,
-        min_length=cs.DISHES_MIN_NAME_LEN
+        max_length=ct.MAX_NAME_LEN,
+        min_length=ct.MIN_NAME_LEN
     )
     photo_id: Optional[uuid.UUID] = Field(None)
     price: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
@@ -34,8 +34,8 @@ class DishCreate(DishBase):
 
     name: str = Field(
         ...,
-        max_length=cs.DISHES_MAX_NAME_LEN,
-        min_length=cs.DISHES_MIN_NAME_LEN
+        max_length=ct.MAX_NAME_LEN,
+        min_length=ct.MIN_NAME_LEN
     )
     price: Decimal = Field(..., ge=0, decimal_places=2)
     cafes_id: list[int]

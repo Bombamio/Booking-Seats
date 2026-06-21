@@ -3,7 +3,7 @@ from typing import Annotated, Optional
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api import validators as validate
+from api import validators as vt
 from crud import dishes_crud, cafes_crud
 from core.db import get_session
 from core.user import current_user
@@ -31,7 +31,7 @@ async def get_dishes_list(
     """
 
     if cafe_id is not None:
-        await validate.check_data_exists(
+        await vt.check_data_exists(
             crud=cafes_crud,
             data_id=cafe_id,
             session=session
@@ -53,31 +53,34 @@ async def get_dishes_list(
 )
 async def create_dishes(
     obj_in: schema.DishCreate,
-    user: Annotated[User, Depends(validate.current_admin_or_mnager)],
+    user: Annotated[User, Depends(vt.current_admin_or_manager)],
     session: SessionDep,
 ):
     """
     POST `/dishes` - Создает новое блюда.
     """
 
+    if obj_in.photo_id is not None:
+        await vt.get_size(obj_in.photo_id)
+
     for cafe_id in obj_in.cafes_id:
-        cafe = await validate.check_data_exists(
+        cafe = await vt.check_data_exists(
             crud=cafes_crud,
             data_id=cafe_id,
             session=session
         )
-        await validate.check_data_is_active(
+        await vt.check_data_is_active(
             crud=cafes_crud,
             data_id=cafe.id,
             session=session
         )
-        await validate.check_name_duplicate(
+        await vt.check_name_duplicate(
             crud=dishes_crud,
             name=obj_in.name,
             cafe_id=cafe.id,
             session=session
         )
-        await validate.check_cafe_manager(
+        await vt.check_cafe_managers(
             crud=cafes_crud,
             user=user,
             cafe_id=cafe.id,
@@ -102,26 +105,26 @@ async def get_dish_by_id(
     GET `/dishes/{dish_id}` - Получение информации о блюде по его ID.
     """
 
-    dish = await validate.check_data_exists(
+    dish = await vt.check_data_exists(
         crud=dishes_crud,
         data_id=dish_id,
         session=session
     )
     # Если обычный залогиненый пользователь - проверит блюдо на активность.
     if not user.role.superuser and not user.role.manager:
-        await validate.check_data_is_active(
+        await vt.check_data_is_active(
             crud=dishes_crud,
             data_id=dish.id,
             session=session
         )
     elif user.role.manager:
-        # TODO: Абсалютная неуверенность по этому валидатору.
-        await validate.check_dish_manager(
+        await vt.check_cafe_manager_by_dish(
             crud=cafes_crud,
             user=user,
             dish=dish,
             session=session
         )
+
     result = await dishes_crud.get_by_user(
         user=user,
         dish=dish,
@@ -138,14 +141,17 @@ async def get_dish_by_id(
 async def update_dishe(
     dish_id: int,
     obj_in: schema.DishUpdate,
-    user: Annotated[User, Depends(validate.current_admin_or_mnager)],
+    user: Annotated[User, Depends(vt.current_admin_or_manager)],
     session: SessionDep,
 ):
     """
     PATCH `/dishes/{dish_id}` - обновление информации о блюде по его ID.
     """
 
-    dish = await validate.check_data_exists(
+    if obj_in.photo_id is not None:
+        await vt.get_size(obj_in.photo_id)
+
+    dish = await vt.check_data_exists(
         crud=dishes_crud,
         data_id=dish_id,
         session=session
@@ -153,17 +159,26 @@ async def update_dishe(
 
     if obj_in.cafes_id is not None:
         for cafe_id in obj_in.cafes_id:
-            await validate.check_data_exists(
+            # Неуверен что эта проверка нужна, но пусть будет.
+            cafe = await vt.check_data_exists(
                 crud=cafes_crud,
                 data_id=cafe_id,
                 session=session
             )
 
             if user.role.manager:
-                await validate.check_cafe_manager(
+                await vt.check_cafe_managers(
                     crud=cafes_crud,
                     user=user,
-                    cafe_id=cafe_id,
+                    cafe_id=cafe.id,
+                    session=session
+                )
+
+            if obj_in.name is not None:
+                await vt.check_name_duplicate(
+                    crud=dishes_crud,
+                    name=obj_in.name,
+                    cafe_id=cafe.id,
                     session=session
                 )
 

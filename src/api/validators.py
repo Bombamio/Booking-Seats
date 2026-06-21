@@ -1,9 +1,12 @@
+import os
+
 from http import HTTPStatus
 
 from fastapi import HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.user import current_user
+from core import constants as ct
 from models import User, Dishes
 
 
@@ -25,7 +28,7 @@ async def check_data_exists(
     return data
 
 
-async def current_admin_or_mnager(
+async def current_admin_or_manager(
     user: User = Depends(current_user)
 ) -> User:
     """
@@ -83,7 +86,7 @@ async def check_data_is_active(
         )
 
 
-async def check_cafe_manager(
+async def check_cafe_managers(
     crud,
     user: User,
     cafe_id: int,
@@ -104,7 +107,7 @@ async def check_cafe_manager(
         )
 
 
-async def check_dish_manager(
+async def check_cafe_manager_by_dish(
     crud,
     user: User,
     dish: Dishes,
@@ -118,8 +121,24 @@ async def check_dish_manager(
         manager_id=user.id,
         session=session
     )
+    # Проверяет вхождение кафе менеджера в список кафе, в которых есть блюдо.
     if not any(cafe.id in cafes_id for cafe in dish.cafes):
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN,
             detail='Доступ запрещен'
+        )
+
+
+async def get_size(
+    file_id
+) -> None:
+    """
+    Валидатор проверки размера файла.
+    """
+
+    # Скорее всего неправильно написал.
+    if os.path.getsize(file_id) > ct.MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+            detail='Ошибка валидации данных'
         )

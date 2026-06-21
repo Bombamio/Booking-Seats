@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy import String, ForeignKey, Integer, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from core import constants as cs
+from core import constants as ct
 from core.base_model import Base
 
 
@@ -20,25 +20,26 @@ class Dishes(Base):
     * `price` - int,
     * `created_at` - datetime,
     * `updated_at` - datetime,
-    * `active` - boole.
+    * `active` - boolean.
     """
 
     name: Mapped[str] = mapped_column(
-        String(cs.DISHES_MAX_NAME_LEN), unique=True, nullable=True
+        String(ct.MAX_NAME_LEN),
+        unique=True
     )
     description: Mapped[str] = mapped_column(
-        String
+        String(ct.MAX_DESCRIPTION_LEN),
+        nullable=True
     )
     cafe_id: Mapped[uuid.UUID] = mapped_column(
         UUID,
-        ForeignKey('cafe.id', name='fk_reservation_cafe_id_cafe'),
-        nullable=True
+        ForeignKey('cafe.id', name='fk_dishes_cafe_id_cafe')
     )
     photo_id: Mapped[uuid.UUID] = mapped_column(
         UUID,
-        ForeignKey('photo.id', name='fk_reservation_photo_id_photo'),
+        ForeignKey('photo.id', name='fk_dishes_photo_id_photo'),
         nullable=True
     )
     price: Mapped[int] = mapped_column(
-        Integer, nullable=True
+        Integer
     )

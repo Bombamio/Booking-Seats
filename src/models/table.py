@@ -9,7 +9,7 @@ from src.core.base_model import Base
 from src.core.constants import DESCRIPTION_LENGTH, MIN_SEATS
 
 if TYPE_CHECKING:
-    from src.models.booking import Booking  # type: ignore # noqa: F401
+    from src.models.booking import BookingItem  # type: ignore # noqa: F401
     from src.models.cafe import Cafe  # type: ignore # noqa: F401
 
 
@@ -31,7 +31,9 @@ class Table(Base):
     description: Mapped[str | None] = mapped_column(String(DESCRIPTION_LENGTH))
 
     cafe: Mapped['Cafe'] = relationship(back_populates='tables')
-    bookings: Mapped[list['Booking']] = relationship(back_populates='table')
+    booking_items: Mapped[list['BookingItem']] = relationship(
+        back_populates='table',
+    )
 
     def __repr__(self) -> str:
         """Вернет краткое понятное описание объекта модели."""

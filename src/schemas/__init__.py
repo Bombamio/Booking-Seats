@@ -16,6 +16,12 @@ from src.schemas.dish import (
     DishInfo,
     DishUpdate,
 )
+from src.schemas.slot import (
+    TimeSlotCreate,
+    TimeSlotInfo,
+    TimeSlotShortInfo,
+    TimeSlotUpdate,
+)
 
 __all__ = [
     'ActionCreate',
@@ -28,4 +34,8 @@ __all__ = [
     'DishCreate',
     'DishInfo',
     'DishUpdate',
+    'TimeSlotCreate',
+    'TimeSlotInfo',
+    'TimeSlotShortInfo',
+    'TimeSlotUpdate',
 ]

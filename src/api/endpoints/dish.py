@@ -1,14 +1,14 @@
+import uuid
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api import validators as vt
-from crud import dishes_crud, cafes_crud
-from core.db import get_session
-from core.user import current_user
-from schemas import dishes as schema
-from models import User
+from src.api import validators as vt
+from src.core.db import get_session
+from src.crud import cafe_crud, dish_crud
+from src.models import User
+from src.schemas import dish as schema
 
 router = APIRouter()
 
@@ -20,30 +20,26 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
     response_model=list[schema.DishInfo],
     response_model_exclude_none=True,
 )
-async def get_dishes_list(
-    cafe_id: Optional[int],
-    user: Annotated[User, Depends(current_user)],
+async def get_dishes_list(  # noqa: ANN201
+    cafe_id: Optional[uuid.UUID],
+    user: Annotated[User, Depends(vt.current_user)],
     session: SessionDep,
     show_active: bool = True,
 ):
-    """
-    GET `/dishes` - Получение списка блюд.
-    """
-
+    """GET `/dishes` - Получение списка блюд."""
     if cafe_id is not None:
         await vt.check_data_exists(
-            crud=cafes_crud,
+            crud=cafe_crud,
             data_id=cafe_id,
-            session=session
+            session=session,
         )
 
-    result = await dishes_crud.get_list_by_user(
+    return await dish_crud.get_list_by_user(
         user=user,
         cafe_id=cafe_id,
         session=session,
-        show_active=show_active
+        show_active=show_active,
     )
-    return result
 
 
 @router.post(
@@ -51,44 +47,40 @@ async def get_dishes_list(
     response_model=[schema.DishInfo],
     response_model_exclude_none=True,
 )
-async def create_dishes(
+async def create_dishes(  # noqa: ANN201
     obj_in: schema.DishCreate,
     user: Annotated[User, Depends(vt.current_admin_or_manager)],
     session: SessionDep,
 ):
-    """
-    POST `/dishes` - Создает новое блюда.
-    """
-
+    """POST `/dishes` - Создает новое блюда."""
     if obj_in.photo_id is not None:
         await vt.get_size(obj_in.photo_id)
 
     for cafe_id in obj_in.cafes_id:
         cafe = await vt.check_data_exists(
-            crud=cafes_crud,
+            crud=cafe_crud,
             data_id=cafe_id,
-            session=session
+            session=session,
         )
         await vt.check_data_is_active(
-            crud=cafes_crud,
+            crud=cafe_crud,
             data_id=cafe.id,
-            session=session
+            session=session,
         )
         await vt.check_name_duplicate(
-            crud=dishes_crud,
+            crud=dish_crud,
             name=obj_in.name,
             cafe_id=cafe.id,
-            session=session
+            session=session,
         )
         await vt.check_cafe_managers(
-            crud=cafes_crud,
+            crud=cafe_crud,
             user=user,
             cafe_id=cafe.id,
-            session=session
+            session=session,
         )
 
-    result = await dishes_crud.create(obj_in, session)
-    return result
+    return await dish_crud.create(obj_in, session)
 
 
 @router.get(
@@ -96,41 +88,37 @@ async def create_dishes(
     response_model=schema.DishInfo,
     response_model_exclude_none=True,
 )
-async def get_dish_by_id(
-    dish_id: int,
-    user: Annotated[User, Depends(current_user)],
+async def get_dish_by_id(  # noqa: ANN201
+    dish_id: uuid.UUID,
+    user: Annotated[User, Depends(vt.current_user)],
     session: SessionDep,
 ):
-    """
-    GET `/dishes/{dish_id}` - Получение информации о блюде по его ID.
-    """
-
+    """GET `/dishes/{dish_id}` - Получение информации о блюде по его ID."""
     dish = await vt.check_data_exists(
-        crud=dishes_crud,
+        crud=dish_crud,
         data_id=dish_id,
-        session=session
+        session=session,
     )
     # Если обычный залогиненый пользователь - проверит блюдо на активность.
-    if not user.role.superuser and not user.role.manager:
+    if not user.role.ADMIN and not user.role.MANAGER:
         await vt.check_data_is_active(
-            crud=dishes_crud,
+            crud=dish_crud,
             data_id=dish.id,
-            session=session
+            session=session,
         )
-    elif user.role.manager:
+    elif user.role.MANAGER:
         await vt.check_cafe_manager_by_dish(
-            crud=cafes_crud,
+            crud=cafe_crud,
             user=user,
             dish=dish,
-            session=session
+            session=session,
         )
 
-    result = await dishes_crud.get_by_user(
+    return await dish_crud.get_by_user(
         user=user,
         dish=dish,
         session=session,
     )
-    return result
 
 
 @router.patch(
@@ -138,53 +126,49 @@ async def get_dish_by_id(
     response_model=schema.DishInfo,
     response_model_exclude_none=True,
 )
-async def update_dishe(
-    dish_id: int,
+async def update_dishe(  # noqa: ANN201
+    dish_id: uuid.UUID,
     obj_in: schema.DishUpdate,
     user: Annotated[User, Depends(vt.current_admin_or_manager)],
     session: SessionDep,
 ):
-    """
-    PATCH `/dishes/{dish_id}` - обновление информации о блюде по его ID.
-    """
-
+    """PATCH `/dishes/{dish_id}` - обновление информации о блюде по его ID."""
     if obj_in.photo_id is not None:
         await vt.get_size(obj_in.photo_id)
 
     dish = await vt.check_data_exists(
-        crud=dishes_crud,
+        crud=dish_crud,
         data_id=dish_id,
-        session=session
+        session=session,
     )
 
     if obj_in.cafes_id is not None:
         for cafe_id in obj_in.cafes_id:
             # Неуверен что эта проверка нужна, но пусть будет.
             cafe = await vt.check_data_exists(
-                crud=cafes_crud,
+                crud=cafe_crud,
                 data_id=cafe_id,
-                session=session
+                session=session,
             )
 
-            if user.role.manager:
+            if user.role.MANAGER:
                 await vt.check_cafe_managers(
-                    crud=cafes_crud,
+                    crud=cafe_crud,
                     user=user,
                     cafe_id=cafe.id,
-                    session=session
+                    session=session,
                 )
 
             if obj_in.name is not None:
                 await vt.check_name_duplicate(
-                    crud=dishes_crud,
+                    crud=dish_crud,
                     name=obj_in.name,
                     cafe_id=cafe.id,
-                    session=session
+                    session=session,
                 )
 
-    result = await dishes_crud.update(
+    return await dish_crud.update(
         db_obj=dish,
         obj_in=obj_in,
-        session=session
+        session=session,
     )
-    return result

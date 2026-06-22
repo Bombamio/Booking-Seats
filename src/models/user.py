@@ -1,14 +1,13 @@
 import enum
 import uuid
-from typing import List
+from typing import List, Optional
 
-from sqlalchemy import CheckConstraint, Enum, ForeignKey, String, UUID
+from sqlalchemy import CheckConstraint, Enum, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
+from src.core import constants as ct
 from src.core.base_model import Base
-from src.core.constants import (MAX_LENGTH_EMAIL, MAX_LENGTH_PASS_HASH,
-                                MAX_LENGTH_PHONE, MAX_LENGTH_USERNAME,
-                                MAX_LENGTH_TG_ID)
+from src.models import Booking, Cafe
 
 
 class UserRole(enum.Enum):
@@ -23,31 +22,39 @@ class User(Base):
     """Модель пользователя."""
 
     username: Mapped[str] = mapped_column(
-        String(MAX_LENGTH_USERNAME), unique=True, nullable=False,
+        String(ct.MAX_USERNAME_LEN),
+        unique=True,
     )
     email: Mapped[str] = mapped_column(
-        String(MAX_LENGTH_EMAIL), unique=True, nullable=False,
+        String(ct.MAX_EMAIL_LEN),
+        unique=True,
     )
     phone: Mapped[str] = mapped_column(
-        String(MAX_LENGTH_PHONE), unique=True, nullable=False,
+        String(ct.MAX_PHONE_LEN),
+        unique=True,
     )
-    tg_id: Mapped[str] = mapped_column(
-        String(MAX_LENGTH_TG_ID), unique=True, nullable=True,
+    tg_id: Mapped[Optional[str]] = mapped_column(
+        String(ct.MAX_TG_ID_LEN),
+        unique=True,
     )
     password_hash: Mapped[str] = mapped_column(
-        String(MAX_LENGTH_PASS_HASH), nullable=False,
+        String(ct.MAX_PASS_HASH_LEN),
     )
     role: Mapped[UserRole] = mapped_column(
-        Enum(UserRole), default=UserRole.USER,
+        Enum(UserRole),
+        default=UserRole.USER,
     )
-    cafe_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID,
+    cafe_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         ForeignKey('cafe.id'),
         nullable=True,
     )
 
-    cafe: Mapped['Cafe | None'] = relationship(back_populates='managers')
-    bookings: Mapped[List['Booking']] = relationship(back_populates='user')
+    cafe: Mapped['Cafe | None'] = relationship(
+        back_populates='managers',
+    )
+    bookings: Mapped[List['Booking']] = relationship(
+        back_populates='user',
+    )
 
     __table_args__ = (
         CheckConstraint(

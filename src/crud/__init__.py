@@ -1,2 +1,2 @@
-from .dishes import dishes_crud     # noqa
-from .cafes import cafes_crud       # noqa
+from .dish import dish_crud  # noqa
+from .cafe import cafe_crud  # noqa

@@ -1,4 +1,7 @@
-from src.models.table import Table # noqa
-from .dishes import Dishes  # noqa
-from .user import User      # noqa
-from .cafes import Cafes    # noqa
+from .action import Action  # noqa
+from .booking import Booking    # noqa
+from .cafe import Cafe  # noqa
+from .dish import Dish  # noqa
+from .slot import Slot  # noqa
+from .table import Table    # noqa
+from .user import User  # noqa

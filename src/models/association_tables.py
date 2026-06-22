@@ -3,6 +3,7 @@ from sqlalchemy import Column, ForeignKey, String, Table
 
 from src.core.base_model import Base
 
+# TODO: Тут решайте сами, я в Many-tp-Many для FastAPI пока не шарю.
 action_cafes = Table(
     'action_cafes',
     Base.metadata,
@@ -19,11 +20,6 @@ action_cafes = Table(
         primary_key=True,
     ),
 )
-
-# ===
-from sqlalchemy import Column, ForeignKey, Table
-
-from src.core.base_model import Base
 
 cafe_dishes = Table(
     'cafe_dishes',

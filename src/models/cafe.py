@@ -1,19 +1,16 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    from src.models.action import Action
-    from src.models.dish import Dish
-    from src.models.slot import Slot
-    from src.models.table import Table
-    from src.models.user import User
+    from src.models import Action, Dish, Slot, Table, User
 
 import uuid
 
-from sqlalchemy import UUID, String
+from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from src.core import constants as ct
 from src.core.base_model import Base
 from src.models.association_tables import cafe_actions, cafe_dishes
 
@@ -23,10 +20,9 @@ class Cafe(Base):
 
     Поля:
     * `id` - uuid4, primary_key;
-    * `created_at` - datetime,
-    * `updated_at` - datetime,
-    * `is_active` - boolean,
-
+    * `created_at` - datetime;
+    * `updated_at` - datetime;
+    * `is_active` - boolean;
     * `name` - str;
     * `address` - str;
     * `photo` - uuid4;
@@ -34,11 +30,21 @@ class Cafe(Base):
     * `managers_id` - uuid4, ForeignKey;
     """
 
-    name: Mapped[str] = mapped_column(String(100), nullable=False)
-    address: Mapped[str] = mapped_column(String(255), nullable=False)
-    phone: Mapped[str] = mapped_column(String(20), nullable=False)
-    description: Mapped[str | None] = mapped_column(String, nullable=True)
-    photo_id: Mapped[uuid.UUID | None] = mapped_column(UUID, nullable=True)
+    name: Mapped[str] = mapped_column(
+        String(ct.MAX_NAME_LEN),
+    )
+    address: Mapped[str] = mapped_column(
+        String(ct.MAX_ADDRESS_LEN),
+    )
+    phone: Mapped[str] = mapped_column(
+        String(ct.MAX_PHONE_LEN),
+    )
+    description: Mapped[Optional[str]] = mapped_column(
+        String(ct.MAX_DESCRIPTION_LEN),
+    )
+    photo_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey('media.id', name='fk_cafe_photo_id_photo'),
+    )
 
     managers: Mapped[list[User]] = relationship(
         back_populates='cafe',

@@ -1,24 +1,23 @@
 import uuid
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.schema import CheckConstraint
 
+from src.core import constants as ct
 from src.core.base_model import Base
-from src.core.constants import DESCRIPTION_LENGTH, MIN_SEATS
 
 if TYPE_CHECKING:
-    from src.models.booking import BookingItem  # type: ignore # noqa: F401
-    from src.models.cafe import Cafe  # type: ignore # noqa: F401
+    from src.models import Booking, Cafe
 
 
 class Table(Base):
-    """Модель для информации о столах для бронирования."""
+    """Модель Dish. Информация о столах для бронирования."""
 
     __table_args__ = (
         CheckConstraint(
-            f'seat_number >= {MIN_SEATS}',
+            f'seat_number >= {ct.MIN_SEATS}',
             name='check_seat_number',
         ),
     )
@@ -28,10 +27,12 @@ class Table(Base):
         index=True,
     )
     seat_number: Mapped[int]
-    description: Mapped[str | None] = mapped_column(String(DESCRIPTION_LENGTH))
+    description: Mapped[Optional[str]] = mapped_column(
+        String(ct.MAX_DESCRIPTION_LEN),
+    )
 
     cafe: Mapped['Cafe'] = relationship(back_populates='tables')
-    booking_items: Mapped[list['BookingItem']] = relationship(
+    booking_items: Mapped[list['Booking']] = relationship(
         back_populates='table',
     )
 

@@ -1,5 +1,5 @@
 from .action import Action  # noqa
-from .booking import Booking    # noqa
+from .booking import Booking, BookingStatus    # noqa
 from .cafe import Cafe  # noqa
 from .dish import Dish  # noqa
 from .slot import Slot  # noqa

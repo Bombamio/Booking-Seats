@@ -15,10 +15,8 @@ async def check_data_exists(
     data_id: int,
     session: AsyncSession,
 ):
+    """Универсальный валидатор проверяющий на существование данных.
     """
-    Универсальный валидатор проверяющий на **существование данных**.
-    """
-
     data = await crud.get(data_id, session)
     if data is None:
         raise HTTPException(
@@ -82,7 +80,7 @@ async def check_data_is_active(
     if data.active is False:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND,
-            detail='Данные не найдены'
+            detail='Данные не найдены',
         )
 
 

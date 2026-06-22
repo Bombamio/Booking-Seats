@@ -1,5 +1,5 @@
+import uuid
 from datetime import datetime
-
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
@@ -7,8 +7,7 @@ from pydantic import BaseModel, ConfigDict
 
 # Не подходит для User, Action и Booking.
 class BaseProjectCreate(BaseModel):
-    """
-    Базовая абстрактная модель для schemas сериализаторов.
+    """Базовая абстрактная модель для schemas сериализаторов.
 
     Поля: `description`.
     """
@@ -24,11 +23,11 @@ class BaseProjectCreate(BaseModel):
 
 # Не подходит для User и BookingTableSlot.
 class BaseProjectShortInfo(BaseProjectCreate):
-    """
-    Базовая абсрактная модель для короткой сводки информации.
+    """Базовая абсрактная модель для короткой сводки информации.
 
     Поля: `id`, `description`.
     """
+
     __abstract__ = True
 
     id: int

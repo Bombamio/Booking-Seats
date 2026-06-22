@@ -1,5 +1,3 @@
-import uuid
-
 from datetime import datetime
 
 from typing import Optional
@@ -33,15 +31,18 @@ class BaseProjectShortInfo(BaseProjectCreate):
     """
     __abstract__ = True
 
-    id: uuid.UUID
+    id: int
 
     model_config = ConfigDict(from_attributes=True)
 
 
 # Не подходит для User и Booking.
 class BaseProjectInfo(BaseProjectShortInfo):
-    """Базовая абстрактная модель для сериализаторов db."""
+    """
+    Базовая абстрактная модель для сериализаторов db.
 
+    Поля: `id`, `description`.
+    """
     __abstract__ = True
 
     is_active: bool

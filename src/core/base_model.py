@@ -3,9 +3,7 @@ import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import BOOLEAN, UUID, DateTime, func
-from sqlalchemy.orm import (
-    Mapped, declarative_base, declared_attr, mapped_column,
-)
+from sqlalchemy.orm import Mapped, declarative_base, declared_attr, mapped_column
 
 
 def get_utc_now() -> datetime:

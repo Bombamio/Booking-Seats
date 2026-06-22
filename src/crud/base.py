@@ -14,13 +14,13 @@ class CRUDBase:
         session: AsyncSession,
     ):
         result = await session.execute(
-            select(self.model).where(self.model.id == obj_id)
+            select(self.model).where(self.model.id == obj_id),
         )
         return result.scalars().first()
 
     async def get_multi(
         self,
-        session: AsyncSession
+        session: AsyncSession,
     ):
         result = await session.execute(select(self.model))
         return list(result.scalars().all())
@@ -42,7 +42,7 @@ class CRUDBase:
         self,
         db_obj,
         obj_in,
-        session: AsyncSession
+        session: AsyncSession,
     ):
         obj_data = jsonable_encoder(db_obj)
         update_data = obj_in.model_dump(exclude_unset=True)
@@ -59,7 +59,7 @@ class CRUDBase:
     async def remove(
         self,
         db_obj,
-        session: AsyncSession
+        session: AsyncSession,
     ):
         db_obj.is_active = False
 

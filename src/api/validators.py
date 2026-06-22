@@ -20,6 +20,9 @@ async def check_data_exists(
     data = await crud.get(data_id, session)
     if data is None:
         raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail='Данные не найдены',
+            # TODO: Проверить какой нужен.
             status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
             detail='Ошибка валидации данных'
         )

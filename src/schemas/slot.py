@@ -2,16 +2,16 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import model_validator
+
+from src import schemas
 
 
-class TimeSlotCreate(BaseModel):
+class TimeSlotCreate(schemas.BaseProjectCreate):
     """Схема для создания нового временного слота."""
 
     start_time: datetime
     end_time: datetime
-
-    model_config = ConfigDict(extra='forbid')
 
     @model_validator(mode='after')
     def check_time_order(self) -> 'TimeSlotCreate':
@@ -21,15 +21,12 @@ class TimeSlotCreate(BaseModel):
         return self
 
 
-class TimeSlotShortInfo(BaseModel):
+class TimeSlotShortInfo(schemas.BaseProjectShortInfo):
     """Краткая информация о временном слоте."""
 
-    id: uuid.UUID
     start_time: datetime
     end_time: datetime
     is_active: bool
-
-    model_config = ConfigDict(from_attributes=True)
 
 
 class TimeSlotInfo(TimeSlotShortInfo):
@@ -40,14 +37,12 @@ class TimeSlotInfo(TimeSlotShortInfo):
     updated_at: datetime
 
 
-class TimeSlotUpdate(BaseModel):
+class TimeSlotUpdate(schemas.BaseProjectCreate):
     """Схема для обновления существующего временного слота."""
 
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
     is_active: Optional[bool] = None
-
-    model_config = ConfigDict(extra='forbid')
 
     @model_validator(mode='after')
     def check_time_order(self) -> 'TimeSlotUpdate':

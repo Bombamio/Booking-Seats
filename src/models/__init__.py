@@ -1,7 +1,19 @@
-from .action import Action  # noqa
-from .booking import Booking    # noqa
-from .cafe import Cafe  # noqa
-from .dish import Dish  # noqa
-from .slot import Slot  # noqa
-from .table import Table    # noqa
-from .user import User  # noqa
+from src.models.action import Action
+from src.models.booking import Booking
+from src.models.booking_items import BookingItem
+from src.models.cafe import Cafe
+from src.models.dish import Dish
+from src.models.slot import Slot
+from src.models.table import Table
+from src.models.user import User
+
+__all__ = [
+    'Action',
+    'Booking',
+    'BookingItem',
+    'Cafe',
+    'Dish',
+    'Slot',
+    'Table',
+    'User',
+]

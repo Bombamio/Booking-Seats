@@ -1,17 +1,17 @@
-"""Импорты."""
+import enum
 import uuid
-
 from datetime import date
 from typing import Optional
 
-from sqlalchemy import ForeignKey, String, Date, Enum
+from sqlalchemy import Date, Enum, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core import constants as ct
 from src.core.base_model import Base
+from src.models import Cafe, Slot, Table, User
 
 
-class BookingStatus(str):
+class BookingStatus(enum.Enum):
     """Статусы бронирования."""
 
     PENDING = 'PENDING'      # Ожидает подтверждения
@@ -37,7 +37,8 @@ class Booking(Base):
     * `is_active` - boolean.
     """
 
-    __tablename__ = 'bookings'
+    # __tablename__ автоматом выставляется от названия класса, это
+    # настройка из Base.
 
     user_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey('users.id', ondelete='CASCADE'),
@@ -57,16 +58,13 @@ class Booking(Base):
     )
     booking_date: Mapped[date] = mapped_column(
         Date,
-        nullable=False,
     )
-    status: Mapped[str] = mapped_column(
+    status: Mapped[BookingStatus] = mapped_column(
         Enum(BookingStatus),
         default=BookingStatus.PENDING,
-        nullable=False,
     )
     note: Mapped[Optional[str]] = mapped_column(
         String(ct.MAX_DESCRIPTION_LEN),
-        nullable=True,
     )
 
     # Связи с другими моделями

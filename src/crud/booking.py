@@ -1,6 +1,4 @@
-"""Импорты."""
 import uuid
-
 from datetime import date
 from typing import Optional
 
@@ -28,9 +26,11 @@ class CRUDBooking(CRUDBase):
             filters.append(self.model.is_active.is_(True))
 
         result = await session.execute(
-            select(self.model).where(*filters).order_by(
-                self.model.booking_date.desc()
-            )
+            select(self.model)
+            .where(*filters)
+            .order_by(
+                self.model.booking_date.desc(),
+            ),
         )
         return list(result.scalars().all())
 
@@ -51,10 +51,12 @@ class CRUDBooking(CRUDBase):
             filters.append(self.model.is_active.is_(True))
 
         result = await session.execute(
-            select(self.model).where(*filters).order_by(
+            select(self.model)
+            .where(*filters)
+            .order_by(
                 self.model.booking_date,
-                self.model.slot_id
-            )
+                self.model.slot_id,
+            ),
         )
         return list(result.scalars().all())
 
@@ -120,10 +122,12 @@ class CRUDBooking(CRUDBase):
             filters.append(self.model.is_active.is_(True))
 
         result = await session.execute(
-            select(self.model).where(*filters).order_by(
+            select(self.model)
+            .where(*filters)
+            .order_by(
                 self.model.booking_date,
-                self.model.slot_id
-            )
+                self.model.slot_id,
+            ),
         )
         return list(result.scalars().all())
 
@@ -137,11 +141,17 @@ class CRUDBooking(CRUDBase):
     ) -> bool:
         """Проверка доступности стола и слота на конкретную дату."""
         table_bookings = await self.get_by_table_and_date(
-            table_id, booking_date, session, exclude_booking_id
+            table_id,
+            booking_date,
+            session,
+            exclude_booking_id,
         )
 
         slot_bookings = await self.get_by_slot_and_date(
-            slot_id, booking_date, session, exclude_booking_id
+            slot_id,
+            booking_date,
+            session,
+            exclude_booking_id,
         )
 
         for booking in table_bookings:

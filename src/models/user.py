@@ -37,6 +37,7 @@ class User(Base):
         String(ct.MAX_TG_ID_LEN),
         unique=True,
     )
+    # TODO: библиотека bigread для паролей или argon2
     password_hash: Mapped[str] = mapped_column(
         String(ct.MAX_PASS_HASH_LEN),
     )

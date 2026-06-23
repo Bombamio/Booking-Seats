@@ -30,6 +30,7 @@ class Cafe(Base):
     * `managers_id` - uuid4, ForeignKey;
     """
 
+    # TODO: двойная валидация полей name и address.
     name: Mapped[str] = mapped_column(
         String(ct.MAX_NAME_LEN),
     )

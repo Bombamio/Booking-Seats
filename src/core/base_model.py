@@ -42,4 +42,5 @@ class Base(DeclarativeBase):
         DateTime(timezone=True),
         server_default=func.now(),
         onupdate=get_utc_now,
+        server_onupdate=func.now(),
     )

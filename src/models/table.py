@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 
 class Table(Base):
-    """Модель Dish. Информация о столах для бронирования."""
+    """Модель Table. Информация о столах для бронирования."""
 
     __table_args__ = (
         CheckConstraint(

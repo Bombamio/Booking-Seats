@@ -1,5 +1,6 @@
 from .action import Action
 from .booking import Booking, BookingStatus
+from .models.booking_items import BookingItem
 from .cafe import Cafe
 from .dish import Dish
 from .slot import Slot
@@ -9,6 +10,7 @@ from .user import User
 __all__ = [
     'Action',
     'Booking',
+    'BookingItem',
     'BookingStatus',
     'Cafe',
     'Dish',

@@ -1,6 +1,8 @@
 import os
 import uuid
+from datetime import datetime
 from http import HTTPStatus
+from typing import Optional
 
 from fastapi import Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -133,4 +135,39 @@ async def get_size(
         raise HTTPException(
             status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
             detail='Ошибка валидации данных',
+        )
+
+
+async def check_slot_overlap(
+    crud,  # noqa: ANN001
+    cafe_id: uuid.UUID,
+    start_time: datetime,
+    end_time: datetime,
+    session: AsyncSession,
+    exclude_id: Optional[uuid.UUID] = None,
+) -> None:
+    """Валидатор проверки на **пересечение временных слотов** в кафе."""
+    overlapping = await crud.get_overlapping(
+        cafe_id=cafe_id,
+        start_time=start_time,
+        end_time=end_time,
+        session=session,
+        exclude_id=exclude_id,
+    )
+    if overlapping is not None:
+        raise HTTPException(
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+            detail='Временной слот пересекается с уже существующим',
+        )
+
+
+def check_belongs_to_cafe(
+    data,  # noqa: ANN001
+    cafe_id: uuid.UUID,
+) -> None:
+    """Валидатор проверки, что объект относится к указанному кафе."""
+    if data.cafe_id != cafe_id:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail='Данные не найдены',
         )

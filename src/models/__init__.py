@@ -1,7 +1,18 @@
-from .action import Action  # noqa
-from .booking import Booking, BookingStatus    # noqa
-from .cafe import Cafe  # noqa
-from .dish import Dish  # noqa
-from .slot import Slot  # noqa
-from .table import Table    # noqa
-from .user import User  # noqa
+from .action import Action
+from .booking import Booking, BookingStatus
+from .cafe import Cafe
+from .dish import Dish
+from .slot import Slot
+from .table import Table
+from .user import User
+
+__all__ = [
+    'Action',
+    'Booking',
+    'BookingStatus',
+    'Cafe',
+    'Dish',
+    'Slot',
+    'Table',
+    'User',
+]

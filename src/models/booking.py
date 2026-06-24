@@ -8,13 +8,13 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core import constants as ct
 from src.core.base_model import Base
-from src.models import Cafe, Slot, Table, User
+from src.models import BookingItem, Cafe, User
 
 
 class BookingStatus(enum.Enum):
     """Статусы бронирования."""
 
-    PENDING = 'PENDING'      # Ожидает подтверждения
+    PENDING = 'PENDING'  # Ожидает подтверждения
     CONFIRMED = 'CONFIRMED'  # Подтверждено
     CANCELLED = 'CANCELLED'  # Отменено
     COMPLETED = 'COMPLETED'  # Завершено
@@ -48,14 +48,6 @@ class Booking(Base):
         ForeignKey('cafes.id', ondelete='CASCADE'),
         index=True,
     )
-    table_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey('tables.id', ondelete='CASCADE'),
-        index=True,
-    )
-    slot_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey('slots.id', ondelete='CASCADE'),
-        index=True,
-    )
     booking_date: Mapped[date] = mapped_column(
         Date,
     )
@@ -72,16 +64,12 @@ class Booking(Base):
         back_populates='bookings',
     )
     cafe: Mapped['Cafe'] = relationship()
-    table: Mapped['Table'] = relationship(
-        back_populates='booking_items',
-    )
-    slot: Mapped['Slot'] = relationship(
-        back_populates='bookings',
+    booking_items: Mapped[list['BookingItem']] = relationship(
+        back_populates='booking',
+        cascade='all, delete-orphan',
+        lazy='selectin',
     )
 
     def __repr__(self) -> str:
         """Возвращает однозначное строковое представление бронирования."""
-        return (
-            f'Booking(id={self.id!r}, user={self.user_id!r}, '
-            f'date={self.booking_date!r})'
-        )
+        return f'Booking(id={self.id!r}, user={self.user_id!r}, date={self.booking_date!r})'

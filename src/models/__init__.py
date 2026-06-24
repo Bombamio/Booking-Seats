@@ -1,11 +1,11 @@
-from .action import Action
-from .booking import Booking, BookingStatus
-from .models.booking_items import BookingItem
-from .cafe import Cafe
-from .dish import Dish
-from .slot import Slot
-from .table import Table
-from .user import User
+from src.action import Action
+from src.models.booking import Booking, BookingStatus
+from src.models.booking_items import BookingItem
+from src.models.cafe import Cafe
+from src.models.dish import Dish
+from src.models.slot import Slot
+from src.models.table import Table
+from src.models.user import User
 
 __all__ = [
     'Action',

@@ -6,6 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.crud.base import CRUDBase
 from src.models import Dish, User
+from src.core.cache import cache
+from src.core.settings import settings
 
 
 class CRUDDish(CRUDBase):
@@ -21,6 +23,14 @@ class CRUDDish(CRUDBase):
         """Получение списка блюд. Для администраторов и менеджеров - все
         блюда (с возможностью выбора), для пользователей - только активные.
         """  # noqa: D205
+        cache_key = (
+            f"dishes:cafe:{cafe_id}:user:{user.id}:"
+            f"active:{show_active}"
+        )
+        cached_data = await cache.get(cache_key)
+        if cached_data is not None:
+            return cached_data
+
         filters = []
 
         if cafe_id is not None:
@@ -39,7 +49,11 @@ class CRUDDish(CRUDBase):
             filters.append(self.model.is_active.is_(True))
 
         result = await session.execute(select(self.model).where(*filters))
-        return list(result.scalars().all())
+        data = list(result.scalars().all())
+
+        await cache.set(cache_key, data, settings.cache_expire_menu)
+
+        return data
 
     async def get_by_name(  # noqa: ANN201
         self,
@@ -48,13 +62,24 @@ class CRUDDish(CRUDBase):
         session: AsyncSession,
     ):
         """Ищет блюдо по имени в определённом кафе."""
+        cache_key = f"dish:cafe:{cafe_id}:name:{name}"
+        cached_data = await cache.get(cache_key)
+        if cached_data is not None:
+            return cached_data
+
         result = await session.execute(
             select(self.model).where(
                 self.model.cafe_id == cafe_id,
                 self.model.name == name,
             ),
         )
-        return result.scalars().first()
+
+        data = result.scalars().first()
+
+        if data:
+            await cache.set(cache_key, data, settings.cache_expire_menu)
+
+        return data
 
     async def get_by_user(  # noqa: ANN201
         self,
@@ -65,6 +90,11 @@ class CRUDDish(CRUDBase):
         """Получение информации о блюде по его ID. Для администраторов и
         менеджеров - все блюда, для пользователей - только активные.
         """  # noqa: D205
+        cache_key = f"dish:user:{user.id}:dish:{dish.id}"
+        cached_data = await cache.get(cache_key)
+        if cached_data is not None:
+            return cached_data
+
         filters = []
         if not user.role.ADMIN and not user.role.MANAGER:
             filters.append(self.model.is_active.is_(True))
@@ -74,7 +104,12 @@ class CRUDDish(CRUDBase):
         filters.append(self.model.id == dish.id)
 
         result = await session.execute(select(self.model).where(*filters))
-        return result.scalars().first()
+        data = result.scalars().first()
+
+        if data:
+            await cache.set(cache_key, data, settings.cache_expire_menu)
+
+        return data
 
 
 dish_crud = CRUDDish(Dish)

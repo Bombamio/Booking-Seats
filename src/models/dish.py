@@ -20,7 +20,7 @@ class Dish(Base):
     * `price` - int;
     * `created_at` - datetime;
     * `updated_at` - datetime;
-    * `active` - boolean.
+    * `is_active` - boolean.
     """
 
     name: Mapped[str] = mapped_column(
@@ -30,7 +30,8 @@ class Dish(Base):
     description: Mapped[Optional[str]] = mapped_column(
         String(ct.MAX_DESCRIPTION_LEN),
     )
-    cafes_id: Mapped[uuid.UUID] = mapped_column(
+    # TODO: Заменить на many-to-many.
+    cafes_id: Mapped[list[uuid.UUID]] = mapped_column(
         ForeignKey('cafe.id', name='fk_dish_cafe_id_cafe'),
     )
     photo: Mapped[Optional[uuid.UUID]] = mapped_column(

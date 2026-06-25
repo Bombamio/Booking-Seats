@@ -28,10 +28,12 @@ class User(Base):
     email: Mapped[str] = mapped_column(
         String(ct.MAX_EMAIL_LEN),
         unique=True,
+        nullable=True,
     )
     phone: Mapped[str] = mapped_column(
         String(ct.MAX_PHONE_LEN),
         unique=True,
+        nullable=True,
     )
     tg_id: Mapped[Optional[str]] = mapped_column(
         String(ct.MAX_TG_ID_LEN),
@@ -59,20 +61,36 @@ class User(Base):
 
     __table_args__ = (
         CheckConstraint(
-            f"(role = '{UserRole.MANAGER.value}' AND cafe_id IS NOT NULL) OR "
             f"(role != '{UserRole.MANAGER.value}' AND cafe_id IS NULL)",
-            name='check_manager_cafe')
+            name='check_manager_cafe',
+        ),
+        CheckConstraint(
+            'email IS NOT NULL OR phone IS NOT NULL',
+            name='check_contact_info',
+        ),
     )
+
+    @validates('email', 'phone')
+    def validate_contact_info(
+        self, key: str, value: str | None,
+    ) -> str | None:
+        """Валидация: хотя бы одно из полей email/phone заполнено."""
+        if key == 'email':
+            email = value.strip() if isinstance(value, str) else None
+        elif key == 'phone':
+            phone = value.strip() if isinstance(value, str) else None
+
+        if email is None and phone is None:
+            raise ValueError(
+                'Хотя бы одно из полей email/phone должно быть заполнено.')
+
+        return value
 
     @validates('cafe_id')
     def validate_cafe_id(
-        self, key, cafe_id: uuid.UUID | None,
+        self, key: str, cafe_id: uuid.UUID | None,
     ) -> uuid.UUID | None:
-        """Валидация кафе для ролей пользователей."""
-        if self.role == UserRole.MANAGER and cafe_id is None:
-            raise ValueError('Менеджер не может быть без кафе'
-                             '(cafe_id не может быть None).')
-
+        """Валидация кафе для роли пользователя: менеджер."""
         if self.role != UserRole.MANAGER and cafe_id is not None:
             raise ValueError('Кафе может быть назначено только менеджерам'
                              '(cafe_id должно быть None).')

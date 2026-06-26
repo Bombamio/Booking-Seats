@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 from schemas.custom_error import CustomError
 
 from core.exceptions import BookingSeatsAppError
+from core.logger import bookingseats_logger
 
 
 def build_error_response(code: int, message: str) -> JSONResponse:
@@ -21,6 +22,7 @@ async def booking_seats_app_error_handler(
     exc: BookingSeatsAppError,
 ) -> JSONResponse:
     """Вернет ответ с ошибкой в формате CustomError для BookingSeatsAppError."""
+    bookingseats_logger.error(f'BookingSeatsAppError: {exc.code} {exc.message}')
     return build_error_response(exc.code, exc.message)
 
 
@@ -30,6 +32,10 @@ async def http_exception_handler(
 ) -> JSONResponse:
     """Вернет ответ с ошибкой в формате CustomError для HTTPException."""
     message = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
+    bookingseats_logger.warning(
+        f'HTTPException: {message} | '
+        f'URL: {request.url} | Status code: {exc.status_code}',
+    )
     return build_error_response(exc.status_code, message)
 
 
@@ -41,10 +47,27 @@ async def validation_error_handler(
     #  не мы задаем сообщение, его генерит FastAPI, надо выдать его в строку
     #  для этого складываем красиво из тех кусочков, что выдает FastAPI
     message = '; '.join(
-        f"{' -> '.join(str(loc) for loc in error['loc'])}: {error['msg']}"
+        f'{" -> ".join(str(loc) for loc in error["loc"])}: {error["msg"]}'
         for error in exc.errors()
     )
+    bookingseats_logger.warning(
+        f'RequestValidationError: {message} | URL: {request.url}',
+    )
     return build_error_response(status.HTTP_422_UNPROCESSABLE_ENTITY, message)
+
+
+async def internal_server_error_handler(
+    request: Request,
+    exc: Exception,
+) -> JSONResponse:
+    """Вернет ответ с ошибкой для непредвиденных ошибок."""
+    bookingseats_logger.error(
+        f'Внутренняя ошибка сервера: {exc} | URL: {request.url}',
+    )
+    return build_error_response(
+        status.HTTP_500_INTERNAL_SERVER_ERROR,
+        'Внутренняя ошибка сервера',
+    )
 
 
 def register_error_handlers(app: FastAPI) -> None:
@@ -58,3 +81,4 @@ def register_error_handlers(app: FastAPI) -> None:
         RequestValidationError,
         validation_error_handler,
     )
+    app.add_exception_handler(Exception, internal_server_error_handler)

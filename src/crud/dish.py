@@ -1,5 +1,4 @@
 import uuid
-from typing import Optional
 
 from sqlalchemy import exists, select
 from sqlalchemy.ext.asyncio import AsyncSession

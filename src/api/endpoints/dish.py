@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.api import validators as vt
 from src.core.db import get_session
 from src.crud import cafe_crud, dish_crud
-from src.models import Dish, User, UserRole
+from src.models import Cafe, Dish, User, UserRole
 from src.schemas import dish as schema
 
 router = APIRouter()
@@ -23,20 +23,21 @@ async def get_dishes_list(
     cafe_id: Optional[uuid.UUID],
     user: Annotated[User, Depends(vt.current_user)],
     session: SessionDep,
-    show_active: bool = True,
+    show_active: Optional[bool] = True,
 ) -> list[Optional[Dish]]:
     """GET `/dishes` - Получение списка блюд."""
     filters = []
 
     if cafe_id is not None:
-        filters.append(Dish.cafes_id == cafe_id)
+        filters.append(Dish.cafes.any(Cafe.id == cafe_id))
 
-    # Супер пользователь видит либо все, либо только неактивне блюда.
     if user.role == UserRole.ADMIN:
-        if show_active is False:
-            filters.append(Dish.is_active.is_(False))
+        if show_active is not None:
+            filters.append(Dish.is_active.is_(show_active))
     elif user.role == UserRole.MANAGER:
-        filters.append(Dish.cafes.managers.id == user.id)
+        filters.append(
+            Dish.cafes.any(Cafe.managers.any(User.id == user.id)),
+        )
         filters.append(Dish.is_active.is_(show_active))
     else:
         filters.append(Dish.is_active.is_(True))
@@ -59,7 +60,7 @@ async def create_dishes(
     """POST `/dishes` - Создает новое блюда."""
     cafes = await cafe_crud.get_multi(
         session,
-        Dish.id.in_(obj_in.cafes_id),
+        Cafe.id.in_(obj_in.cafes_id),
     )
     await vt.check_data_len_by_data_ids(
         data=cafes,
@@ -77,7 +78,11 @@ async def create_dishes(
         session=session,
     )
 
-    return await dish_crud.create(obj_in, session)
+    return await dish_crud.create(
+        obj_in,
+        session,
+        cafes=cafes,
+    )
 
 
 @router.get(
@@ -103,7 +108,7 @@ async def get_dish_by_id(
     if user.role == UserRole.MANAGER:
         await vt.check_cafe_managers(
             user=user,
-            cafes_id=dish.cafes_id,
+            cafes_id=[cafe.id for cafe in dish.cafes],
         )
 
     return dish
@@ -126,6 +131,8 @@ async def update_dishe(
         Dish.id == dish_id,
     )
 
+    relations = {}
+
     if obj_in.cafes_id is not None:
         if user.role.MANAGER:
             await vt.check_cafe_managers(
@@ -133,6 +140,12 @@ async def update_dishe(
                 cafes_id=obj_in.cafes_id,
                 check_len=True,
             )
+
+        cafes = await cafe_crud.get_multi(
+            session,
+            Cafe.id.in_(obj_in.cafes_id),
+        )
+        relations['cafes'] = cafes
 
     if obj_in.name is not None:
         await vt.check_name_duplicate(
@@ -145,4 +158,5 @@ async def update_dishe(
         db_obj=dish,
         obj_in=obj_in,
         session=session,
+        **relations,
     )

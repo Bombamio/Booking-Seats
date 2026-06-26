@@ -2,10 +2,12 @@ import uuid
 from typing import Optional
 
 from sqlalchemy import ForeignKey, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core import constants as ct
 from src.core.base_model import Base
+from src.models import Cafe
+from src.models.association_tables import cafe_dishes
 
 
 class Dish(Base):
@@ -30,13 +32,14 @@ class Dish(Base):
     description: Mapped[Optional[str]] = mapped_column(
         String(ct.MAX_DESCRIPTION_LEN),
     )
-    # TODO: Заменить на many-to-many.
-    cafes_id: Mapped[list[uuid.UUID]] = mapped_column(
-        ForeignKey('cafe.id', name='fk_dish_cafe_id_cafe'),
-    )
     photo: Mapped[Optional[uuid.UUID]] = mapped_column(
-        ForeignKey('media.id', name='fk_dish_photo_id_photo'),
+        ForeignKey('media.id'),
     )
     price: Mapped[int] = mapped_column(
         Integer,
+    )
+
+    cafes: Mapped[list['Cafe']] = relationship(
+        secondary=cafe_dishes,
+        back_populates='dishes',
     )

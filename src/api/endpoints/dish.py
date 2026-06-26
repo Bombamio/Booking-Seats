@@ -5,12 +5,11 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api import validators as vt
+from src.core.cache import cache
 from src.core.db import get_session
 from src.crud import cafe_crud, dish_crud
 from src.models import Cafe, Dish, User, UserRole
 from src.schemas import dish as schema
-from src.core.cache import cache
-
 
 router = APIRouter()
 

@@ -1,20 +1,22 @@
 import uuid
 from typing import Optional
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.crud.base import CRUDBase
-from src.models import Action
+
 from src.core.cache import cache
 from src.core.settings import settings
+from src.crud.base import CRUDBase
+from src.models import Action
 
 
 class CRUDAction(CRUDBase):
     """CRUD функции для модели Action."""
 
-    async def get_active_actions(
+    async def get_active_actions(  # noqa: ANN201
         self,
-        cafe_id: Optional[uuid.UUID] = None,
-        session: AsyncSession = None,
+        cafe_id: Optional[uuid.UUID],
+        session: AsyncSession,
     ):
         """Получение активных акций с кешированием."""
         cache_key = f"actions:cafe:{cafe_id}:active"
@@ -33,8 +35,14 @@ class CRUDAction(CRUDBase):
 
         return data
 
-    async def clear_cache(self, cafe_id: Optional[uuid.UUID] = None):
+    async def clear_cache(
+        self,
+        cafe_id: Optional[uuid.UUID],
+    ) -> None:
         """Очистка кеша акций."""
         if cafe_id:
             await cache.delete(f"actions:cafe:{cafe_id}:active")
         await cache.clear_pattern("actions:cafe:*")
+
+
+action_crud = CRUDAction(Action)

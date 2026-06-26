@@ -1,6 +1,8 @@
 import json
 from typing import Any, Optional
+
 from redis import asyncio as aioredis
+
 from src.core.settings import settings
 
 
@@ -16,7 +18,7 @@ class RedisCache:
         if not self.redis:
             self.redis = await aioredis.from_url(
                 settings.REDIS_URL,
-                decode_responses=True
+                decode_responses=True,
             )
 
     async def get(self, key: str) -> Optional[Any]:

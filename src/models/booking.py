@@ -59,7 +59,7 @@ class Booking(Base):
         String(ct.MAX_DESCRIPTION_LEN),
     )
 
-    # Связи с другими моделями
+    # Связи с другими моделями.
     user: Mapped['User'] = relationship(
         back_populates='bookings',
     )

@@ -7,18 +7,77 @@ from typing import Optional
 from fastapi import Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.api.validators import current_user
 from src.core import constants as ct
-from src.models import Dish, User
+from src.crud import dish_crud
+from src.models import User, UserRole
 
 
-async def check_data_exists(  # noqa: ANN201
+async def current_user(
+    user: User,
+) -> User:
+    """Валидатор проверки **авторизации** пользователя."""
+    if not user.is_active:
+        raise HTTPException(
+            status_code=HTTPStatus.UNAUTHORIZED,
+            detail='Неавторизированный пользователь',
+        )
+    return user
+
+
+async def current_admin_or_manager(
+    user: User = Depends(current_user),
+) -> User:
+    """Валидатор проверки прав **админа** или **менеджера**."""
+    if user.role not in (UserRole.ADMIN, UserRole.MANAGER):
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN,
+            detail='Доступ запрещен',
+        )
+    return user
+
+
+# TODO: Если нужно только проверить существование,
+# а так - кондидат на удаление.
+async def check_data_exists(
     crud,  # noqa: ANN001
-    data_id: uuid.UUID,
     session: AsyncSession,
+    *filters,  # noqa: ANN002
+) -> None:
+    """Универсальный валидатор проверяющий на существование данных.
+
+    Пример:
+    ```
+    await vt.check_data_exists(
+        dish_crud,
+        session,
+        Dish.id == dish_id,
+    )
+    ```
+    """
+    if not await crud.exists(session, *filters):
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail='Данные не найдены',
+        )
+
+
+async def get_and_check_data_exists(  # noqa: ANN201
+    crud,  # noqa: ANN001
+    session: AsyncSession,
+    *filters,  # noqa: ANN002
 ):
-    """Универсальный валидатор проверяющий на существование данных."""
-    data = await crud.get(data_id, session)
+    """Валидатор проверяющий на существование и возвращающий данных.
+
+    Пример:
+    ```
+    dish: Dish = await vt.get_and_check_data_exists(
+        dish_crud,
+        session,
+        Dish.id == dish_id,
+    )
+    ```
+    """
+    data = await crud.get(session, *filters)
     if data is None:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND,
@@ -27,44 +86,17 @@ async def check_data_exists(  # noqa: ANN201
     return data
 
 
-async def current_admin_or_manager(
-    user: User = Depends(current_user),
-) -> User:
-    """Валидатор проверки прав **админа** или **менеджера**."""
-    if not (user.role.ADMIN or user.role.MANAGER):
-        raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN,
-            detail='Доступ запрещен',
-        )
-    return user
-
-
-async def current_user(
-    user: User = Depends(current_user),
-) -> User:
-    """Валидатор проверки **авторизации** пользователя."""
-    if not (user.role.ADMIN or user.role.MANAGER or user.role.USER):
-        raise HTTPException(
-            status_code=HTTPStatus.UNAUTHORIZED,
-            detail='Неавторизированный пользователь',
-        )
-    return user
-
-
 async def check_name_duplicate(
-    crud,  # noqa: ANN001
     name: str,
-    cafe_id: uuid.UUID,
     session: AsyncSession,
+    exclude_id: uuid.UUID | None = None,
 ) -> None:
     """Валидатор проверки на **уникальнось названия**."""
-    result = await crud.get_by_name(
-        cafe_id=cafe_id,
+    if await dish_crud.duplicate_exists(
         name=name,
         session=session,
-    )
-
-    if result is not None:
+        exclude_id=exclude_id,
+    ):
         raise HTTPException(
             status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
             detail='Ошибка валидации данных',
@@ -72,17 +104,23 @@ async def check_name_duplicate(
 
 
 async def check_data_is_active(
-    crud,  # noqa: ANN001
-    data_id: uuid.UUID,
-    session: AsyncSession,
+    data,  # noqa: ANN001
 ) -> None:
     """Валидатор проверки на **активность поля**."""
-    data = await crud.get(
-        obj_id=data_id,
-        session=session,
-    )
+    if not data.is_active:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail='Данные не найдены',
+        )
 
-    if data.active is False:
+
+async def check_list_data_is_active(
+    list_data,  # noqa: ANN001
+) -> None:
+    """Валидатор проверки списка данных на **активность поля**."""
+    inactive_cafes = [data for data in list_data if not data.is_active]
+
+    if inactive_cafes:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND,
             detail='Данные не найдены',
@@ -90,36 +128,12 @@ async def check_data_is_active(
 
 
 async def check_cafe_managers(
-    crud,  # noqa: ANN001
     user: User,
-    cafe_id: uuid.UUID,
-    session: AsyncSession,
+    cafes_id: list[uuid.UUID],
+    check_len: bool = False,
 ) -> None:
-    """Валидатор проверки на **роль менеджера** определённого кафе."""
-    managers = await crud.get_managers_by_cafe(
-        cafe_id=cafe_id,
-        session=session,
-    )
-    if user.id not in managers:
-        raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN,
-            detail='Доступ запрещен',
-        )
-
-
-async def check_cafe_manager_by_dish(
-    crud,  # noqa: ANN001
-    user: User,
-    dish: Dish,
-    session: AsyncSession,
-) -> None:
-    """Валидатор проверки на **роль менеджера** кафе c определённым блюдом."""
-    cafes_id = await crud.get_cafes_by_manager(
-        manager_id=user.id,
-        session=session,
-    )
-    # Проверяет вхождение кафе менеджера в список кафе, в которых есть блюдо.
-    if not any(cafe.id in cafes_id for cafe in dish.cafes):
+    """Проверка, что менеджер имеет доступ к кафе из списка."""
+    if (check_len and len(cafes_id) != 1) or (user.cafe_id not in cafes_id):
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN,
             detail='Доступ запрещен',
@@ -167,6 +181,18 @@ def check_belongs_to_cafe(
 ) -> None:
     """Валидатор проверки, что объект относится к указанному кафе."""
     if data.cafe_id != cafe_id:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail='Данные не найдены',
+        )
+
+
+async def check_data_len_by_data_ids(
+    data,  # noqa: ANN001
+    data_ids,  # noqa: ANN001
+) -> None:
+    """Валидатор проверки количества найденных объектов, с количеством id."""
+    if len(data) != len(data_ids):
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND,
             detail='Данные не найдены',

@@ -4,6 +4,7 @@ from typing import AsyncGenerator
 import uvicorn
 from fastapi import FastAPI
 
+from core.error_handlers import register_error_handlers
 from core.cache import cache
 from core.settings import settings
 
@@ -24,6 +25,8 @@ app = FastAPI(
     version=settings.version,
     description=settings.description,
 )
+
+register_error_handlers(app)
 
 
 @app.get(

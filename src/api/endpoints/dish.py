@@ -9,6 +9,8 @@ from src.core.db import get_session
 from src.crud import cafe_crud, dish_crud
 from src.models import Cafe, Dish, User, UserRole
 from src.schemas import dish as schema
+from src.core.cache import cache
+
 
 router = APIRouter()
 
@@ -78,11 +80,15 @@ async def create_dishes(
         session=session,
     )
 
-    return await dish_crud.create(
+    result = await dish_crud.create(
         obj_in,
         session,
         cafes=cafes,
     )
+
+    await cache.clear_pattern("dishes:cafe:*")
+
+    return result
 
 
 @router.get(
@@ -154,9 +160,13 @@ async def update_dishe(
             exclude_id=dish.id,
         )
 
-    return await dish_crud.update(
+    result = await dish_crud.update(
         db_obj=dish,
         obj_in=obj_in,
         session=session,
         **relations,
     )
+
+    await cache.clear_pattern("dishes:cafe:*")
+
+    return result

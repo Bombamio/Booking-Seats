@@ -4,6 +4,7 @@ from typing import AsyncGenerator
 import uvicorn
 from fastapi import FastAPI
 
+from core.cache import cache
 from core.settings import settings
 
 
@@ -11,8 +12,11 @@ from core.settings import settings
 async def lifespan(app: FastAPI) -> AsyncGenerator:
     """Жизненный цикл приложения FastAPI."""
     # TODO: Добавить код, выполняемый при старте приложения
+    await cache.connect()
     yield
     # TODO: Добавить код, выполняемый при остановке приложения
+    if cache.redis:
+        await cache.redis.close()
 
 
 app = FastAPI(

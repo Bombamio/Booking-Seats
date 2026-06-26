@@ -9,7 +9,7 @@ from sqlalchemy.schema import CheckConstraint
 from src.core.base_model import Base
 
 if TYPE_CHECKING:
-    from src.models import Cafe
+    from src.models import BookingItem, Cafe
 
 
 class Slot(Base):
@@ -34,6 +34,9 @@ class Slot(Base):
     )
 
     cafe: Mapped['Cafe'] = relationship(back_populates='slots')
+    booking_items: Mapped[list['BookingItem']] = relationship(
+        back_populates='slot',
+    )
 
     def __repr__(self) -> str:
         """Вернет краткое понятное описание объекта модели."""

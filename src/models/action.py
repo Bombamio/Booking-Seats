@@ -19,7 +19,7 @@ class Action(Base):
     * `photo` - uuid4, ForeignKey;
     * `created_at` - datetime;
     * `updated_at` - datetime;
-    * `active` - boolean.
+    * `is_active` - boolean.
     """
 
     description: Mapped[str] = mapped_column(String(ct.MAX_DESCRIPTION_LEN))

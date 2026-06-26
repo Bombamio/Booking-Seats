@@ -9,7 +9,7 @@ from src.core import constants as ct
 from src.core.base_model import Base
 
 if TYPE_CHECKING:
-    from src.models import Booking, Cafe
+    from src.models import BookingItem, Cafe
 
 
 class Table(Base):
@@ -32,7 +32,7 @@ class Table(Base):
     )
 
     cafe: Mapped['Cafe'] = relationship(back_populates='tables')
-    booking_items: Mapped[list['Booking']] = relationship(
+    booking_items: Mapped[list['BookingItem']] = relationship(
         back_populates='table',
     )
 

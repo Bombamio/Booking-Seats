@@ -20,6 +20,16 @@ class Settings(BaseSettings):
     postgres_server: str = 'localhost'
     postgres_port: int = 5432
 
+    # Настройки Redis
+    redis_host: str = 'localhost'
+    redis_port: int = 6379
+    redis_db: int = 0
+    redis_password: str | None = None
+
+    # Настройки кеширования
+    cache_expire_menu: int = 300
+    cache_expire_actions: int = 600
+
     model_config = SettingsConfigDict(
         env_file=BASE_DIR / '../infra/.env',
         env_file_encoding='utf-8',
@@ -33,6 +43,15 @@ class Settings(BaseSettings):
             f'postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}@'
             f'{self.postgres_server}:{self.postgres_port}/{self.postgres_db}'
         )
+
+    @property
+    def redis_url(self) -> str:
+        """Строка подключения к Redis."""
+        if self.redis_password:
+            return f'redis://:{self.redis_password}@{
+                self.redis_host
+            }:{self.redis_port}/{self.redis_db}'
+        return f'redis://{self.redis_host}:{self.redis_port}/{self.redis_db}'
 
 
 settings = Settings()  # type: ignore

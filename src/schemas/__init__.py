@@ -11,6 +11,7 @@ from src.schemas.base import (
 from src.schemas.cafe import (
     CafeShortInfo,
 )
+from src.schemas.custom_error import CustomError
 from src.schemas.dish import (
     DishCreate,
     DishInfo,
@@ -31,6 +32,7 @@ __all__ = [
     'BaseProjectInfo',
     'BaseProjectShortInfo',
     'CafeShortInfo',
+    'CustomError',
     'DishCreate',
     'DishInfo',
     'DishUpdate',

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from fastapi import status
 
 from schemas.custom_error import CustomError
@@ -84,3 +86,20 @@ ERRORS_4XX_FULL = {**ERRORS_POST, **ERROR_404}
 ERRORS_GET_MULTI_USERS = {**ERROR_401, **ERROR_403, **ERROR_422}
 ERRORS_PATCH_ME = {**ERROR_400, **ERROR_403, **ERROR_422}
 ERRORS_GET_USERS = {**ERROR_401, **ERROR_403, **ERROR_404, **ERROR_422}
+
+###############################################################################
+# Настройки логгера приложения.                                               #
+###############################################################################
+
+LOG_DIR = Path(__file__).resolve().parent.parent / 'logs'
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+LOG_FILE = LOG_DIR / 'app.log'
+LOG_FILE_BACKUP_COUNT = 5
+LOG_FILE_MAX_SIZE = 1024 * 1024 * 5  # 5 мб.
+LOG_LEVEL = 'DEBUG'
+LOG_FORMAT = (
+    '<green>{time:YYYY-MM-DD HH:mm:ss}</green> | '
+    '<level>{level}</level> | '
+    '<cyan>{extra[user]}</cyan> | '
+    '<level>{message}</level>'
+)

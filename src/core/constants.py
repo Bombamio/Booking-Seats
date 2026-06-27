@@ -54,11 +54,33 @@ ERROR_404 = {
 ERROR_422 = {
     status.HTTP_422_UNPROCESSABLE_ENTITY: {
         'model': CustomError,
-        'description': ' Ошибка валидации данных',
+        'description': 'Ошибка валидации данных',
     },
 }
+ERROR_422_AUTH = {
+    status.HTTP_422_UNPROCESSABLE_ENTITY: {
+        'model': CustomError,
+        'description': 'Неверные имя пользователя или пароль',
+    },
+}
+# группы ошибок собранные под методы ендпойнтов.
 
-ERRORS_GET = {**ERROR_404, **ERROR_403}
-ERRORS_GET_MULTI = {**ERROR_403, **ERROR_422}
-ERRORS_CREATE = {**ERROR_400, **ERROR_403, **ERROR_422}
-ERRORS_UPDATE = {**ERROR_400, **ERROR_403, **ERROR_404, **ERROR_422}
+
+# для всех GET(multi) кроме USERS, TABLE и TIME_SLOTS
+ERRORS_GET_MULTI = {**ERROR_401, **ERROR_422}
+
+# для GET(multi) у TABLE и TIME_SLOTS
+ERRORS_GET_MULTI_WITH_404 = {**ERRORS_GET_MULTI, **ERROR_404}
+
+ERRORS_POST_BOOKING = {**ERROR_400, **ERROR_401, **ERROR_422}
+
+# для POST кроме BOOKING, TABLE, TIME_SLOTS, USERS и AUTH
+ERRORS_POST = {**ERRORS_POST_BOOKING, **ERROR_403}
+
+# для всех PATCH кроме ME, для всех GET(id) кроме USERS и ME, для POST у TABLE и TIME_SLOTS
+ERRORS_4XX_FULL = {**ERRORS_POST, **ERROR_404}
+
+# группа отличающихся для USER
+ERRORS_GET_MULTI_USERS = {**ERROR_401, **ERROR_403, **ERROR_422}
+ERRORS_PATCH_ME = {**ERROR_400, **ERROR_403, **ERROR_422}
+ERRORS_GET_USERS = {**ERROR_401, **ERROR_403, **ERROR_404, **ERROR_422}

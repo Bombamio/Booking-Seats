@@ -4,12 +4,21 @@ from sqlalchemy import exists, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.inspection import inspect
 
+from src.core.logger import bookingseats_logger
+
 
 class CRUDBase:
     """Базовый CRUD класс."""
 
     def __init__(self, model) -> None:  # noqa: ANN001, D107
         self.model = model
+
+    @staticmethod
+    def _format_filters(*filters) -> str:  # noqa: ANN002
+        """Сформирует строку с описанием применённых фильтров."""
+        if not filters:
+            return 'нет'
+        return ', '.join(str(filter_) for filter_ in filters)
 
     async def get(  # noqa: ANN201
         self,
@@ -27,6 +36,10 @@ class CRUDBase:
         )
         ```
         """
+        bookingseats_logger.debug(
+            f'get {self.model.__name__}: '
+            f'filters=[{self._format_filters(*filters)}]',
+        )
         result = await session.execute(
             select(self.model).where(*filters),
         )
@@ -53,6 +66,10 @@ class CRUDBase:
         if filters:
             stmt = stmt.where(*filters)
 
+        bookingseats_logger.debug(
+            f'get_multi {self.model.__name__}: '
+            f'filters=[{self._format_filters(*filters)}]',
+        )
         result = await session.execute(stmt)
 
         return result.scalars().all()
@@ -98,6 +115,10 @@ class CRUDBase:
             setattr(db_obj, attr, value)
 
         session.add(db_obj)
+        bookingseats_logger.debug(
+            f'create {self.model.__name__} id={db_obj.id}: '
+            f'data={obj_in_data}, relations={list(relations.keys())}',
+        )
         await session.commit()
         await session.refresh(db_obj)
 
@@ -153,6 +174,10 @@ class CRUDBase:
             setattr(db_obj, attr, value)
 
         session.add(db_obj)
+        bookingseats_logger.debug(
+            f'update {self.model.__name__} id={db_obj.id}: '
+            f'data={update_data}, relations={list(relations.keys())}',
+        )
         await session.commit()
         await session.refresh(db_obj)
 
@@ -174,6 +199,10 @@ class CRUDBase:
         )
         ```
         """
+        bookingseats_logger.debug(
+            f'exists {self.model.__name__}: '
+            f'filters=[{self._format_filters(*filters)}]',
+        )
         result = select(
             exists().where(*filters),
         )

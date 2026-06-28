@@ -15,6 +15,7 @@ from src.schemas.dish import (
     DishInfo,
     DishUpdate,
 )
+from src.schemas.media import MediaInfo
 from src.schemas.slot import (
     TimeSlotCreate,
     TimeSlotInfo,
@@ -37,6 +38,7 @@ __all__ = [
     'DishCreate',
     'DishInfo',
     'DishUpdate',
+    'MediaInfo',
     'TimeSlotCreate',
     'TimeSlotInfo',
     'TimeSlotShortInfo',

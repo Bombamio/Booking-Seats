@@ -16,6 +16,18 @@ main_router.include_router(
 )
 
 main_router.include_router(
+    endpoints.table_router,
+    prefix='/cafes/{cafe_id}/tables',
+    tags=['Tables'],
+)
+
+main_router.include_router(
+    endpoints.media_router,
+    prefix='/media',
+    tags=['Media'],
+)
+
+main_router.include_router(
     endpoints.cafe_router,
     prefix='/cafes',
     tags=['Cafes'],

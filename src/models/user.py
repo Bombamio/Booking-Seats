@@ -61,7 +61,7 @@ class User(Base):
 
     __table_args__ = (
         CheckConstraint(
-            f"(role != '{UserRole.MANAGER.value}' AND cafe_id IS NULL)",
+            f"(role = '{UserRole.MANAGER.value}' OR cafe_id IS NULL)",
             name='check_manager_cafe',
         ),
         CheckConstraint(

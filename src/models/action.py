@@ -6,7 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core import constants as ct
 from src.core.base_model import Base
-from src.models.association_tables import action_cafes
+from src.models.association_tables import cafe_actions
 
 
 class Action(Base):
@@ -29,11 +29,13 @@ class Action(Base):
         comment='ID медиа-файла с изображением акции',
     )
 
-    cafes_id = relationship(
+    cafes = relationship(
         'Cafe',
-        secondary=action_cafes,
+        secondary=cafe_actions,
         back_populates='actions',
     )
 
     def __repr__(self) -> str:
-        return f"<Action(id={self.id}, description='{self.description[:30]}...')>"
+        return (
+            f"<Action(id={self.id}, description='{self.description[:30]}...')>"
+        )

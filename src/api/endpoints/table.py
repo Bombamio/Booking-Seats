@@ -11,9 +11,9 @@ from src.core.constants import (
 )
 from src.core.db import get_session
 from src.core.decorators import with_error_responses
-from src.models import User
+from src.models import Table, User
 from src.schemas import table as schema
-from src.services.table import table_service
+from src.services import table_service
 
 router = APIRouter()
 
@@ -26,8 +26,8 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
     response_model_exclude_none=True,
     summary='Получение списка столов в кафе',
     description=(
-        'Получение списка доступных для бронирования столов в кафе. '
-        'Для администраторов и менеджеров - все столы (с возможностью выбора), '
+        'Получение списка доступных для бронирования столов в кафе.'
+        'Для администраторов и менеджеров - все столы (с возможностью выбора),'
         'для пользователей - только активные.'
     ),
 )
@@ -37,7 +37,7 @@ async def get_tables_list(
     user: Annotated[User, Depends(vt.current_user)],
     session: SessionDep,
     show_active: bool = True,
-) -> list[schema.TableInfo]:
+) -> list[Table]:
     """Получение списка столиков в кафе."""
     return await table_service.get_multi_by_cafe(
         cafe_id=cafe_id,
@@ -53,7 +53,7 @@ async def get_tables_list(
     response_model_exclude_none=True,
     summary='Новый стол в кафе',
     description=(
-        'Создает новый стол кафе. '
+        'Создает новый стол кафе.'
         'Только для администраторов и менеджеров.'
     ),
 )
@@ -63,7 +63,7 @@ async def create_table(
     table_create: schema.TableCreate,
     user: Annotated[User, Depends(vt.current_admin_or_manager)],
     session: SessionDep,
-) -> schema.TableInfo:
+) -> Table:
     """Создание столика."""
     return await table_service.create_with_cafe(
         cafe_id=cafe_id,
@@ -79,8 +79,8 @@ async def create_table(
     response_model_exclude_none=True,
     summary='Информация о столе в кафе по его ID',
     description=(
-        'Получение информации о столе в кафе по его ID. '
-        'Для администраторов и менеджеров - все столы, '
+        'Получение информации о столе в кафе по его ID.'
+        'Для администраторов и менеджеров - все столы,'
         'для пользователей - только активные.'
     ),
 )
@@ -90,7 +90,7 @@ async def get_table(
     table_id: uuid.UUID,
     user: Annotated[User, Depends(vt.current_user)],
     session: SessionDep,
-) -> schema.TableInfo:
+) -> Table:
     """Получение столика по ID."""
     return await table_service.get_by_cafe_and_id(
         cafe_id=cafe_id,
@@ -106,7 +106,7 @@ async def get_table(
     response_model_exclude_none=True,
     summary='Обновление информации о столе в кафе по его ID',
     description=(
-        'Обновление информации о столе в кафе по его ID. '
+        'Обновление информации о столе в кафе по его ID.'
         'Только для администраторов и менеджеров.'
     ),
 )
@@ -117,7 +117,7 @@ async def update_table(
     table_update: schema.TableUpdate,
     user: Annotated[User, Depends(vt.current_admin_or_manager)],
     session: SessionDep,
-) -> schema.TableInfo:
+) -> Table:
     """Обновление информации о столике в кафе по его ID."""
     return await table_service.update_table(
         cafe_id=cafe_id,

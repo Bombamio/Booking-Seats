@@ -24,6 +24,12 @@ from src.schemas.slot import (
     TimeSlotShortInfo,
     TimeSlotUpdate,
 )
+from src.schemas.table import (
+    TableCreate,
+    TableInfo,
+    TableShortInfo,
+    TableUpdate,
+)
 
 __all__ = [
     'ActionCreate',
@@ -38,6 +44,10 @@ __all__ = [
     'DishInfo',
     'DishUpdate',
     'MediaInfo',
+    'TableCreate',
+    'TableInfo',
+    'TableShortInfo',
+    'TableUpdate',
     'TimeSlotCreate',
     'TimeSlotInfo',
     'TimeSlotShortInfo',

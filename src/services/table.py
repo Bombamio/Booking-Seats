@@ -2,17 +2,17 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.crud.cafe import cafe_crud
-from src.crud.table import CRUDTable
+from src.crud import CRUDTable, cafe_crud
 from src.models import Cafe, Table, User, UserRole
-from src.schemas.table import TableCreate, TableUpdate
-from src.services.base import BaseService
+from src.schemas import TableCreate, TableUpdate
+from src.services import BaseService
 
 
 # Допущения до рефакторинга базовых слоёв:
 # - CRUDBase выполняет только чтение/подготовку данных без commit и refresh;
 # - фиксация изменений в БД (commit) выполняется в методах сервиса;
-# - soft_delete из BaseService также не делает commit — только меняет объекты в сессии.
+# - soft_delete из BaseService также не делает commit — только меняет
+# объекты в сессии.
 class TableService(CRUDTable, BaseService):
     """Обработает операции со столиками кафе."""
 
@@ -27,7 +27,8 @@ class TableService(CRUDTable, BaseService):
             return
         if user.cafe_id is None or user.cafe_id != cafe_id:
             self.log_warning(
-                f'Пользователь {user.id} попытался получить доступ к кафе {cafe_id} без разрешения',
+                f'Пользователь {user.id} попытался получить доступ к'
+                f'кафе {cafe_id} без разрешения',
             )
             self.raise_forbidden('Доступ запрещен')
 
@@ -69,7 +70,8 @@ class TableService(CRUDTable, BaseService):
 
         tables = list(await self.get_multi(session, *filters))
         self.log_info(
-            f'Пользователь {user.id} получил список из {len(tables)} столов для кафе {cafe_id}',
+            f'Пользователь {user.id} получил список из {len(tables)}'
+            f'столов для кафе {cafe_id}',
         )
         return tables
 
@@ -86,7 +88,7 @@ class TableService(CRUDTable, BaseService):
             session,
             Cafe.id == cafe_id,
         )
-        self.ensure_is_active(cafe)
+        await self.ensure_is_active(cafe)
         await self.ensure_manager_cafe_access(user, cafe.id, session)
 
         table = self.model(
@@ -122,10 +124,11 @@ class TableService(CRUDTable, BaseService):
         self.ensure_belongs_to_cafe(table, cafe_id)
 
         if user.role == UserRole.USER:
-            self.ensure_is_active(table)
+            await self.ensure_is_active(table)
 
         self.log_info(
-            f'Пользователь {user.id} получил информацию о столе {table.id} из кафе {cafe_id}',
+            f'Пользователь {user.id} получил информацию о столе {table.id}'
+            f'из кафе {cafe_id}',
         )
         return table
 
@@ -171,7 +174,8 @@ class TableService(CRUDTable, BaseService):
 
         await session.commit()
         self.log_info(
-            f'Пользователь {user.id} обновил стол {table_id} в кафе {cafe_id} (деактивирован: {deactivate})',
+            f'Пользователь {user.id} обновил стол {table_id} в'
+            f'кафе {cafe_id} (деактивирован: {deactivate})',
         )
         return table
 

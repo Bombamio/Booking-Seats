@@ -20,3 +20,9 @@ main_router.include_router(
     prefix='/cafes/{cafe_id}/tables',
     tags=['Tables'],
 )
+
+main_router.include_router(
+    endpoints.media_router,
+    prefix='/media',
+    tags=['Media'],
+)

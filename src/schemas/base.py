@@ -31,7 +31,7 @@ class BaseProjectCreate(BaseModel):
 class BaseProjectShortInfo(BaseProjectCreate):
     """Базовая абстрактная схема с короткой сводки информации.
 
-    * `id` - int;
+    * `id` - uuid;
     * `description` - string.
     """
 
@@ -46,7 +46,7 @@ class BaseProjectShortInfo(BaseProjectCreate):
 class BaseProjectInfo(BaseProjectShortInfo):
     """Базовая абстрактная схема с полной информацией о модели.
 
-    * `id` - int;
+    * `id` - uuid;
     * `description` - string;
     * `is_active` - boolean;
     * `created_at` - date-time;

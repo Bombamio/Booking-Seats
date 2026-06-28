@@ -8,9 +8,8 @@ from src.schemas.base import (
     BaseProjectInfo,
     BaseProjectShortInfo,
 )
-from src.schemas.cafe import (
-    CafeShortInfo,
-)
+from src.schemas.cafe import CafeCreate, CafeInfo, CafeShortInfo, CafeUpdate
+from src.schemas.custom_error import CustomError
 from src.schemas.dish import (
     DishCreate,
     DishInfo,
@@ -31,6 +30,10 @@ __all__ = [
     'BaseProjectInfo',
     'BaseProjectShortInfo',
     'CafeShortInfo',
+    'CafeInfo',
+    'CafeCreate',
+    'CafeUpdate',
+    'CustomError',
     'DishCreate',
     'DishInfo',
     'DishUpdate',

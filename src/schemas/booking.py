@@ -8,30 +8,17 @@ from src.core import constants as ct
 from src.models.booking import BookingStatus
 from src.schemas import (
     CafeShortInfo,
-    SlotInfo,
     TableShortInfo,
     TimeSlotShortInfo,
     UserShortInfo,
 )
 
 
-# ERROR: К твоим schemas не подходит уже созданные базовые классы, там есть
-# лишнее для тебя поле description.
 class BookingTableSlot(BaseModel):
     """Базовая схема для бронирования."""
 
-    # TODO: Нужны тольько 2 поля: table_id и slot_id.
-
-    # user_id: uuid.UUID = Field(..., description='ID пользователя')
-    # cafe_id: uuid.UUID = Field(..., description='ID кафе')
     table_id: uuid.UUID = Field(..., description='ID стола')
     slot_id: uuid.UUID = Field(..., description='ID временного слота')
-    # booking_date: date = Field(..., description='Дата бронирования')
-    # note: Optional[str] = Field(
-    #     None,
-    #     max_length=ct.MAX_DESCRIPTION_LEN,
-    #     description='Примечание к бронированию',
-    # )
 
     model_config = ConfigDict(
         extra='forbid',
@@ -41,18 +28,8 @@ class BookingTableSlot(BaseModel):
 class BookingTableSlotShortInfo(BaseModel):
     """Краткая информация о бронировании."""
 
-    # user_id: uuid.UUID
-    # cafe_id: uuid.UUID
-    # table_id: uuid.UUID
-    # slot_id: uuid.UUID
-    # booking_date: date
-    # status: BookingStatus
-    # note: Optional[str] = None
-
-    # TODO: Если я правильно понял, то этот класс должен выглядить так:
     table: Optional['TableShortInfo']
     slot: Optional['TimeSlotShortInfo']
-    # А поля выше - лишние.
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -74,12 +51,6 @@ class BookingCreate(BaseModel):
         extra='forbid',
     )
 
-    # Не нужное поле.
-    # status: BookingStatus = Field(
-    #     default=BookingStatus.PENDING,
-    #     description='Статус бронирования',
-    # )
-
     @field_validator('booking_date')
     @classmethod
     def validate_booking_date(cls, v: date) -> date:
@@ -91,24 +62,6 @@ class BookingCreate(BaseModel):
 
 class BookingUpdate(BookingCreate):
     """Схема для обновления существующего бронирования."""
-
-    # Лишние поля.
-    # user_id: Optional[uuid.UUID] = Field(
-    #     None,
-    #     description='ID пользователя',
-    # )
-    # cafe_id: Optional[uuid.UUID] = Field(
-    #     None,
-    #     description='ID кафе',
-    # )
-    # table_id: Optional[uuid.UUID] = Field(
-    #     None,
-    #     description='ID стола',
-    # )
-    # slot_id: Optional[uuid.UUID] = Field(
-    #     None,
-    #     description='ID временного слота',
-    # )
 
     tables_slots: Optional[list[BookingTableSlot]] = None
     guest_number: Optional[int] = None
@@ -142,12 +95,6 @@ class BookingUpdate(BookingCreate):
 class BookingInfo(BaseModel):
     """Полная информация о бронировании для ответа API."""
 
-    # Лишние поля.
-    # user_id: uuid.UUID
-    # cafe_id: uuid.UUID
-    # table_id: uuid.UUID
-    # slot_id: uuid.UUID
-
     id: Optional[uuid.UUID] = None
     user: Optional[UserShortInfo] = None
     cafe: Optional[CafeShortInfo] = None
@@ -168,13 +115,3 @@ class BookingInfo(BaseModel):
         """Конфигурация для модели."""
 
         from_attributes = True
-
-
-# Походу вспомогательный класс, но я не помню где ты его использовал.
-class BookingDetailedInfo(BookingInfo):
-    """Расширенная информация о бронировании с вложенными объектами."""
-
-    user: Optional['UserShortInfo'] = None
-    cafe: Optional['CafeShortInfo'] = None
-    table: Optional['TableShortInfo'] = None
-    slot: Optional['SlotInfo'] = None

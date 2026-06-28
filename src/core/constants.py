@@ -24,6 +24,29 @@ MAX_ADDRESS_LEN = 256
 
 MAX_FILE_SIZE = 5242880  # 5 мб.
 
+
+###############################################################################
+# Параметры для работы с медиа-файлами                                        #
+###############################################################################
+
+MEDIA_CHUNK_SIZE = 64 * 1024
+MEDIA_FILE_EXTENSION = '.jpg'
+MEDIA_OUTPUT_TYPE = 'image/jpeg'
+MEDIA_IMAGE_SIGNATURES = {
+    b'\xff\xd8\xff': 'image/jpeg',
+    b'\x89PNG\r\n\x1a\n': 'image/png',
+}
+MEDIA_SIGNATURE_CHECK_SIZE = max(
+    len(signature) for signature in MEDIA_IMAGE_SIGNATURES
+)
+ALLOWED_MEDIA_FORMATS = sorted({
+    'jpg' if media_type.endswith('/jpeg') else media_type.rsplit('/', 1)[-1]
+    for media_type in MEDIA_IMAGE_SIGNATURES.values()
+})
+
+MEDIA_DIR = Path(__file__).resolve().parent.parent / 'media'
+MEDIA_DIR.mkdir(parents=True, exist_ok=True)
+
 ###############################################################################
 # Описание ошибок для OpenApi в endpoints                                     #
 ###############################################################################
@@ -59,6 +82,12 @@ ERROR_422 = {
         'description': 'Ошибка валидации данных',
     },
 }
+ERROR_422_MEDIA_SAVE = {
+    status.HTTP_422_UNPROCESSABLE_ENTITY: {
+        'model': CustomError,
+        'description': 'Ошибка сохранения файла',
+    },
+}
 ERROR_422_AUTH = {
     status.HTTP_422_UNPROCESSABLE_ENTITY: {
         'model': CustomError,
@@ -66,7 +95,6 @@ ERROR_422_AUTH = {
     },
 }
 # группы ошибок собранные под методы ендпойнтов.
-
 
 # для всех GET(multi) кроме USERS, TABLE и TIME_SLOTS
 ERRORS_GET_MULTI = {**ERROR_401, **ERROR_422}
@@ -86,6 +114,10 @@ ERRORS_4XX_FULL = {**ERRORS_POST, **ERROR_404}
 ERRORS_GET_MULTI_USERS = {**ERROR_401, **ERROR_403, **ERROR_422}
 ERRORS_PATCH_ME = {**ERROR_400, **ERROR_403, **ERROR_422}
 ERRORS_GET_USERS = {**ERROR_401, **ERROR_403, **ERROR_404, **ERROR_422}
+
+# для GET и POST у MEDIA
+ERRORS_GET_MEDIA = {**ERROR_404, **ERROR_422}
+ERRORS_POST_MEDIA = {**ERROR_400, **ERROR_401, **ERROR_403, **ERROR_422_MEDIA_SAVE}
 
 ###############################################################################
 # Настройки логгера приложения.                                               #

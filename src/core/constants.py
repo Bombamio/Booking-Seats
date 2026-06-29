@@ -7,8 +7,11 @@ from schemas.custom_error import CustomError
 # Основные числа: 1, 8, 16, 32, 64, 128, 256, 512, 1024, и т.д.
 
 MAX_EMAIL_LEN = 256
+MIN_USERNAME_LEN = 3
 MAX_USERNAME_LEN = 32
 MAX_PASS_HASH_LEN = 256
+MIN_PASSWORD_LEN = 8
+MAX_PASSWORD_LEN = 64
 MAX_PHONE_LEN = 16
 MAX_TG_ID_LEN = 32
 

@@ -1,5 +1,4 @@
 import uuid
-from decimal import Decimal
 from typing import Optional
 
 from pydantic import Field
@@ -18,7 +17,7 @@ class DishBase(BaseProjectCreate):
     * `name` - string;
     * `description` - string;
     * `photo_id` - uuid;
-    * `price` - Decimal.
+    * `price` - int.
     """
 
     name: Optional[str] = Field(
@@ -27,10 +26,9 @@ class DishBase(BaseProjectCreate):
         min_length=ct.MIN_NAME_LEN,
     )
     photo_id: Optional[uuid.UUID] = None
-    price: Optional[Decimal] = Field(
+    price: Optional[int] = Field(
         None,
         ge=0,
-        decimal_places=2,
     )
 
 
@@ -40,7 +38,7 @@ class DishCreate(DishBase):
     * `name` - string;
     * `description` - string;
     * `photo_id` - uuid;
-    * `price` - Decimal;
+    * `price` - int;
     * `cafes_id` - list uuid.
     """
 
@@ -49,10 +47,9 @@ class DishCreate(DishBase):
         max_length=ct.MAX_NAME_LEN,
         min_length=ct.MIN_NAME_LEN,
     )
-    price: Decimal = Field(
+    price: int = Field(
         ...,
         ge=0,
-        decimal_places=2,
     )
     cafes_id: list[uuid.UUID]
 
@@ -64,7 +61,7 @@ class DishInfo(BaseProjectInfo):
     * `name` - string;
     * `description` - string;
     * `photo_id` - uuid;
-    * `price` - Decimal;
+    * `price` - int;
     * `cafes` - list;
     * `is_active` - boolean;
     * `created_at` - date-time;
@@ -77,10 +74,9 @@ class DishInfo(BaseProjectInfo):
         min_length=ct.MIN_NAME_LEN,
     )
     photo_id: Optional[uuid.UUID] = None
-    price: Decimal = Field(
+    price: int = Field(
         ...,
         ge=0,
-        decimal_places=2,
     )
     cafes: list[CafeShortInfo]
 
@@ -91,7 +87,7 @@ class DishUpdate(DishBase):
     * `name` - string;
     * `description` - string;
     * `photo_id` - uuid;
-    * `price` - Decimal;
+    * `price` - int;
     * `cafes_id` - list uuid.
     * `is_active` - boolean.
     """

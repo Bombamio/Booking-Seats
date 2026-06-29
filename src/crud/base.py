@@ -1,8 +1,10 @@
-from typing import Optional
+import uuid
+from typing import Any, Optional
 
 from sqlalchemy import exists, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.inspection import inspect
+from sqlalchemy.sql.elements import BinaryExpression
 
 from src.core.logger import bookingseats_logger
 
@@ -10,21 +12,42 @@ from src.core.logger import bookingseats_logger
 class CRUDBase:
     """Базовый CRUD класс."""
 
-    def __init__(self, model) -> None:  # noqa: ANN001, D107
+    def __init__(
+        self,
+        model: Any,
+    ) -> None:
+        """Метаданные модели."""
         self.model = model
+        self.mapper = inspect(self.model)
+        self.model_fields = set(self.mapper.columns.keys())
+        self.relationships = set(self.mapper.relationships.keys())
 
     @staticmethod
-    def _format_filters(*filters) -> str:  # noqa: ANN002
+    def _format_filters(*filters: Any) -> str:
         """Сформирует строку с описанием применённых фильтров."""
         if not filters:
             return 'нет'
         return ', '.join(str(filter_) for filter_ in filters)
 
-    async def get(  # noqa: ANN201
+    def _check_filters(
+        self,
+        *filters: Any,
+    ) -> None:
+        """Проверка простых бинарных выражений."""
+        table = self.model.__table__
+
+        for filter_ in filters:
+            if isinstance(filter_, BinaryExpression):
+                if filter_.left.table is not table:
+                    raise ValueError(
+                        f'Invalid filter: {filter_}',
+                    )
+
+    async def get(
         self,
         session: AsyncSession,
-        *filters,  # noqa: ANN002
-    ):
+        *filters: Any,
+    ) -> Any:
         """GET-функция, возвращает объект по заданным фильтрам.
 
         Пример:
@@ -40,16 +63,18 @@ class CRUDBase:
             f'get {self.model.__name__}: '
             f'filters=[{self._format_filters(*filters)}]',
         )
+
+        self._check_filters(*filters)
         result = await session.execute(
             select(self.model).where(*filters),
         )
         return result.scalars().first()
 
-    async def get_multi(  # noqa: ANN201
+    async def get_multi(
         self,
         session: AsyncSession,
-        *filters,  # noqa: ANN002
-    ):
+        *filters: Any,
+    ) -> Any:
         """GET-функция, возвращает список объектов.
 
         Пример:
@@ -65,6 +90,7 @@ class CRUDBase:
 
         if filters:
             stmt = stmt.where(*filters)
+            self._check_filters(*filters)
 
         bookingseats_logger.debug(
             f'get_multi {self.model.__name__}: '
@@ -74,12 +100,12 @@ class CRUDBase:
 
         return result.scalars().all()
 
-    async def create(  # noqa: ANN201
+    async def create(
         self,
-        obj_in,  # noqa: ANN001
+        obj_in: Any,
         session: AsyncSession,
-        **relations,  # noqa: ANN003
-    ):
+        **relations: Any,
+    ) -> Any:
         """POST-функция, добавляет объект в базу данных.
 
         **Примечание!** Если у вас есть поле many-to-many - обязательно
@@ -94,20 +120,15 @@ class CRUDBase:
         )
         ```
         """
-        model_fields = self.model.__table__.columns.keys()
-
         obj_in_data = {
             key: value
             for key, value in obj_in.model_dump().items()
-            if key in model_fields
+            if key in self.model_fields
         }
-
         db_obj = self.model(**obj_in_data)
 
-        mapper = inspect(self.model)
-
         for attr, value in relations.items():
-            if attr not in mapper.relationships:
+            if attr not in self.relationships:
                 # Защита от опечаток.
                 raise ValueError(
                     f'{attr} is not a relationships of {self.model.__name__}',
@@ -124,13 +145,13 @@ class CRUDBase:
 
         return db_obj
 
-    async def update(  # noqa: ANN201
+    async def update(
         self,
-        db_obj,  # noqa: ANN001
-        obj_in,  # noqa: ANN001
+        db_obj: Any,
+        obj_in: Any,
         session: AsyncSession,
-        **relations,  # noqa: ANN003
-    ):
+        **relations: Any,
+    ) -> Any:
         """PATCH-функция, обновляет информацю об объекте в базе данных.
 
         **Примечание!** Если у вас есть поле many-to-many - обязательно
@@ -157,16 +178,12 @@ class CRUDBase:
         """
         update_data = obj_in.model_dump(exclude_unset=True)
 
-        model_fields = self.model.__table__.columns.keys()
-
         for field, value in update_data.items():
-            if field in model_fields:
+            if field in self.model_fields:
                 setattr(db_obj, field, value)
 
-        mapper = inspect(self.model)
-
         for attr, value in relations.items():
-            if attr not in mapper.relationships:
+            if attr not in self.relationships:
                 # Защита от опечаток.
                 raise ValueError(
                     f'{attr} is not a relationships of {self.model.__name__}',
@@ -186,7 +203,7 @@ class CRUDBase:
     async def exists(
         self,
         session: AsyncSession,
-        *filters,  # noqa: ANN002
+        *filters: Any,
     ) -> Optional[bool]:
         """Запрос для проверки существования объекта.
 
@@ -203,8 +220,29 @@ class CRUDBase:
             f'exists {self.model.__name__}: '
             f'filters=[{self._format_filters(*filters)}]',
         )
+
+        self._check_filters(*filters)
         result = select(
             exists().where(*filters),
+        )
+
+        return await session.scalar(result)
+
+    async def duplicate_exists(
+        self,
+        name: str,
+        exclude_id: Optional[uuid.UUID],
+        session: AsyncSession,
+    ) -> Optional[bool]:
+        """Проверяет, существует ли объект с таким именем."""
+        filters = [self.model.name == name]
+        if exclude_id is not None:
+            # Текущее объект не считается дубликатом.
+            filters.append(self.model.id != exclude_id)
+        result = select(
+            exists().where(
+                *filters,
+            ),
         )
 
         return await session.scalar(result)

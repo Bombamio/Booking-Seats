@@ -13,7 +13,7 @@ class CRUDUser(CRUDBase):
             new_managers: list[User],
             new_cafe: Cafe | None,
         ) -> None:
-        """Закрепляем менеджера за кафе, commit делать на стороне сервиса."""
+        """Закрепляем менеджера за кафе (commit делать на стороне сервиса)."""
         for manager in new_managers:
             if new_cafe:
                 manager.cafe_id = new_cafe.id

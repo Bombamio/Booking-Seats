@@ -27,7 +27,7 @@ class Cafe(Base):
     * `address` - str;
     * `photo` - uuid4;
     * `description` - str;
-    * `managers_id` - uuid4, ForeignKey;
+    * `managers_id` - uuid4;
     """
 
     # TODO: двойная валидация полей name и address.

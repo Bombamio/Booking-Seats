@@ -8,9 +8,7 @@ from src.schemas.base import (
     BaseProjectInfo,
     BaseProjectShortInfo,
 )
-from src.schemas.cafe import (
-    CafeShortInfo,
-)
+from src.schemas.cafe import CafeCreate, CafeInfo, CafeShortInfo, CafeUpdate
 from src.schemas.custom_error import CustomError
 from src.schemas.dish import (
     DishCreate,
@@ -24,6 +22,12 @@ from src.schemas.slot import (
     TimeSlotShortInfo,
     TimeSlotUpdate,
 )
+from src.schemas.table import (
+    TableCreate,
+    TableInfo,
+    TableShortInfo,
+    TableUpdate,
+)
 
 __all__ = [
     'ActionCreate',
@@ -33,11 +37,18 @@ __all__ = [
     'BaseProjectInfo',
     'BaseProjectShortInfo',
     'CafeShortInfo',
+    'CafeInfo',
+    'CafeCreate',
+    'CafeUpdate',
     'CustomError',
     'DishCreate',
     'DishInfo',
     'DishUpdate',
     'MediaInfo',
+    'TableCreate',
+    'TableInfo',
+    'TableShortInfo',
+    'TableUpdate',
     'TimeSlotCreate',
     'TimeSlotInfo',
     'TimeSlotShortInfo',

@@ -35,7 +35,7 @@ class RedisCache:
         await self.redis.setex(
             key,
             expire,
-            json.dumps(value, default=str)
+            json.dumps(value, default=str),
         )
 
     async def delete(self, key: str):

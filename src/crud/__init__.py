@@ -4,6 +4,7 @@ from .cafe import CRUDCafe, cafe_crud
 from .dish import CRUDDish, dish_crud
 from .slot import CRUDSlot, slot_crud
 from .table import CRUDTable, table_crud
+from .user import CRUDUser, user_crud
 
 __all__ = [
     'CRUDAction', 'action_crud',
@@ -12,4 +13,5 @@ __all__ = [
     'CRUDDish', 'dish_crud',
     'CRUDSlot', 'slot_crud',
     'CRUDTable', 'table_crud',
+    'CRUDUser', 'user_crud',
 ]

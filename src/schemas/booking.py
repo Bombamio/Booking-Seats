@@ -8,7 +8,6 @@ from src.core import constants as ct
 from src.models.booking import BookingStatus
 from src.schemas import (
     CafeShortInfo,
-    SlotInfo,
     TableShortInfo,
     TimeSlotShortInfo,
     UserShortInfo,

@@ -2,7 +2,7 @@ import os
 import uuid
 from datetime import datetime
 from http import HTTPStatus
-from typing import Optional
+from typing import Any, Optional
 
 from fastapi import Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,7 +12,7 @@ from src.crud import dish_crud
 from src.models import User, UserRole
 
 
-async def current_user(
+async def current_user_is_active(
     user: User,
 ) -> User:
     """Валидатор проверки **авторизации** пользователя."""
@@ -25,7 +25,7 @@ async def current_user(
 
 
 async def current_admin_or_manager(
-    user: User = Depends(current_user),
+    user: User = Depends(current_user_is_active),
 ) -> User:
     """Валидатор проверки прав **админа** или **менеджера**."""
     if user.role not in (UserRole.ADMIN, UserRole.MANAGER):
@@ -36,12 +36,10 @@ async def current_admin_or_manager(
     return user
 
 
-# TODO: Если нужно только проверить существование,
-# а так - кондидат на удаление.
 async def check_data_exists(
-    crud,  # noqa: ANN001
+    crud: Any,
     session: AsyncSession,
-    *filters,  # noqa: ANN002
+    *filters: Any,
 ) -> None:
     """Универсальный валидатор проверяющий на существование данных.
 
@@ -61,11 +59,11 @@ async def check_data_exists(
         )
 
 
-async def get_and_check_data_exists(  # noqa: ANN201
-    crud,  # noqa: ANN001
+async def get_and_check_data_exists(
+    crud: Any,
     session: AsyncSession,
-    *filters,  # noqa: ANN002
-):
+    *filters: Any,
+) -> Any:
     """Валидатор проверяющий на существование и возвращающий данных.
 
     Пример:
@@ -104,26 +102,26 @@ async def check_name_duplicate(
 
 
 async def check_data_is_active(
-    data,  # noqa: ANN001
+    data: Any,
 ) -> None:
     """Валидатор проверки на **активность поля**."""
     if not data.is_active:
         raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND,
-            detail='Данные не найдены',
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+            detail='Ошибка валидации данных',
         )
 
 
 async def check_list_data_is_active(
-    list_data,  # noqa: ANN001
+    list_data: Any,
 ) -> None:
     """Валидатор проверки списка данных на **активность поля**."""
     inactive_cafes = [data for data in list_data if not data.is_active]
 
     if inactive_cafes:
         raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND,
-            detail='Данные не найдены',
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+            detail='Ошибка валидации данных',
         )
 
 
@@ -153,7 +151,7 @@ async def get_size(
 
 
 async def check_slot_overlap(
-    crud,  # noqa: ANN001
+    crud: Any,
     cafe_id: uuid.UUID,
     start_time: datetime,
     end_time: datetime,
@@ -176,7 +174,7 @@ async def check_slot_overlap(
 
 
 def check_belongs_to_cafe(
-    data,  # noqa: ANN001
+    data: Any,
     cafe_id: uuid.UUID,
 ) -> None:
     """Валидатор проверки, что объект относится к указанному кафе."""
@@ -188,8 +186,8 @@ def check_belongs_to_cafe(
 
 
 async def check_data_len_by_data_ids(
-    data,  # noqa: ANN001
-    data_ids,  # noqa: ANN001
+    data: Any,
+    data_ids: Any,
 ) -> None:
     """Валидатор проверки количества найденных объектов, с количеством id."""
     if len(data) != len(data_ids):

@@ -3,7 +3,7 @@
 import uuid
 from typing import Any, NoReturn
 
-from fastapi import Depends, status
+from fastapi import status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.exceptions import BookingSeatsAppError
@@ -70,41 +70,11 @@ class BaseService:
         self,
         message: str = 'Ошибка валидации данных',
     ) -> NoReturn:
-        """Сообщит об ошибке валидации данных с кодом 404."""
+        """Сообщит об ошибке валидации данных с кодом 422."""
         raise BookingSeatsAppError(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
             message,
         )
-
-    async def current_user(
-        self,
-        user: User,
-    ) -> User:
-        """Проверит авторизацию пользователя.
-
-        В противном случае сообщит об ошибке 401.
-        """
-        if not user.is_active:
-            self.log_warning(
-                f'{user} - неавторизован.',
-            )
-            self.raise_unauthorized()
-        return user
-
-    async def current_admin_or_manager(
-        self,
-        user: User = Depends(current_user),
-    ) -> User:
-        """Проверит права пользователя.
-
-        В противном случае сообщит об ошибке 403.
-        """
-        if user.role is not (UserRole.ADMIN, UserRole.MANAGER):
-            self.log_warning(
-                f'{user} - не имеет права супер-пользователя, или менеджера.',
-            )
-            self.raise_forbidden()
-        return user
 
     async def ensure_exists(
         self,
@@ -149,7 +119,7 @@ class BaseService:
             self.log_warning(
                 f'Объект {data} - не активен.',
             )
-            self.raise_not_found()
+            self.raise_unprocessable_entity()
 
     def ensure_belongs_to_cafe(
         self,

@@ -41,33 +41,35 @@ class MediaService(BaseService):
         user: User,
     ) -> bytes:
         """Считает загружаемый файл и сначала проверит сигнатуру."""
-        content = bytearray()
+        #  закрывает файл после чтения даже при досрочном выходе из контекста
+        async with file:
+            content = bytearray()
 
-        first_chunk = await file.read(ct.MEDIA_SIGNATURE_CHECK_SIZE)
-        if not first_chunk:
-            raise BookingSeatsAppError(
-                status.HTTP_422_UNPROCESSABLE_ENTITY,
-                'Файл не передан',
-            )
-
-        self._detect_image_type(first_chunk)
-        content.extend(first_chunk)
-        total_size = len(first_chunk)
-
-        while chunk := await file.read(ct.MEDIA_CHUNK_SIZE):
-            total_size += len(chunk)
-            if total_size > ct.MAX_FILE_SIZE:
-                self.log_warning(
-                    f'Пользователь {user.id} попытался загрузить файл, '
-                    f'превышающий допустимый размер',
-                )
+            first_chunk = await file.read(ct.MEDIA_SIGNATURE_CHECK_SIZE)
+            if not first_chunk:
                 raise BookingSeatsAppError(
                     status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    'Размер файла превышает допустимый',
+                    'Файл не передан',
                 )
-            content.extend(chunk)
 
-        return bytes(content)
+            self._detect_image_type(first_chunk)
+            content.extend(first_chunk)
+            total_size = len(first_chunk)
+
+            while chunk := await file.read(ct.MEDIA_CHUNK_SIZE):
+                total_size += len(chunk)
+                if total_size > ct.MAX_FILE_SIZE:
+                    self.log_warning(
+                        f'Пользователь {user.id} попытался загрузить файл, '
+                        f'превышающий допустимый размер',
+                    )
+                    raise BookingSeatsAppError(
+                        status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        'Размер файла превышает допустимый',
+                    )
+                content.extend(chunk)
+
+            return bytes(content)
 
     def _detect_image_type(self, content: bytes) -> str:
         """Определит тип изображения по сигнатуре файла."""

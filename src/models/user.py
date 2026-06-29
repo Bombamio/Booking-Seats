@@ -72,7 +72,9 @@ class User(Base):
 
     @validates('email', 'phone')
     def validate_contact_info(
-        self, key: str, value: str | None,
+        self,
+        key: str,
+        value: str | None,
     ) -> str | None:
         """Валидация: хотя бы одно из полей email/phone заполнено."""
         if key == 'email':
@@ -81,18 +83,18 @@ class User(Base):
             phone = value.strip() if isinstance(value, str) else None
 
         if email is None and phone is None:
-            raise ValueError(
-                'Хотя бы одно из полей email/phone должно быть заполнено.')
+            raise ValueError('Хотя бы одно из полей email/phone должно быть заполнено.')
 
         return value
 
     @validates('cafe_id')
     def validate_cafe_id(
-        self, key: str, cafe_id: uuid.UUID | None,
+        self,
+        key: str,
+        cafe_id: uuid.UUID | None,
     ) -> uuid.UUID | None:
         """Валидация кафе для роли пользователя: менеджер."""
         if self.role == UserRole.MANAGER or cafe_id is None:
             return cafe_id
 
-        raise ValueError('Кафе может быть назначено только менеджерам'
-                            '(cafe_id должно быть None).')
+        raise ValueError('Кафе может быть назначено только менеджерам(cafe_id должно быть None).')

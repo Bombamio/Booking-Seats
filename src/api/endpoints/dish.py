@@ -58,7 +58,7 @@ async def create_dishes(
     user: Annotated[User, Depends(vt.current_admin_or_manager)],
     session: SessionDep,
 ) -> Dish:
-    """POST `/dishes` - Создает новое блюдо."""
+    """POST `/dishes` - Создает новое блюда."""
     cafes = await cafe_crud.get_multi(
         session,
         Cafe.id.in_(obj_in.cafes_id),

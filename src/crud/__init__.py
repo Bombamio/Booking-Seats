@@ -1,13 +1,17 @@
-from .action import action_crud
-from .cafe import cafe_crud
-from .dish import dish_crud
-from .slot import slot_crud
-from .user import user_crud
+from .action import CRUDAction, action_crud
+from .base import CRUDBase
+from .cafe import CRUDCafe, cafe_crud
+from .dish import CRUDDish, dish_crud
+from .slot import CRUDSlot, slot_crud
+from .table import CRUDTable, table_crud
+from .user import CRUDUser, user_crud
 
 __all__ = [
-    'action_crud',
-    'cafe_crud',
-    'dish_crud',
-    'slot_crud',
-    'user_crud',
+    'CRUDAction', 'action_crud',
+    'CRUDBase',
+    'CRUDCafe', 'cafe_crud',
+    'CRUDDish', 'dish_crud',
+    'CRUDSlot', 'slot_crud',
+    'CRUDTable', 'table_crud',
+    'CRUDUser', 'user_crud',
 ]

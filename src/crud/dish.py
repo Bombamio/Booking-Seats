@@ -18,17 +18,8 @@ class CRUDDish(CRUDBase):
         name: str,
         session: AsyncSession,
         exclude_id: Optional[uuid.UUID],
-    ):
+    ) -> Optional[bool]:
         """Проверяет, существует ли блюдо с таким именем."""
-        # TODO: Нужно переработать cache.
-        cache_key = (
-            f"dishes:cafe:{cafe_id}:user:{user.id}:"
-            f"active:{show_active}"
-        )
-        cached_data = await cache.get(cache_key)
-        if cached_data is not None:
-            return cached_data
-
         filters = [self.model.name == name]
         if exclude_id is not None:
             # Текущее блюдо не считается дубликатом.
@@ -39,12 +30,7 @@ class CRUDDish(CRUDBase):
             ),
         )
 
-        result = await session.scalar(result)
-        data = list(result.scalars().all())
-
-        await cache.set(cache_key, data, settings.cache_expire_menu)
-
-        return data
+        return await session.scalar(result)
 
 
 dish_crud = CRUDDish(Dish)

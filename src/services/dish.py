@@ -1,0 +1,243 @@
+import uuid
+from typing import Any, Optional
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.crud import CRUDDish, cafe_crud, dish_crud
+from src.models import Cafe, Dish, User, UserRole
+from src.schemas import DishCreate, DishUpdate
+from src.services import BaseService
+
+
+class DishService(CRUDDish, BaseService):
+    """Обработка операций с блюдами."""
+
+    async def _ensure_name_unique(
+        self,
+        name: str,
+        session: AsyncSession,
+        exclude_id: uuid.UUID | None = None,
+    ) -> None:
+        """Проверит уникальность названия блюда."""
+        if await dish_crud.duplicate_exists(
+            name=name,
+            session=session,
+            exclude_id=exclude_id,
+        ):
+            self.log_warning(
+                f'Блюдо с назанием {name} - уже существует.',
+            )
+            self.raise_unprocessable_entity()
+
+    async def _ensure_manajer_cafe_list_access(
+        self,
+        user: User,
+        cafes_id: list[uuid.UUID],
+        check_len: bool = False,
+    ) -> None:
+        """Проверяет что менеджер имеет доступ к кафе из списка."""
+        if user.role != UserRole.MANAGER:
+            return
+        if (
+            (check_len and len(cafes_id) != 1)
+            or (user.cafe_id not in cafes_id)
+        ):
+            self.log_warning(
+                f'Пользователь {user.id} попытался получить доступ '
+                f'к кафе {cafes_id} без разрешения',
+            )
+            self.raise_forbidden()
+
+    async def _ensure_cafes_len(
+        self,
+        cafes: Any,
+        cafes_id: list[uuid.UUID],
+    ) -> None:
+        if len(cafes) != len(cafes_id):
+            self.log_warning(
+                f'Задано {len(cafes_id)} кафе -'
+                f'вернулось {len(cafes)}.',
+            )
+            # TODO: Возможно здес нужно вызывать 400-ую ошибку.
+            self.raise_not_found()
+
+    async def get_multi_dishes(
+        self,
+        cafe_id: Optional[uuid.UUID],
+        user: User,
+        session: AsyncSession,
+        show_active: Optional[bool],
+    ) -> list[Optional[Dish]]:
+        """Вернет список блюд с учётом роли пользователя.
+
+        По умолчанию показывает:
+
+        * для пользователя - только активные блюда (всегда, в не зависимости
+        от значения параметра).
+        * для администратора - все блюда (и активные и не активные)
+        * для менеджера - активные блюда
+        """
+        filters = []
+
+        if cafe_id is not None:
+            filters.append(self.model.cafes.any(Cafe.id == cafe_id))
+
+        if (
+            user.role == UserRole.USER
+            or show_active
+            or user.role == UserRole.MANAGER and show_active is None
+        ):
+            filters.append(Dish.is_active.is_(True))
+
+        elif (
+            show_active is False
+            and user.role == UserRole.MANAGER
+            and cafe_id is not None
+        ):
+            filters.append(
+                Dish.cafes.any(Cafe.managers.any(User.id == user.id)),
+            )
+
+        elif user.role != UserRole.USER and show_active is not None:
+            filters.append(Dish.is_active.is_(show_active))
+
+        dishes = list(await self.get_multi(session, *filters))
+        self.log_info(
+            f'Пользователь {user.id} получил список из {len(dishes)} блюд.',
+        )
+        return dishes
+
+    async def create_dish(
+        self,
+        obj_in: DishCreate,
+        user: User,
+        session: AsyncSession,
+    ) -> Dish:
+        """Вернёт новое блюдо.
+
+        Только для администраторов и менеджеров.
+        """
+        cafes = await cafe_crud.get_multi(
+            session,
+            Cafe.id.in_(obj_in.cafes_id),
+        )
+
+        await self._ensure_cafes_len(
+            cafes=cafes,
+            cafes_id=obj_in.cafes_id,
+        )
+        await self._ensure_manajer_cafe_list_access(
+            user=user,
+            cafes_id=obj_in.cafes_id,
+            check_len=True,
+        )
+        await self._ensure_name_unique(
+            name=obj_in.name,
+            session=session,
+        )
+
+        result = await self.create(
+            obj_in,
+            session,
+            cafes=cafes,
+        )
+
+        self.log_info(
+            f'Пользователь {user.id} создал блюдо {obj_in.name}',
+        )
+
+        return result
+
+    async def get_dish_by_id(
+        self,
+        dish_id: uuid.UUID,
+        user: User,
+        session: AsyncSession,
+    ) -> Dish:
+        """Получение информации о блюде по его ID.
+
+        * для администраторов и менеджеров - все блюда
+        * для пользователей - только активные.
+        """
+        filters = [Dish.id == dish_id]
+        if user.role == UserRole.USER:
+            filters.append(Dish.is_active.is_(True))
+
+        dish: Dish = await self.get_or_raise(
+            dish_crud,
+            session,
+            *filters,
+        )
+
+        await self._ensure_manajer_cafe_list_access(
+            user=user,
+            cafes_id=[cafe.id for cafe in dish.cafes],
+        )
+
+        self.log_info(
+            f'Пользователь {user.id} получил информацию о блюде {dish_id}',
+        )
+
+        return dish
+
+    async def update_dish(
+        self,
+        dish_id: uuid.UUID,
+        obj_in: DishUpdate,
+        user: User,
+        session: AsyncSession,
+    ) -> Dish:
+        """Обновление информации о блюде по его ID.
+
+        Только для администраторов и менеджеров.
+        """
+        dish: Dish = await self.get_or_raise(
+            dish_crud,
+            session,
+            Dish.id == dish_id,
+        )
+
+        relations = {}
+
+        if obj_in.cafes_id is not None:
+            cafes = await cafe_crud.get_multi(
+                session,
+                Cafe.id.in_(obj_in.cafes_id),
+            )
+
+            await self._ensure_cafes_len(
+                cafes=cafes,
+                cafes_id=obj_in.cafes_id,
+            )
+
+            if user.role.MANAGER:
+                await self._ensure_manajer_cafe_list_access(
+                    user=user,
+                    cafes_id=obj_in.cafes_id,
+                    check_len=True,
+                )
+
+            relations['cafes'] = cafes
+
+        if obj_in.name is not None:
+            await self._ensure_name_unique(
+                name=obj_in.name,
+                session=session,
+                exclude_id=dish_id,
+            )
+
+        result = await self.update(
+            db_obj=dish,
+            obj_in=obj_in,
+            session=session,
+            **relations,
+        )
+
+        self.log_info(
+            f'Пользователь {user.id} изменил информацию о блюде {dish_id}',
+        )
+
+        return result
+
+
+dish_service = DishService(Dish)

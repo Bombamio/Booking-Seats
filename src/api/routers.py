@@ -28,6 +28,12 @@ main_router.include_router(
 )
 
 main_router.include_router(
+    endpoints.action_router,
+    prefix='/actions',
+    tags=['Actions'],
+)
+
+main_router.include_router(
     endpoints.cafe_router,
     prefix='/cafes',
     tags=['Cafes'],

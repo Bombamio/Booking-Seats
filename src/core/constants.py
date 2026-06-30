@@ -5,12 +5,25 @@ from fastapi import status
 from schemas.custom_error import CustomError
 
 # Основные числа: 1, 8, 16, 32, 64, 128, 256, 512, 1024, и т.д.
+SECRET_KEY = 'bd125ffa58cbb4303de365029c44cdda23830f7181e18d158cc3e95d6b55c963'
+# Пока будет здесь, сгенерирован с помощью команды в терминале:
+# openssl rand -hex 32
+ALGORITHM = 'HS256'
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 MAX_EMAIL_LEN = 256
+MIN_USERNAME_LEN = 3
 MAX_USERNAME_LEN = 32
-MAX_PASS_HASH_LEN = 256
+MAX_PASS_HASH_LEN = 32
+MIN_PASSWORD_LEN = 8
+MAX_PASSWORD_LEN = 64
 MAX_PHONE_LEN = 16
 MAX_TG_ID_LEN = 32
+
+HASH_TIME_COST = 1
+HASH_MEMORY_COST = 51200  # 50 MB
+HASH_PARALLELISM = 2
+HASH_SALT_LEN = 16
 
 MIN_SEATS = 1
 

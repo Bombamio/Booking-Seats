@@ -19,7 +19,7 @@ class DishService(CRUDDish, BaseService):
         exclude_id: uuid.UUID | None = None,
     ) -> None:
         """Проверит уникальность названия блюда."""
-        if await dish_crud.duplicate_exists(
+        if await self.duplicate_exists(
             name=name,
             session=session,
             exclude_id=exclude_id,
@@ -58,8 +58,7 @@ class DishService(CRUDDish, BaseService):
                 f'Задано {len(cafes_id)} кафе -'
                 f'вернулось {len(cafes)}.',
             )
-            # TODO: Возможно здес нужно вызывать 400-ую ошибку.
-            self.raise_not_found()
+            self.raise_unprocessable_entity()
 
     async def get_multi_dishes(
         self,

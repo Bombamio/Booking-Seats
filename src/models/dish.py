@@ -17,7 +17,7 @@ class Dish(Base):
     * `id` - uuid4, primary_key;
     * `name` - str, unique;
     * `description` - str;
-    * `cafes_id` - int, ForeignKey;
+    * `cafes` - list[Cafe], many-to-many;
     * `photo` - uuid4, ForeignKey;
     * `price` - int;
     * `created_at` - datetime;

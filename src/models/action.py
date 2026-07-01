@@ -22,7 +22,10 @@ class Action(Base):
     * `is_active` - boolean.
     """
 
-    description: Mapped[str] = mapped_column(String(ct.MAX_DESCRIPTION_LEN))
+    description: Mapped[str] = mapped_column(
+        String(ct.MAX_DESCRIPTION_LEN),
+        unique=True,
+    )
 
     photo: Mapped[Optional[uuid.UUID]] = mapped_column(
         ForeignKey('media.id', ondelete='SET NULL'),

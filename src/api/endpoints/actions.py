@@ -5,15 +5,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.validators import current_user, current_admin_or_manager
 from src.core.db import get_db
-from src.crud.action import CRUDAction
 from src.models.user import User
 from src.schemas.action import ActionCreate, ActionInfo, ActionUpdate
 from src.services.action import ActionService
 
 router = APIRouter(prefix='/actions', tags=['Акции'])
 
-crud_action = CRUDAction()
-action_service = ActionService(crud_action)
+action_service = ActionService()
 
 
 @router.get('/', response_model=List[ActionInfo])

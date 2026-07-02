@@ -1,9 +1,11 @@
+import re
 import uuid
 from datetime import datetime
 from enum import StrEnum
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import (BaseModel, ConfigDict, Field, field_validator,
+                      model_validator)
 
 from src.core import constants as ct
 
@@ -24,6 +26,23 @@ class UserBase(BaseModel):
     email: Optional[str] = Field(default=None, max_length=ct.MAX_EMAIL_LEN)
     phone: Optional[str] = Field(default=None, max_length=ct.MAX_PHONE_LEN)
     tg_id: Optional[str] = Field(max_length=ct.MAX_TG_ID_LEN)
+
+    @field_validator('phone')
+    def validate_phone(self, value: str) -> str:
+        """Валидация номера телефона."""
+        regex_for_phone = r'^\+\d{1,15}$'
+        if not re.match(regex_for_phone, value):
+            raise ValueError('Номер телефона должен начинаться с "+" и'
+                             'содержать от 1 до 15 цифр')
+        return value
+
+    @field_validator('email')
+    def validate_email(self, value: str) -> str:
+        """Валидация email."""
+        regex_for_email = r'^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(regex_for_email, value):
+            raise ValueError('Неверный формат email')
+        return value
 
 
 class UserCreate(UserBase):
@@ -76,7 +95,7 @@ class UserUpdate(BaseModel):
     email: Optional[str] = Field(max_length=ct.MAX_EMAIL_LEN)
     phone: Optional[str] = Field(max_length=ct.MAX_PHONE_LEN)
     tg_id: Optional[str] = Field(max_length=ct.MAX_TG_ID_LEN)
-    role: Optional[UserRole] = UserRole.USER
+    role: Optional[UserRole] = Field(default=UserRole.USER)
     cafe_id: Optional[uuid.UUID] = Field(default=None)
     password: Optional[str] = Field(min_length=ct.MIN_PASSWORD_LEN,
                                     max_length=ct.MAX_PASSWORD_LEN)

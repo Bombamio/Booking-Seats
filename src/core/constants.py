@@ -4,6 +4,9 @@ from fastapi import status
 
 from schemas.custom_error import CustomError
 
+
+PHONE_NUMBER_PATTERN = r"^\+?[0-9]{7,15}$"
+
 # Основные числа: 1, 8, 16, 32, 64, 128, 256, 512, 1024, и т.д.
 
 MAX_EMAIL_LEN = 256

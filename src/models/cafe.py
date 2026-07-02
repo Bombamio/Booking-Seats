@@ -3,11 +3,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    from src.models import Action, Dish, Slot, Table, User
+    from src.models import Action, Dish, Table, User
 
 import uuid
 
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core import constants as ct
@@ -55,10 +55,6 @@ class Cafe(Base):
         back_populates='cafe',
     )
 
-    slots: Mapped[list[Slot]] = relationship(
-        back_populates='cafe',
-    )
-
     dishes: Mapped[list[Dish]] = relationship(
         secondary=cafe_dishes,
         back_populates='cafes',
@@ -68,3 +64,8 @@ class Cafe(Base):
         secondary=cafe_actions,
         back_populates='cafes',
     )
+
+    __table_args__ = (
+    UniqueConstraint('name', 'address', name='uq_cafe_name_address'),
+
+)

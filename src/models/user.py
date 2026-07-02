@@ -82,7 +82,8 @@ class User(Base):
             phone = value.strip() if isinstance(value, str) else None
 
         if email is None and phone is None:
-            raise ValueError('Хотя бы одно из полей email/phone должно быть заполнено.')
+            raise ValueError(
+                'Хотя бы одно из полей email/phone должно быть заполнено.')
 
         return value
 
@@ -96,4 +97,5 @@ class User(Base):
         if self.role == UserRole.MANAGER or cafe_id is None:
             return cafe_id
 
-        raise ValueError('Кафе может быть назначено только менеджерам(cafe_id должно быть None).')
+        raise ValueError('Кафе может быть назначено только менеджерам '
+                         '(cafe_id должно быть None).')

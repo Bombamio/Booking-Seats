@@ -38,3 +38,15 @@ main_router.include_router(
     prefix='/cafes',
     tags=['Cafes'],
 )
+
+main_router.include_router(
+    endpoints.user_router,
+    prefix='/users',
+    tags=['Users'],
+)
+
+main_router.include_router(
+    endpoints.auth_router,
+    prefix='/auth',
+    tags=['Authenticaton'],
+)

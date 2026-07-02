@@ -44,3 +44,9 @@ main_router.include_router(
     prefix='/users',
     tags=['Users'],
 )
+
+main_router.include_router(
+    endpoints.auth_router,
+    prefix='/auth',
+    tags=['Authenticaton'],
+)

@@ -55,6 +55,13 @@ class ActionUpdate(ActionBase):
     * `is_active` - boolean.
     """
 
+    photo_id: Optional[uuid.UUID] = Field(None)
+    cafes_id: Optional[list[uuid.UUID]] = Field(None)
+    description: Optional[str] = Field(
+        None,
+        max_length=ct.MAX_DESCRIPTION_LEN,
+        min_length=ct.MIN_DESCRIPTION_LEN,
+    )
     is_active: Optional[bool] = None
 
 

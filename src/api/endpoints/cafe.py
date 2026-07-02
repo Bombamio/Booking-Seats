@@ -4,16 +4,17 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.api import validators as vt
-from src.core.db import get_session
-from src.models import User
-from src.schemas import CafeCreate, CafeInfo, CafeUpdate
-from src.services.cafe import CafeService, get_cafe_service
+from api import validators as vt
+from models import User
+from schemas import CafeCreate, CafeInfo, CafeUpdate
+from services.cafe import CafeService
+
+from core.db import get_session
 
 router = APIRouter()
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
-CafeServiceDep = Annotated[CafeService, Depends(get_cafe_service)]
+cafe_service = CafeService()
 
 
 @router.get(
@@ -22,8 +23,8 @@ CafeServiceDep = Annotated[CafeService, Depends(get_cafe_service)]
     summary='Получение списка кафе',
 )
 async def get_cafes(
-    service: CafeServiceDep,
-    user: Annotated[User, Depends(vt.current_user)],
+    session: SessionDep,
+    user: Annotated[User, Depends(vt.current_user_is_active)],
     show_active: bool = True,
 ) -> list[CafeInfo]:
     """Получение списка кафе.
@@ -31,7 +32,7 @@ async def get_cafes(
     Для администраторов и менеджеров - все кафе (с возможностью выбора),
     для пользователей - только активные.
     """
-    return await service.get_cafes(user, show_active)
+    return await cafe_service.get_cafes(session, user, show_active)
 
 
 @router.post(
@@ -42,13 +43,13 @@ async def get_cafes(
 )
 async def create_cafe(
     cafe: CafeCreate,
-    service: CafeServiceDep,
+    session: SessionDep,
 ) -> CafeInfo:
     """Создает новое кафе.
 
     Только для администраторов и менеджеров.
     """
-    return await service.create_cafe(cafe)
+    return await cafe_service.create_cafe(session, cafe)
 
 
 @router.get(
@@ -58,29 +59,30 @@ async def create_cafe(
 )
 async def get_cafe(
     cafe_id: uuid.UUID,
-    service: CafeServiceDep,
-    user: Annotated[User, Depends(vt.current_user)],
+    session: SessionDep,
+    user: Annotated[User, Depends(vt.current_user_is_active)],
 ) -> CafeInfo:
     """Получение информации о кафе по его ID.
 
     Для администраторов и менеджеров - все кафе, для пользователей
     только активные.
     """
-    return await service.get_cafe(cafe_id, user)
+    return await cafe_service.get_cafe(session, cafe_id, user)
 
 
 @router.patch(
     '/{cafe_id}',
+    response_model=CafeInfo,
     summary='Обновление информации о кафе по его ID',
     dependencies=[Depends(vt.current_admin_or_manager)],
 )
 async def update_cafe(
     cafe_id: uuid.UUID,
     cafe: CafeUpdate,
-    service: CafeServiceDep,
+    session: SessionDep,
 ) -> CafeInfo:
     """Обновление информации о кафе по его ID.
 
     Только для администраторов и менеджеров.
     """
-    return await service.update_cafe(cafe_id, cafe)
+    return await cafe_service.update_cafe(session, cafe, cafe_id)

@@ -2,8 +2,8 @@ import uuid  # noqa: I001
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.core import constants as ct
-from src.schemas import (
+from core import constants as ct
+from schemas import (
     BaseProjectCreate, BaseProjectInfo, BaseProjectShortInfo, UserShort,
 )
 
@@ -31,7 +31,7 @@ class CafeBase(BaseModel):
     phone: str = Field(
         ...,
         max_length=ct.MAX_PHONE_LEN,
-        pattern=r"^\+?[0-9]{7,15}$",
+        pattern=ct.PHONE_NUMBER_PATTERN,
         title='Телефон кафе',
     )
     photo_id: uuid.UUID | None = None

@@ -1,5 +1,12 @@
-from src.schemas.action import ActionCreate, ActionInfo, ActionUpdate
-from src.schemas.auth import AuthData, AuthToken
+from src.schemas.action import (
+    ActionCreate,
+    ActionInfo,
+    ActionUpdate,
+)
+from src.schemas.auth import (
+    AuthData,
+    AuthToken,
+)
 from src.schemas.base import (
     BaseProjectCreate,
     BaseProjectInfo,
@@ -12,9 +19,18 @@ from src.schemas.booking import (
     BookingTableSlotShortInfo,
     BookingUpdate,
 )
-from src.schemas.cafe import CafeCreate, CafeInfo, CafeShortInfo, CafeUpdate
+from src.schemas.cafe import (
+    CafeCreate,
+    CafeInfo,
+    CafeShortInfo,
+    CafeUpdate,
+)
 from src.schemas.custom_error import CustomError
-from src.schemas.dish import DishCreate, DishInfo, DishUpdate
+from src.schemas.dish import (
+    DishCreate,
+    DishInfo,
+    DishUpdate,
+)
 from src.schemas.media import MediaInfo
 from src.schemas.slot import (
     TimeSlotCreate,
@@ -22,7 +38,12 @@ from src.schemas.slot import (
     TimeSlotShortInfo,
     TimeSlotUpdate,
 )
-from src.schemas.table import TableCreate, TableInfo, TableShortInfo, TableUpdate
+from src.schemas.table import (
+    TableCreate,
+    TableInfo,
+    TableShortInfo,
+    TableUpdate,
+)
 from src.schemas.user import (
     UserCreate,
     UserInfo,

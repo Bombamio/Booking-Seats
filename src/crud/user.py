@@ -24,73 +24,73 @@ class CRUDUser(CRUDBase):
 
     async def create(
         self,
-        obj_in: schema.UserCreate,
+        user_create: schema.UserCreate,
         session: AsyncSession,
         **relations: Any,
     ) -> User:
         """Создание пользователя."""
         if await self.duplicate_login(
-            session, login=obj_in.email or obj_in.phone,
+            session, login=user_create.email or user_create.phone,
         ):
             raise ValueError('Пользователь с таким email/phone уже существует')
-        password_hash = hash_password(obj_in.password)
+        password_hash = hash_password(user_create.password)
 
-        obj_data = obj_in.model_dump(exclude={'password'})
-        obj_data['password_hash'] = password_hash
+        user_payload = user_create.model_dump(exclude={'password'})
+        user_payload['password_hash'] = password_hash
 
-        db_obj = self.model(**obj_data)
+        user_entity = self.model(**user_payload)
 
         for attr, value in relations.items():
             if attr not in self.relationships:
                 raise ValueError(
                     f'{attr} is not a relationships of {self.model.__name__}',
                 )
-            setattr(db_obj, attr, value)
+            setattr(user_entity, attr, value)
 
-        session.add(db_obj)
+        session.add(user_entity)
         bookingseats_logger.debug(
-            f'create {self.model.__name__} id={db_obj.id}: '
-            f'data={obj_data}, relations={list(relations.keys())}',
+            f'create {self.model.__name__} id={user_entity.id}: '
+            f'data={user_payload}, relations={list(relations.keys())}',
         )
         await session.commit()
-        await session.refresh(db_obj)
+        await session.refresh(user_entity)
 
-        return db_obj
+        return user_entity
 
     async def update(
         self,
-        db_obj: User,
-        obj_in: schema.UserUpdate,
+        user_entity: User,
+        user_update: schema.UserUpdate,
         session: AsyncSession,
         **relations: Any,
     ) -> User:
         """Обновление пользователя."""
-        update_data = obj_in.model_dump(exclude_unset=True)
+        user_update_payload = user_update.model_dump(exclude_unset=True)
 
-        if 'password' in update_data:
-            update_data['password_hash'] = hash_password(
-                update_data.pop('password'))
+        if 'password' in user_update_payload:
+            user_update_payload['password_hash'] = hash_password(
+                user_update_payload.pop('password'))
 
-        for field, value in update_data.items():
+        for field, value in user_update_payload.items():
             if field in self.model_fields:
-                setattr(db_obj, field, value)
+                setattr(user_entity, field, value)
 
         for attr, value in relations.items():
             if attr not in self.relationships:
                 raise ValueError(
                     f'{attr} is not a relationships of {self.model.__name__}',
                 )
-            setattr(db_obj, attr, value)
+            setattr(user_entity, attr, value)
 
-        session.add(db_obj)
+        session.add(user_entity)
         bookingseats_logger.debug(
-            f'update {self.model.__name__} id={db_obj.id}: '
-            f'data={update_data}, relations={list(relations.keys())}',
+            f'update {self.model.__name__} id={user_entity.id}: '
+            f'data={user_update_payload}, relations={list(relations.keys())}',
         )
         await session.commit()
-        await session.refresh(db_obj)
+        await session.refresh(user_entity)
 
-        return db_obj
+        return user_entity
 
     async def update_link_in_cafe(
         self,

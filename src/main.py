@@ -4,34 +4,37 @@ from typing import AsyncGenerator
 import uvicorn
 from fastapi import FastAPI
 
-from core.cache import cache
-from core.error_handlers import register_error_handlers
-from core.logger import bookingseats_logger
-from core.logging_middleware import LoggingMiddleware
-from core.settings import settings
+from src.api.routers import main_router
+from src.core.cache import cache
+from src.core.error_handlers import register_error_handlers
+from src.core.logger import bookingseats_logger
+from src.core.logging_middleware import LoggingMiddleware
+from src.core.settings import settings
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator:
     """Жизненный цикл приложения FastAPI."""
     # TODO: Добавить код, выполняемый при старте приложения
-    bookingseats_logger.info('Запуск приложения...')
+    bookingseats_logger.info('Запуск приложения BookingSeats...')
     await cache.connect()
     yield
     # TODO: Добавить код, выполняемый при остановке приложения
     if cache.redis:
-        await cache.redis.close()
-    bookingseats_logger.info('Приложение остановлено.')
+        await cache.redis.aclose()
+    bookingseats_logger.info('Приложение BookingSeats остановлено.')
 
 
 app = FastAPI(
     title=settings.title,
     version=settings.version,
     description=settings.description,
+    lifespan=lifespan,
 )
 
 register_error_handlers(app)
 app.add_middleware(LoggingMiddleware)
+app.include_router(main_router)
 
 
 @app.get(
@@ -48,4 +51,4 @@ async def index() -> dict:
 
 
 if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8000)
+    uvicorn.run(app, host='0.0.0.0', port=8000, access_log=False)

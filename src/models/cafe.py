@@ -3,11 +3,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    from src.models import Action, Dish, Table, User
+    from src.models import Action, Dish, Slot, Table, User
 
 import uuid
 
-from sqlalchemy import ForeignKey, String, UniqueConstraint
+from sqlalchemy import String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core import constants as ct
@@ -25,7 +25,7 @@ class Cafe(Base):
     * `is_active` - boolean;
     * `name` - str;
     * `address` - str;
-    * `photo` - uuid4;
+    * `photo_id` - uuid4;
     * `description` - str;
     * `managers_id` - uuid4;
     """
@@ -43,15 +43,17 @@ class Cafe(Base):
     description: Mapped[Optional[str]] = mapped_column(
         String(ct.MAX_DESCRIPTION_LEN),
     )
-    photo_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        ForeignKey('media.id', name='fk_cafe_photo_id_photo'),
-    )
+    photo_id: Mapped[Optional[uuid.UUID]]
 
     managers: Mapped[list[User]] = relationship(
         back_populates='cafe',
     )
 
     tables: Mapped[list[Table]] = relationship(
+        back_populates='cafe',
+    )
+
+    slots: Mapped[list[Slot]] = relationship(
         back_populates='cafe',
     )
 
@@ -66,6 +68,5 @@ class Cafe(Base):
     )
 
     __table_args__ = (
-    UniqueConstraint('name', 'address', name='uq_cafe_name_address'),
-
-)
+        UniqueConstraint('name', 'address', name='uq_cafe_name_address'),
+    )

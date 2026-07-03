@@ -12,7 +12,7 @@ class CRUDCafe(CRUDBase):
 
     async def create_cafe(  # noqa: ANN201
         self,
-        obj_in,  # noqa: ANN001
+        cafe_create,  # noqa: ANN001
         session: AsyncSession,
         **relations,  # noqa: ANN003
     ):
@@ -26,7 +26,7 @@ class CRUDCafe(CRUDBase):
         Пример:
         ```
         return await dish_crud.create(
-            obj_in=obj_in,
+            create_data=dish_data,
             session=session,
             cafes=cafes,
         )
@@ -34,13 +34,13 @@ class CRUDCafe(CRUDBase):
         """
         model_fields = self.model.__table__.columns.keys()
 
-        obj_in_data = {
+        cafe_payload = {
             key: value
-            for key, value in obj_in.model_dump().items()
+            for key, value in cafe_create.model_dump().items()
             if key in model_fields
         }
 
-        db_obj = self.model(**obj_in_data)
+        cafe_entity = self.model(**cafe_payload)
 
         mapper = inspect(self.model)
 
@@ -50,12 +50,12 @@ class CRUDCafe(CRUDBase):
                 raise ValueError(
                     f'{attr} is not a relationships of {self.model.__name__}',
                 )
-            setattr(db_obj, attr, value)
+            setattr(cafe_entity, attr, value)
 
-        session.add(db_obj)
+        session.add(cafe_entity)
         await session.flush()
 
-        return db_obj
+        return cafe_entity
 
     async def get_multi_with_managers(
         self,
@@ -92,26 +92,26 @@ class CRUDCafe(CRUDBase):
 
     async def update_cafe(
         self,
-        db_obj,  # noqa: ANN001
-        obj_in,  # noqa: ANN001
+        cafe_entity,  # noqa: ANN001
+        cafe_update,  # noqa: ANN001
         session: AsyncSession,
     ) -> Cafe:
         """PATCH-функция, обновляет информацю о кафе.
 
         Commit должен выполняться на стороне сервиса
         """
-        update_data = obj_in.model_dump(exclude_unset=True)
+        cafe_update_payload = cafe_update.model_dump(exclude_unset=True)
 
         model_fields = self.model.__table__.columns.keys()
 
-        for field, value in update_data.items():
+        for field, value in cafe_update_payload.items():
             if field in model_fields:
-                setattr(db_obj, field, value)
+                setattr(cafe_entity, field, value)
 
-        session.add(db_obj)
+        session.add(cafe_entity)
         await session.flush()
 
-        return db_obj
+        return cafe_entity
 
 
 cafe_crud = CRUDCafe(Cafe)

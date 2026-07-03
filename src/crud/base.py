@@ -102,7 +102,7 @@ class CRUDBase:
 
     async def create(
         self,
-        obj_in: Any,
+        create_data: Any,
         session: AsyncSession,
         **relations: Any,
     ) -> Any:
@@ -114,18 +114,18 @@ class CRUDBase:
         Пример:
         ```
         return await dish_crud.create(
-            obj_in=obj_in,
+            create_data=dish_data,
             session=session,
             cafes=cafes,
         )
         ```
         """
-        obj_in_data = {
+        create_payload = {
             key: value
-            for key, value in obj_in.model_dump().items()
+            for key, value in create_data.model_dump().items()
             if key in self.model_fields
         }
-        db_obj = self.model(**obj_in_data)
+        created_entity = self.model(**create_payload)
 
         for attr, value in relations.items():
             if attr not in self.relationships:
@@ -133,22 +133,22 @@ class CRUDBase:
                 raise ValueError(
                     f'{attr} is not a relationships of {self.model.__name__}',
                 )
-            setattr(db_obj, attr, value)
+            setattr(created_entity, attr, value)
 
-        session.add(db_obj)
+        session.add(created_entity)
         bookingseats_logger.debug(
-            f'create {self.model.__name__} id={db_obj.id}: '
-            f'data={obj_in_data}, relations={list(relations.keys())}',
+            f'create {self.model.__name__} id={created_entity.id}: '
+            f'data={create_payload}, relations={list(relations.keys())}',
         )
         await session.commit()
-        await session.refresh(db_obj)
+        await session.refresh(created_entity)
 
-        return db_obj
+        return created_entity
 
     async def update(
         self,
-        db_obj: Any,
-        obj_in: Any,
+        db_entity: Any,
+        update_data: Any,
         session: AsyncSession,
         **relations: Any,
     ) -> Any:
@@ -161,26 +161,26 @@ class CRUDBase:
         ```
         relations = {}
 
-        if obj_in.cafes_id is not None:
+        if update_data.cafes_id is not None:
             cafes = await cafe_crud.get_multi(
                 session,
-                Cafe.id.in_(obj_in.cafes_id),
+                Cafe.id.in_(update_data.cafes_id),
             )
             relations['cafes'] = cafes
 
         return await dish_crud.update(
-            db_obj=dish,
-            obj_in=obj_in,
+            db_entity=dish,
+            update_data=update_data,
             session=session,
             **relations,
         )
         ```
         """
-        update_data = obj_in.model_dump(exclude_unset=True)
+        update_payload = update_data.model_dump(exclude_unset=True)
 
-        for field, value in update_data.items():
+        for field, value in update_payload.items():
             if field in self.model_fields:
-                setattr(db_obj, field, value)
+                setattr(db_entity, field, value)
 
         for attr, value in relations.items():
             if attr not in self.relationships:
@@ -188,17 +188,17 @@ class CRUDBase:
                 raise ValueError(
                     f'{attr} is not a relationships of {self.model.__name__}',
                 )
-            setattr(db_obj, attr, value)
+            setattr(db_entity, attr, value)
 
-        session.add(db_obj)
+        session.add(db_entity)
         bookingseats_logger.debug(
-            f'update {self.model.__name__} id={db_obj.id}: '
-            f'data={update_data}, relations={list(relations.keys())}',
+            f'update {self.model.__name__} id={db_entity.id}: '
+            f'data={update_payload}, relations={list(relations.keys())}',
         )
         await session.commit()
-        await session.refresh(db_obj)
+        await session.refresh(db_entity)
 
-        return db_obj
+        return db_entity
 
     async def exists(
         self,

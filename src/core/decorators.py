@@ -14,15 +14,18 @@ def with_error_responses(  # noqa: ANN201
 
     Пример использования в endpoint:
 
-    @with_error_responses(ERRORS_GET_MULTI) #  из констант ERRORS_GET_MULTI
+    @with_error_responses(ERRORS_GET_MULTI)  # из api.error_responses
     async def get_users(self, request: Request) -> list[User]:
         return await self.user_service.get_users()
 
     """
 
     def decorator(func):  # noqa: ANN001, ANN202
+        """Добавит описание ошибок в атрибут responses функции."""
+
         @wraps(func)
         async def wrapper(*args, **kwargs):  # noqa: ANN002, ANN003, ANN202
+            """Выполнит исходный endpoint без изменения поведения."""
             return await func(*args, **kwargs)
 
         if not hasattr(wrapper, 'responses'):

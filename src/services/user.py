@@ -1,10 +1,11 @@
 from uuid import UUID
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.crud.user import CRUDUser, user_crud
-from src.models.user import User, UserRole
-from src.services.base import BaseService
+from src.crud import CRUDUser, user_crud
+from src.models import User, UserRole
 from src.schemas import user as schema
+from src.services.base import BaseService
 
 
 class UserService(CRUDUser, BaseService):
@@ -16,7 +17,7 @@ class UserService(CRUDUser, BaseService):
         user_in: schema.UserCreate,
     ) -> User:
         """Создание нового пользователя."""
-        return await self.create(session, obj_in=user_in)
+        return await self.create(user_in, session)
 
     async def get_user(
         self,

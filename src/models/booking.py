@@ -1,14 +1,16 @@
 import enum
 import uuid
 from datetime import date
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from src.models import BookingItem, Cafe, User
 
 from sqlalchemy import Date, Enum, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core import constants as ct
 from src.core.base_model import Base
-from src.models import BookingItem, Cafe, User
 
 
 class BookingStatus(enum.Enum):

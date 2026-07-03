@@ -4,11 +4,8 @@ from typing import Optional
 from pydantic import Field
 
 from src.core import constants as ct
-from src.schemas import (
-    BaseProjectCreate,
-    BaseProjectInfo,
-    CafeShortInfo,
-)
+from src.schemas.base import BaseProjectCreate, BaseProjectInfo
+from src.schemas.cafe import CafeShortInfo
 
 
 class DishBase(BaseProjectCreate):

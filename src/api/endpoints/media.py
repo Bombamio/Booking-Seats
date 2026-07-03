@@ -3,16 +3,13 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Response, UploadFile, status
 
+from src.api import error_responses as er
 from src.api import validators as vt
-from src.core.constants import (
-    ERRORS_GET_MEDIA,
-    ERRORS_POST_MEDIA,
-    MEDIA_OUTPUT_TYPE,
-)
+from src.core.constants import MEDIA_OUTPUT_TYPE
 from src.core.decorators import with_error_responses
 from src.models import User
 from src.schemas import media as schema
-from src.services.media import media_service
+from src.services import media_service
 
 router = APIRouter()
 
@@ -29,10 +26,10 @@ router = APIRouter()
         'Только для администраторов и менеджеров.'
     ),
 )
-@with_error_responses(ERRORS_POST_MEDIA)
+@with_error_responses(er.ERRORS_POST_MEDIA)
 async def upload_media(
     user: Annotated[User, Depends(vt.current_admin_or_manager)],
-    file: Annotated[UploadFile],
+    file: UploadFile,
 ) -> schema.MediaInfo:
     """Загрузка изображения."""
     return await media_service.upload(
@@ -54,7 +51,7 @@ async def upload_media(
         },
     },
 )
-@with_error_responses(ERRORS_GET_MEDIA)
+@with_error_responses(er.ERRORS_GET_MEDIA)
 async def get_media(
     media_id: uuid.UUID,
 ) -> Response:

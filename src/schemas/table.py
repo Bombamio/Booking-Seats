@@ -3,7 +3,7 @@ from typing import Any, Optional
 from pydantic import Field, PositiveInt, model_validator
 
 from src.core.constants import MIN_SEATS
-from src.schemas import (
+from src.schemas.base import (
     BaseProjectCreate,
     BaseProjectInfo,
     BaseProjectShortInfo,

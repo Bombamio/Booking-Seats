@@ -8,7 +8,8 @@ from starlette.middleware.base import (
 from starlette.requests import Request
 from starlette.responses import Response
 
-from core.logger import bookingseats_logger
+from src.core import constants as ct
+from src.core.logger import bookingseats_logger
 
 
 # TODO: чтобы залогировать данные о пользователе - нужна доработка.
@@ -31,7 +32,9 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             return response
         # при любом исходе записываем время, метод, url, статус в лог
         finally:
-            duration_ms = (time.perf_counter() - start_time) * 1000
+            duration_ms = (
+                time.perf_counter() - start_time
+            ) * ct.MILLISECONDS_IN_SECOND
             bookingseats_logger.info(
                 f'{request.method} {request.url.path} | '
                 f'status={status_code} | '

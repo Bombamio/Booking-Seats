@@ -6,9 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.cache import cache
 from src.core.settings import settings
 from src.crud.base import CRUDBase
-from src.models import Action
-from src.models.cafe import Cafe
-from src.schemas.action import ActionCreate, ActionUpdate
+from src.crud.cafe import cafe_crud
+from src.models import Action, Cafe
+from src.schemas import ActionCreate, ActionUpdate
 
 
 class CRUDAction(CRUDBase):
@@ -33,50 +33,50 @@ class CRUDAction(CRUDBase):
 
     async def create(
         self,
-        obj_in: ActionCreate,
+        action_create: ActionCreate,
         session: AsyncSession,
     ) -> Action:
         """Создание акции с привязкой к кафе."""
-        if not obj_in.cafes_id:
+        if not action_create.cafes_id:
             raise ValueError(
                 'Акция должна быть привязана хотя бы к одному кафе',
             )
 
-        cafes = await Cafe.get_multi(
+        cafes = await cafe_crud.get_multi(
             session,
-            Cafe.id.in_(obj_in.cafes_id),
+            Cafe.id.in_(action_create.cafes_id),
         )
 
         return await super().create(
-            obj_in=obj_in,
+            create_data=action_create,
             session=session,
             cafes=cafes,
         )
 
     async def update(
         self,
-        db_obj: Action,
-        obj_in: ActionUpdate,
+        action_entity: Action,
+        action_update: ActionUpdate,
         session: AsyncSession,
     ) -> Action:
         """Обновление акции, включая связи с кафе."""
         relations = {}
 
-        if obj_in.cafes_id is not None:
-            if not obj_in.cafes_id:
+        if action_update.cafes_id is not None:
+            if not action_update.cafes_id:
                 raise ValueError(
                     'Акция должна быть привязана хотя бы к одному кафе',
                 )
 
-            cafes = await Cafe.get_multi(
+            cafes = await cafe_crud.get_multi(
                 session,
-                Cafe.id.in_(obj_in.cafes_id),
+                Cafe.id.in_(action_update.cafes_id),
             )
             relations['cafes'] = cafes
 
         return await super().update(
-            db_obj=db_obj,
-            obj_in=obj_in,
+            db_entity=action_entity,
+            update_data=action_update,
             session=session,
             **relations,
         )
@@ -85,7 +85,7 @@ class CRUDAction(CRUDBase):
         self,
         cafe_id: Optional[uuid.UUID],
         session: AsyncSession,
-    ):
+    ) -> List[Action]:
         """Получение активных акций с кешированием."""
         cache_key = f"actions:cafe:{cafe_id}:active"
 

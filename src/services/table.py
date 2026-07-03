@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.crud import CRUDTable, cafe_crud
 from src.models import Cafe, Table, User, UserRole
 from src.schemas import TableCreate, TableUpdate
-from src.services import BaseService
+from src.services.base import BaseService
 
 
 # Допущения до рефакторинга базовых слоёв:
@@ -34,15 +34,15 @@ class TableService(CRUDTable, BaseService):
 
     def _apply_fields_update(
         self,
-        db_obj: Table,
-        obj_in: TableUpdate,
+        table_entity: Table,
+        table_update: TableUpdate,
     ) -> None:
         """Применит переданные поля к объекту без обращения к CRUDBase.update."""
-        update_data = obj_in.model_dump(exclude_unset=True)
+        table_update_payload = table_update.model_dump(exclude_unset=True)
         model_fields = self.model.__table__.columns.keys()
-        for field, value in update_data.items():
+        for field, value in table_update_payload.items():
             if field in model_fields:
-                setattr(db_obj, field, value)
+                setattr(table_entity, field, value)
 
     async def get_multi_by_cafe(
         self,

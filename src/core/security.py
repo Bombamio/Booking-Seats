@@ -11,7 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core import constants as ct
 from src.core.db import get_session
-from src.models.user import User
+from src.core.logger import current_user_var
+from src.models import User
 
 ph = PasswordHasher(
     time_cost=ct.HASH_TIME_COST,
@@ -46,15 +47,17 @@ def needs_rehash(hashed: str) -> bool:
 
 
 def create_access_token(
-        data: dict,
-        expires_delta: timedelta | None = None,
+    data: dict,
+    expires_delta: timedelta | None = None,
 ) -> str:
     """Создание JWT токена."""
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+        expire = datetime.now(timezone.utc) + timedelta(
+            minutes=ct.ACCESS_TOKEN_EXPIRE_MINUTES,
+        )
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, ct.SECRET_KEY, algorithm=ct.ALGORITHM)
 
@@ -79,4 +82,6 @@ async def get_current_user(
     user = await session.get(User, user_id)
     if user is None:
         raise credentials_exception
+    # Запишем текущего пользователя в контекст для логгера
+    current_user_var.set(f"{user.username}({user.id})")
     return user

@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.crud import CRUDDish, cafe_crud, dish_crud
 from src.models import Cafe, Dish, User, UserRole
 from src.schemas import DishCreate, DishUpdate
-from src.services import BaseService
+from src.services.base import BaseService
 
 
 class DishService(CRUDDish, BaseService):
@@ -53,6 +53,7 @@ class DishService(CRUDDish, BaseService):
         cafes: Any,
         cafes_id: list[uuid.UUID],
     ) -> None:
+        """Проверит, что все переданные ID кафе существуют."""
         if len(cafes) != len(cafes_id):
             self.log_warning(
                 f'Задано {len(cafes_id)} кафе -'
@@ -108,7 +109,7 @@ class DishService(CRUDDish, BaseService):
 
     async def create_dish(
         self,
-        obj_in: DishCreate,
+        dish_create: DishCreate,
         user: User,
         session: AsyncSession,
     ) -> Dish:
@@ -118,31 +119,31 @@ class DishService(CRUDDish, BaseService):
         """
         cafes = await cafe_crud.get_multi(
             session,
-            Cafe.id.in_(obj_in.cafes_id),
+            Cafe.id.in_(dish_create.cafes_id),
         )
 
         await self._ensure_cafes_len(
             cafes=cafes,
-            cafes_id=obj_in.cafes_id,
+            cafes_id=dish_create.cafes_id,
         )
         await self._ensure_manajer_cafe_list_access(
             user=user,
-            cafes_id=obj_in.cafes_id,
+            cafes_id=dish_create.cafes_id,
             check_len=True,
         )
         await self._ensure_name_unique(
-            name=obj_in.name,
+            name=dish_create.name,
             session=session,
         )
 
         result = await self.create(
-            obj_in,
+            dish_create,
             session,
             cafes=cafes,
         )
 
         self.log_info(
-            f'Пользователь {user.id} создал блюдо {obj_in.name}',
+            f'Пользователь {user.id} создал блюдо {dish_create.name}',
         )
 
         return result
@@ -182,7 +183,7 @@ class DishService(CRUDDish, BaseService):
     async def update_dish(
         self,
         dish_id: uuid.UUID,
-        obj_in: DishUpdate,
+        dish_update: DishUpdate,
         user: User,
         session: AsyncSession,
     ) -> Dish:
@@ -198,36 +199,36 @@ class DishService(CRUDDish, BaseService):
 
         relations = {}
 
-        if obj_in.cafes_id is not None:
+        if dish_update.cafes_id is not None:
             cafes = await cafe_crud.get_multi(
                 session,
-                Cafe.id.in_(obj_in.cafes_id),
+                Cafe.id.in_(dish_update.cafes_id),
             )
 
             await self._ensure_cafes_len(
                 cafes=cafes,
-                cafes_id=obj_in.cafes_id,
+                cafes_id=dish_update.cafes_id,
             )
 
             if user.role.MANAGER:
                 await self._ensure_manajer_cafe_list_access(
                     user=user,
-                    cafes_id=obj_in.cafes_id,
+                    cafes_id=dish_update.cafes_id,
                     check_len=True,
                 )
 
             relations['cafes'] = cafes
 
-        if obj_in.name is not None:
+        if dish_update.name is not None:
             await self._ensure_name_unique(
-                name=obj_in.name,
+                name=dish_update.name,
                 session=session,
                 exclude_id=dish_id,
             )
 
         result = await self.update(
-            db_obj=dish,
-            obj_in=obj_in,
+            db_entity=dish,
+            update_data=dish_update,
             session=session,
             **relations,
         )

@@ -1,17 +1,26 @@
-from .action import CRUDAction, action_crud
-from .base import CRUDBase
-from .cafe import CRUDCafe, cafe_crud
-from .dish import CRUDDish, dish_crud
-from .slot import CRUDSlot, slot_crud
-from .table import CRUDTable, table_crud
-from .user import CRUDUser, user_crud
+from src.crud.action import CRUDAction, action_crud
+from src.crud.base import CRUDBase
+from src.crud.booking import CRUDBooking, booking_crud
+from src.crud.cafe import CRUDCafe, cafe_crud
+from src.crud.dish import CRUDDish, dish_crud
+from src.crud.slot import CRUDSlot, slot_crud
+from src.crud.table import CRUDTable, table_crud
+from src.crud.user import CRUDUser, user_crud
 
 __all__ = [
-    'CRUDAction', 'action_crud',
+    'CRUDAction',
+    'CRUDBooking',
     'CRUDBase',
-    'CRUDCafe', 'cafe_crud',
-    'CRUDDish', 'dish_crud',
-    'CRUDSlot', 'slot_crud',
-    'CRUDTable', 'table_crud',
-    'CRUDUser', 'user_crud',
+    'CRUDCafe',
+    'CRUDDish',
+    'CRUDSlot',
+    'CRUDTable',
+    'CRUDUser',
+    'action_crud',
+    'booking_crud',
+    'cafe_crud',
+    'dish_crud',
+    'slot_crud',
+    'table_crud',
+    'user_crud',
 ]

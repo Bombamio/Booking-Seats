@@ -22,7 +22,7 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 )
 async def get_time_slots_list(  # noqa: ANN201
     cafe_id: uuid.UUID,
-    user: Annotated[User, Depends(vt.current_user)],
+    user: Annotated[User, Depends(vt.current_user_is_active)],
     session: SessionDep,
     show_active: bool = True,
 ):
@@ -47,7 +47,7 @@ async def get_time_slots_list(  # noqa: ANN201
 )
 async def create_time_slot(  # noqa: ANN201
     cafe_id: uuid.UUID,
-    obj_in: schema.TimeSlotCreate,
+    slot_create: schema.TimeSlotCreate,
     user: Annotated[User, Depends(vt.current_admin_or_manager)],
     session: SessionDep,
 ):
@@ -74,13 +74,13 @@ async def create_time_slot(  # noqa: ANN201
     await vt.check_slot_overlap(
         crud=slot_crud,
         cafe_id=cafe.id,
-        start_time=obj_in.start_time,
-        end_time=obj_in.end_time,
+        start_time=slot_create.start_time,
+        end_time=slot_create.end_time,
         session=session,
     )
 
     return await slot_crud.create_with_cafe(
-        obj_in=obj_in,
+        slot_create=slot_create,
         cafe_id=cafe.id,
         session=session,
     )
@@ -94,7 +94,7 @@ async def create_time_slot(  # noqa: ANN201
 async def get_time_slot_by_id(  # noqa: ANN201
     cafe_id: uuid.UUID,
     slot_id: uuid.UUID,
-    user: Annotated[User, Depends(vt.current_user)],
+    user: Annotated[User, Depends(vt.current_user_is_active)],
     session: SessionDep,
 ):
     """Получение информации о временном слоте в кафе по его ID."""
@@ -129,7 +129,7 @@ async def get_time_slot_by_id(  # noqa: ANN201
 async def update_time_slot(  # noqa: ANN201
     cafe_id: uuid.UUID,
     slot_id: uuid.UUID,
-    obj_in: schema.TimeSlotUpdate,
+    slot_update: schema.TimeSlotUpdate,
     user: Annotated[User, Depends(vt.current_admin_or_manager)],
     session: SessionDep,
 ):
@@ -154,18 +154,18 @@ async def update_time_slot(  # noqa: ANN201
             session=session,
         )
 
-    if obj_in.start_time is not None or obj_in.end_time is not None:
+    if slot_update.start_time is not None or slot_update.end_time is not None:
         await vt.check_slot_overlap(
             crud=slot_crud,
             cafe_id=cafe.id,
-            start_time=obj_in.start_time or slot.start_time,
-            end_time=obj_in.end_time or slot.end_time,
+            start_time=slot_update.start_time or slot.start_time,
+            end_time=slot_update.end_time or slot.end_time,
             session=session,
             exclude_id=slot.id,
         )
 
     return await slot_crud.update(
-        db_obj=slot,
-        obj_in=obj_in,
+        db_entity=slot,
+        update_data=slot_update,
         session=session,
     )

@@ -4,11 +4,8 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.api import error_responses as er
 from src.api import validators as vt
-from src.core.constants import (
-    ERRORS_4XX_FULL,
-    ERRORS_GET_MULTI_WITH_404,
-)
 from src.core.db import get_session
 from src.core.decorators import with_error_responses
 from src.models import Table, User
@@ -31,10 +28,10 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
         'для пользователей - только активные.'
     ),
 )
-@with_error_responses(ERRORS_GET_MULTI_WITH_404)
+@with_error_responses(er.ERRORS_GET_MULTI_WITH_404)
 async def get_tables_list(
     cafe_id: uuid.UUID,
-    user: Annotated[User, Depends(vt.current_user)],
+    user: Annotated[User, Depends(vt.current_user_is_active)],
     session: SessionDep,
     show_active: bool = True,
 ) -> list[Table]:
@@ -57,7 +54,7 @@ async def get_tables_list(
         'Только для администраторов и менеджеров.'
     ),
 )
-@with_error_responses(ERRORS_4XX_FULL)
+@with_error_responses(er.ERRORS_4XX_FULL)
 async def create_table(
     cafe_id: uuid.UUID,
     table_create: schema.TableCreate,
@@ -84,11 +81,11 @@ async def create_table(
         'для пользователей - только активные.'
     ),
 )
-@with_error_responses(ERRORS_4XX_FULL)
+@with_error_responses(er.ERRORS_4XX_FULL)
 async def get_table(
     cafe_id: uuid.UUID,
     table_id: uuid.UUID,
-    user: Annotated[User, Depends(vt.current_user)],
+    user: Annotated[User, Depends(vt.current_user_is_active)],
     session: SessionDep,
 ) -> Table:
     """Получение столика по ID."""
@@ -110,7 +107,7 @@ async def get_table(
         'Только для администраторов и менеджеров.'
     ),
 )
-@with_error_responses(ERRORS_4XX_FULL)
+@with_error_responses(er.ERRORS_4XX_FULL)
 async def update_table(
     cafe_id: uuid.UUID,
     table_id: uuid.UUID,

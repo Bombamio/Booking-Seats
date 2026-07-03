@@ -8,12 +8,13 @@ from fastapi import Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core import constants as ct
+from src.core.security import get_current_user
 from src.crud import dish_crud
 from src.models import User, UserRole
 
 
 async def current_user_is_active(
-    user: User,
+    user: User = Depends(get_current_user),
 ) -> User:
     """Валидатор проверки **авторизации** пользователя."""
     if not user.is_active:

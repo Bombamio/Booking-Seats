@@ -1,15 +1,14 @@
 import uuid
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from pydantic import Field
 
 from src.core import constants as ct
-from src.models import Action
-from src.schemas import (
-    BaseProjectCreate,
-    BaseProjectInfo,
-    CafeShortInfo,
-)
+from src.schemas.base import BaseProjectCreate, BaseProjectInfo
+from src.schemas.cafe import CafeShortInfo
+
+if TYPE_CHECKING:
+    from src.models import Action
 
 
 class ActionBase(BaseProjectCreate):
@@ -55,6 +54,13 @@ class ActionUpdate(ActionBase):
     * `is_active` - boolean.
     """
 
+    photo_id: Optional[uuid.UUID] = Field(None)
+    cafes_id: Optional[list[uuid.UUID]] = Field(None)
+    description: Optional[str] = Field(
+        None,
+        max_length=ct.MAX_DESCRIPTION_LEN,
+        min_length=ct.MIN_DESCRIPTION_LEN,
+    )
     is_active: Optional[bool] = None
 
 
@@ -77,6 +83,6 @@ class ActionInfo(BaseProjectInfo):
     )
 
     @classmethod
-    def from_orm_model(cls, action: Action) -> 'ActionInfo':
+    def from_orm_model(cls, action: 'Action') -> 'ActionInfo':
         """Создает схему из ORM модели Action."""
         return cls.model_validate(action)

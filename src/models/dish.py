@@ -1,13 +1,15 @@
 import uuid
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy import Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core import constants as ct
 from src.core.base_model import Base
-from src.models import Cafe
 from src.models.association_tables import cafe_dishes
+
+if TYPE_CHECKING:
+    from src.models import Cafe
 
 
 class Dish(Base):
@@ -18,12 +20,14 @@ class Dish(Base):
     * `name` - str, unique;
     * `description` - str;
     * `cafes` - list[Cafe], many-to-many;
-    * `photo` - uuid4, ForeignKey;
+    * `photo_id` - uuid4;
     * `price` - int;
     * `created_at` - datetime;
     * `updated_at` - datetime;
     * `is_active` - boolean.
     """
+
+    __tablename__ = 'dishes'
 
     name: Mapped[str] = mapped_column(
         String(ct.MAX_NAME_LEN),
@@ -32,9 +36,7 @@ class Dish(Base):
     description: Mapped[Optional[str]] = mapped_column(
         String(ct.MAX_DESCRIPTION_LEN),
     )
-    photo: Mapped[Optional[uuid.UUID]] = mapped_column(
-        ForeignKey('media.id'),
-    )
+    photo_id: Mapped[Optional[uuid.UUID]]
     price: Mapped[int] = mapped_column(
         Integer,
     )

@@ -46,6 +46,7 @@ class BookingItem(Base):
     slot: Mapped['Slot'] = relationship(back_populates='booking_items')
 
     def __repr__(self) -> str:
+        """Вернет краткое представление связки бронирования."""
         return (
             f'BookingItem(id={self.id!r}, '
             f'booking_id={self.booking_id!r}, '

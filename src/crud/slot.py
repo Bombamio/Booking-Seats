@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.crud.base import CRUDBase
 from src.models import Slot
-from src.schemas.slot import TimeSlotCreate
+from src.schemas import TimeSlotCreate
 
 
 class CRUDSlot(CRUDBase):
@@ -25,7 +25,7 @@ class CRUDSlot(CRUDBase):
             query = query.where(self.model.is_active.is_(True))
 
         result = await session.execute(query)
-        return list(result.scalars().all())
+        return result.scalars().all()
 
     async def get_overlapping(
         self,
@@ -49,19 +49,19 @@ class CRUDSlot(CRUDBase):
 
     async def create_with_cafe(
         self,
-        obj_in: TimeSlotCreate,
+        slot_create: TimeSlotCreate,
         cafe_id: uuid.UUID,
         session: AsyncSession,
     ) -> Slot:
         """Создаёт временной слот, привязанный к переданному кафе."""
-        db_obj = self.model(
+        slot_entity = self.model(
             cafe_id=cafe_id,
-            **obj_in.model_dump(),
+            **slot_create.model_dump(),
         )
-        session.add(db_obj)
+        session.add(slot_entity)
         await session.flush()
-        await session.refresh(db_obj)
-        return db_obj
+        await session.refresh(slot_entity)
+        return slot_entity
 
 
 slot_crud = CRUDSlot(Slot)

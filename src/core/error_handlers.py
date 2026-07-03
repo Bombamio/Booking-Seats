@@ -2,10 +2,9 @@ from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from schemas.custom_error import CustomError
-
-from core.exceptions import BookingSeatsAppError
-from core.logger import bookingseats_logger
+from src.core.exceptions import BookingSeatsAppError
+from src.core.logger import bookingseats_logger
+from src.schemas.custom_error import CustomError
 
 
 def build_error_response(code: int, message: str) -> JSONResponse:

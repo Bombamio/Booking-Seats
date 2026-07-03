@@ -8,7 +8,7 @@ from src.api import validators as vt
 from src.core.db import get_session
 from src.models import User
 from src.schemas import CafeCreate, CafeInfo, CafeUpdate
-from src.services.cafe import CafeService, get_cafe_service
+from src.services import CafeService, get_cafe_service
 
 router = APIRouter()
 
@@ -23,7 +23,7 @@ CafeServiceDep = Annotated[CafeService, Depends(get_cafe_service)]
 )
 async def get_cafes(
     service: CafeServiceDep,
-    user: Annotated[User, Depends(vt.current_user)],
+    user: Annotated[User, Depends(vt.current_user_is_active)],
     show_active: bool = True,
 ) -> list[CafeInfo]:
     """Получение списка кафе.
@@ -59,7 +59,7 @@ async def create_cafe(
 async def get_cafe(
     cafe_id: uuid.UUID,
     service: CafeServiceDep,
-    user: Annotated[User, Depends(vt.current_user)],
+    user: Annotated[User, Depends(vt.current_user_is_active)],
 ) -> CafeInfo:
     """Получение информации о кафе по его ID.
 
@@ -71,6 +71,7 @@ async def get_cafe(
 
 @router.patch(
     '/{cafe_id}',
+    response_model=CafeInfo,
     summary='Обновление информации о кафе по его ID',
     dependencies=[Depends(vt.current_admin_or_manager)],
 )

@@ -1,13 +1,15 @@
 import enum
 import uuid
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from sqlalchemy import CheckConstraint, Enum, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from src.core import constants as ct
 from src.core.base_model import Base
-from src.models import Booking, Cafe
+
+if TYPE_CHECKING:
+    from src.models import Booking, Cafe
 
 
 class UserRole(enum.Enum):
@@ -47,7 +49,7 @@ class User(Base):
         default=UserRole.USER,
     )
     cafe_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        ForeignKey('cafe.id'),
+        ForeignKey('cafes.id'),
         nullable=True,
     )
 
@@ -96,4 +98,4 @@ class User(Base):
         if self.role == UserRole.MANAGER or cafe_id is None:
             return cafe_id
 
-        raise ValueError('Кафе может быть назначено только менеджерам(cafe_id должно быть None).')
+        raise ValueError('Кафе может быть назначено только менеджерам (cafe_id должно быть None).')

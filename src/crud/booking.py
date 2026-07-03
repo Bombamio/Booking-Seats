@@ -2,12 +2,11 @@ import uuid
 from datetime import date
 from typing import Optional
 
-from sqlalchemy import select
+from sqlalchemy import exists, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.crud.base import CRUDBase
-from src.models import Booking, User
-from src.models.user import UserRole
+from src.models import Booking, BookingStatus, User, UserRole
 
 
 class CRUDBooking(CRUDBase):
@@ -32,7 +31,7 @@ class CRUDBooking(CRUDBase):
                 self.model.booking_date.desc(),
             ),
         )
-        return list(result.scalars().all())
+        return result.scalars().all()
 
     async def get_by_cafe(
         self,
@@ -58,7 +57,7 @@ class CRUDBooking(CRUDBase):
                 self.model.slot_id,
             ),
         )
-        return list(result.scalars().all())
+        return result.scalars().all()
 
     async def get_by_table_and_date(
         self,
@@ -72,14 +71,16 @@ class CRUDBooking(CRUDBase):
             self.model.table_id == table_id,
             self.model.booking_date == booking_date,
             self.model.is_active.is_(True),
-            self.model.status.in_(['PENDING', 'CONFIRMED']),
+            self.model.status.in_(
+                [BookingStatus.PENDING, BookingStatus.CONFIRMED],
+            ),
         ]
 
         if exclude_booking_id:
             filters.append(self.model.id != exclude_booking_id)
 
         result = await session.execute(select(self.model).where(*filters))
-        return list(result.scalars().all())
+        return result.scalars().all()
 
     async def get_by_slot_and_date(
         self,
@@ -93,14 +94,16 @@ class CRUDBooking(CRUDBase):
             self.model.slot_id == slot_id,
             self.model.booking_date == booking_date,
             self.model.is_active.is_(True),
-            self.model.status.in_(['PENDING', 'CONFIRMED']),
+            self.model.status.in_(
+                [BookingStatus.PENDING, BookingStatus.CONFIRMED],
+            ),
         ]
 
         if exclude_booking_id:
             filters.append(self.model.id != exclude_booking_id)
 
         result = await session.execute(select(self.model).where(*filters))
-        return list(result.scalars().all())
+        return result.scalars().all()
 
     async def get_by_manager(
         self,
@@ -129,7 +132,7 @@ class CRUDBooking(CRUDBase):
                 self.model.slot_id,
             ),
         )
-        return list(result.scalars().all())
+        return result.scalars().all()
 
     async def check_availability(
         self,
@@ -140,29 +143,21 @@ class CRUDBooking(CRUDBase):
         exclude_booking_id: Optional[uuid.UUID] = None,
     ) -> bool:
         """Проверка доступности стола и слота на конкретную дату."""
-        table_bookings = await self.get_by_table_and_date(
-            table_id,
-            booking_date,
-            session,
-            exclude_booking_id,
-        )
+        filters = [
+            self.model.booking_date == booking_date,
+            self.model.is_active.is_(True),
+            self.model.status == BookingStatus.CONFIRMED,
+            or_(
+                self.model.table_id == table_id,
+                self.model.slot_id == slot_id,
+            ),
+        ]
+        if exclude_booking_id:
+            filters.append(self.model.id != exclude_booking_id)
 
-        slot_bookings = await self.get_by_slot_and_date(
-            slot_id,
-            booking_date,
-            session,
-            exclude_booking_id,
-        )
-
-        for booking in table_bookings:
-            if booking.status == 'CONFIRMED':
-                return False
-
-        for booking in slot_bookings:
-            if booking.status == 'CONFIRMED':
-                return False
-
-        return True
+        query = select(exists().where(*filters))
+        has_conflict = await session.scalar(query)
+        return not bool(has_conflict)
 
     async def update_status(
         self,
@@ -171,7 +166,10 @@ class CRUDBooking(CRUDBase):
         session: AsyncSession,
     ) -> Optional[Booking]:
         """Обновление статуса бронирования."""
-        booking = await self.get(booking_id, session)
+        booking = await self.get(
+            session,
+            self.model.id == booking_id,
+        )
         if not booking:
             return None
 

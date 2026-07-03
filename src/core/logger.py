@@ -10,9 +10,9 @@
 - ``crud/base.py`` — лог операций с БД. (также можно указывать логирование
     в crud методах фичей).
 
-Поле ``{extra[user]}`` — идентификатор контекста. Сейчас по умолчанию
-``SYSTEM``. После внедрения авторизации сюда можно подставлять логин
-или id пользователя через ``logger.bind(user=...)``.
+Текущего пользователя получаем из контекста с помощью ContextVar.
+Стандартный механизм логирования FastAPI и Uvicorn перехватываем и выдаем в
+том формате, коорый принят в нашем приложении.
 
 Логирование по слоям
 --------------------
@@ -23,7 +23,7 @@
 2. HTTP-слой (``core/logging_middleware.py``)
    ``LoggingMiddleware`` подключён в ``main.py``. В блоке ``finally``
    пишет метод, путь, статус и время выполнения. Уровень: ``info``.
-   TODO: добавить данные о текущем пользователе.
+   В ``extra`` добавляем данные о текущем пользователе.
 
 3. Слой ошибок (``core/error_handlers.py``)
    - ``BookingSeatsAppError`` — ``error``
@@ -44,11 +44,13 @@
        bookingseats_logger.error('...')
 """
 
+import logging
 import sys
+from contextvars import ContextVar
 
 from loguru import logger
 
-from core.constants import (
+from src.core.constants import (
     LOG_FILE,
     LOG_FILE_BACKUP_COUNT,
     LOG_FILE_MAX_SIZE,
@@ -57,6 +59,40 @@ from core.constants import (
 )
 
 logger.remove()
+current_user_var: ContextVar[str] = ContextVar(
+    'current_user',
+    default='SYSTEM',
+)
+
+
+def get_user() -> str:
+    """Вернет текущего пользователя из контекста."""
+    return current_user_var.get()
+
+
+class InterceptHandler(logging.Handler):
+    """Перехватчик логов из стандартного logging в loguru."""
+
+    def emit(self, record: logging.LogRecord) -> None:
+        """Передаст сообщение в loguru."""
+        try:
+            level = logger.level(record.levelname).name
+        except ValueError:
+            level = "INFO"
+        logger.log(level, record.getMessage())
+
+
+def setup_logging() -> None:
+    """Настроит перехват логов из стандартного logging в loguru."""
+    logging.captureWarnings(True)
+    logging.root.handlers = []
+    logging.root.addHandler(InterceptHandler())
+    logging.root.setLevel(logging.INFO)
+    for name in ['uvicorn', 'uvicorn.access', 'uvicorn.error', 'fastapi']:
+        lib_logger = logging.getLogger(name)
+        lib_logger.handlers = []
+        lib_logger.addHandler(InterceptHandler())
+        lib_logger.propagate = False
 
 
 def setup_logger() -> None:
@@ -66,6 +102,7 @@ def setup_logger() -> None:
         level=LOG_LEVEL,
         format=LOG_FORMAT,
         colorize=True,
+        filter=lambda record: record['extra'].setdefault('user', get_user()),
     )
     logger.add(
         LOG_FILE,
@@ -73,8 +110,9 @@ def setup_logger() -> None:
         format=LOG_FORMAT,
         rotation=LOG_FILE_MAX_SIZE,
         retention=LOG_FILE_BACKUP_COUNT,
+        filter=lambda record: record['extra'].setdefault('user', get_user()),
     )
-    logger.bind(user='SYSTEM')
+    setup_logging()
     return logger
 
 

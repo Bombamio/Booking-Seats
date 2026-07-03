@@ -14,4 +14,5 @@ cafe_actions = Table(
     Column('cafe_id', ForeignKey('cafes.id'), primary_key=True),
     Column('action_id', ForeignKey('actions.id'), primary_key=True),
 )
-booking_dishes = Table(...)
+# TODO
+# booking_dishes = Table(...)

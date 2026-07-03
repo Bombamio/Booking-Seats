@@ -4,10 +4,10 @@ from typing import Optional
 
 from pydantic import model_validator
 
-from src import schemas
+from src.schemas.base import BaseProjectCreate, BaseProjectShortInfo
 
 
-class TimeSlotCreate(schemas.BaseProjectCreate):
+class TimeSlotCreate(BaseProjectCreate):
     """Схема для создания нового временного слота."""
 
     start_time: datetime
@@ -21,7 +21,7 @@ class TimeSlotCreate(schemas.BaseProjectCreate):
         return self
 
 
-class TimeSlotShortInfo(schemas.BaseProjectShortInfo):
+class TimeSlotShortInfo(BaseProjectShortInfo):
     """Краткая информация о временном слоте."""
 
     start_time: datetime
@@ -37,7 +37,7 @@ class TimeSlotInfo(TimeSlotShortInfo):
     updated_at: datetime
 
 
-class TimeSlotUpdate(schemas.BaseProjectCreate):
+class TimeSlotUpdate(BaseProjectCreate):
     """Схема для обновления существующего временного слота."""
 
     start_time: Optional[datetime] = None

@@ -9,7 +9,7 @@ from fastapi import UploadFile, status
 from src.core import constants as ct
 from src.core.exceptions import BookingSeatsAppError
 from src.models import User
-from src.schemas.media import MediaInfo
+from src.schemas import MediaInfo
 from src.services.base import BaseService
 
 
@@ -92,6 +92,7 @@ class MediaService(BaseService):
         file_path = self._get_media_path(media_id)
 
         def _write_file() -> None:
+            """Запишет конвертированное изображение на диск."""
             jpg_content = self._convert_to_jpg(content)
             ct.MEDIA_DIR.mkdir(parents=True, exist_ok=True)
             file_path.write_bytes(jpg_content)

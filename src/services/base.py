@@ -4,7 +4,9 @@ import uuid
 from typing import Any, NoReturn
 
 from fastapi import status
+from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import RelationshipDirection
 
 from src.core.exceptions import BookingSeatsAppError
 from src.core.logger import bookingseats_logger
@@ -152,11 +154,44 @@ class BaseService:
 
     async def soft_delete(
         self,
-        db_obj: Any,
+        entity: Any,
         session: AsyncSession,
     ) -> Any:
         """Деактивирует объект и связанные дочерние сущности (is_active=False).
 
         Commit не выполняет — только подготовит изменения в сессии.
         """
-        # предложение для обсуждения
+        visited: set[tuple[type[Any], Any]] = set()
+
+        def deactivate_recursive(current: Any) -> None:
+            """Рекурсивно деактивирует объект и его связанные сущности."""
+            if current is None:
+                return
+
+            identity = getattr(current, 'id', id(current))
+            current_key = (type(current), identity)
+            if current_key in visited:
+                return
+            visited.add(current_key)
+
+            if hasattr(current, 'is_active'):
+                setattr(current, 'is_active', False)
+                session.add(current)
+
+            mapper = sa_inspect(type(current))
+            for relationship in mapper.relationships:
+                if relationship.direction is not RelationshipDirection.ONETOMANY:
+                    continue
+                related = getattr(current, relationship.key)
+
+                if related is None:
+                    continue
+
+                if relationship.uselist:
+                    for child in related:
+                        deactivate_recursive(child)
+                else:
+                    deactivate_recursive(related)
+
+        deactivate_recursive(entity)
+        return entity

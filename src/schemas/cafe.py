@@ -2,10 +2,13 @@ import uuid  # noqa: I001
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from core import constants as ct
-from schemas import (
-    BaseProjectCreate, BaseProjectInfo, BaseProjectShortInfo, UserShort,
+from src.core import constants as ct
+from src.schemas.base import (
+    BaseProjectCreate,
+    BaseProjectInfo,
+    BaseProjectShortInfo,
 )
+from src.schemas.user import UserShortInfo
 
 
 class CafeBase(BaseModel):
@@ -65,7 +68,7 @@ class CafeInfo(CafeBase, BaseProjectInfo):
     * updated_at: datetime (не обязательное)
     """
 
-    managers: list[UserShort] = Field(default_factory=list)
+    managers: list[UserShortInfo] = Field(default_factory=list)
 
 
 class CafeCreate(CafeBase, BaseProjectCreate):
@@ -107,7 +110,7 @@ class CafeUpdate(BaseModel):
     phone: str | None = Field(
         None,
         max_length=ct.MAX_PHONE_LEN,
-        pattern=r"^\+?[0-9]{7,15}$",
+        pattern=ct.PHONE_NUMBER_PATTERN,
         title='Телефон кафе',
     )
     photo_id: uuid.UUID | None = None

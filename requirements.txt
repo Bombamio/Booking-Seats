@@ -28,3 +28,4 @@ websockets==16.0
 redis>=4.5.0
 loguru==0.7.3
 Pillow>=10.0.0
+python-multipart>=0.0.20

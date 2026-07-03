@@ -5,9 +5,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.db import get_session
 from src.core.security import get_current_user
-from src.models.user import User
+from src.models import User
 from src.schemas import user as schema
-from src.services.user import user_service
+from src.services import user_service
 
 router = APIRouter()
 
@@ -55,10 +55,14 @@ async def get_user(
     response_model=schema.UserInfo,
 )
 async def create_user(
+    user_in: schema.UserCreate,
     session: SessionDep,
 ) -> schema.UserInfo:
     """Создание нового пользователя."""
-    return await user_service.create_user(session)
+    return await user_service.create_user(
+        session=session,
+        user_in=user_in,
+    )
 
 
 @router.put(

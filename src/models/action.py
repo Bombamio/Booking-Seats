@@ -1,7 +1,7 @@
 import uuid
 from typing import Optional
 
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core import constants as ct
@@ -16,7 +16,7 @@ class Action(Base):
     * `id` - uuid4, primary_key;
     * `description` - str;
     * `cafes_id` - relationship;
-    * `photo` - uuid4, ForeignKey;
+    * `photo_id` - uuid4;
     * `created_at` - datetime;
     * `updated_at` - datetime;
     * `is_active` - boolean.
@@ -27,8 +27,7 @@ class Action(Base):
         unique=True,
     )
 
-    photo: Mapped[Optional[uuid.UUID]] = mapped_column(
-        ForeignKey('media.id', ondelete='SET NULL'),
+    photo_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         comment='ID медиа-файла с изображением акции',
     )
 
@@ -39,6 +38,9 @@ class Action(Base):
     )
 
     def __repr__(self) -> str:
+        """Вернет краткое представление акции для отладки."""
         return (
-            f"<Action(id={self.id}, description='{self.description[:30]}...')>"
+            f"<Action(id={self.id}, description='"
+            f'{self.description[:ct.ACTION_REPR_DESCRIPTION_PREVIEW_LEN]}...'
+            "')>"
         )

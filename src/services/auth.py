@@ -7,8 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.constants import ACCESS_TOKEN_EXPIRE_MINUTES
 from src.core.security import create_access_token, verify_password
 from src.crud.user import user_crud
-from src.models.user import User
-from src.schemas.auth import AuthToken
+from src.models import User
+from src.schemas import AuthToken
 from src.services.base import BaseService
 
 

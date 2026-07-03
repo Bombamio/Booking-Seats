@@ -4,8 +4,8 @@ from typing import Annotated, Optional
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.api import error_responses as er
 from src.api import validators as vt
-from src.core import constants as cs
 from src.core.db import get_session
 from src.core.decorators import with_error_responses
 from src.models import Dish, User
@@ -21,7 +21,7 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
     '/',
     response_model=list[schema.DishInfo],
 )
-@with_error_responses(cs.ERRORS_GET_MULTI_WITH_404)
+@with_error_responses(er.ERRORS_GET_MULTI_WITH_404)
 async def get_multi(
     cafe_id: Optional[uuid.UUID],
     user: Annotated[User, Depends(vt.current_user_is_active)],
@@ -39,17 +39,17 @@ async def get_multi(
 
 @router.post(
     '/',
-    response_model=[schema.DishInfo],
+    response_model=schema.DishInfo,
 )
-@with_error_responses(cs.ERRORS_POST)
+@with_error_responses(er.ERRORS_POST)
 async def create(
-    obj_in: schema.DishCreate,
+    dish_create: schema.DishCreate,
     user: Annotated[User, Depends(vt.current_admin_or_manager)],
     session: SessionDep,
 ) -> Dish:
     """POST `/dishes` - Создает новое блюда."""
     return await dish_service.create_dish(
-        obj_in=obj_in,
+        dish_create=dish_create,
         user=user,
         session=session,
     )
@@ -59,7 +59,7 @@ async def create(
     '/{dish_id}',
     response_model=schema.DishInfo,
 )
-@with_error_responses(cs.ERRORS_4XX_FULL)
+@with_error_responses(er.ERRORS_4XX_FULL)
 async def get_by_id(
     dish_id: uuid.UUID,
     user: Annotated[User, Depends(vt.current_user_is_active)],
@@ -77,17 +77,17 @@ async def get_by_id(
     '/{dish_id}',
     response_model=schema.DishInfo,
 )
-@with_error_responses(cs.ERRORS_4XX_FULL)
+@with_error_responses(er.ERRORS_4XX_FULL)
 async def update(
     dish_id: uuid.UUID,
-    obj_in: schema.DishUpdate,
+    dish_update: schema.DishUpdate,
     user: Annotated[User, Depends(vt.current_admin_or_manager)],
     session: SessionDep,
 ) -> Dish:
     """PATCH `/dishes/{dish_id}` - обновление информации о блюде по его ID."""
     return await dish_service.update_dish(
         dish_id=dish_id,
-        obj_in=obj_in,
+        dish_update=dish_update,
         user=user,
         session=session,
     )

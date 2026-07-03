@@ -5,11 +5,13 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from src.core import constants as ct
-from src.models.booking import BookingStatus
-from src.schemas.cafe import CafeShortInfo
-from src.schemas.slot import TimeSlotShortInfo
-from src.schemas.table import TableShortInfo
-from src.schemas.user import UserShortInfo
+from src.models import BookingStatus
+from src.schemas import (
+    CafeShortInfo,
+    TableShortInfo,
+    TimeSlotShortInfo,
+    UserShortInfo,
+)
 
 
 class BookingTableSlot(BaseModel):
@@ -17,6 +19,10 @@ class BookingTableSlot(BaseModel):
 
     table_id: uuid.UUID = Field(..., description='ID стола')
     slot_id: uuid.UUID = Field(..., description='ID временного слота')
+    dishes_id: Optional[list[uuid.UUID]] = Field(
+        None,
+        description='Список ID заказанных блюд',
+    )
 
     model_config = ConfigDict(
         extra='forbid',

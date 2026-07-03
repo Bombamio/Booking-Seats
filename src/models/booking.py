@@ -4,7 +4,7 @@ from datetime import date
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    from src.models import BookingItem, Cafe, User
+    from src.models import BookingItem, Cafe, Dish, User
 
 from sqlalchemy import Date, Enum, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -30,6 +30,7 @@ class Booking(Base):
     * `user_id` - uuid4, ForeignKey (пользователь, который бронирует);
     * `cafe_id` - uuid4, ForeignKey (кафе, где бронируют);
     * `table_id` - uuid4, ForeignKey (стол, который бронируют);
+    * `dish_id` - uuid4, ForeignKey (блюда, который бронируют);
     * `slot_id` - uuid4, ForeignKey (временной слот);
     * `booking_date` - date (дата бронирования);
     * `status` - str (статус бронирования);
@@ -66,6 +67,7 @@ class Booking(Base):
         back_populates='bookings',
     )
     cafe: Mapped['Cafe'] = relationship()
+    dish: Mapped['Dish'] = relationship()
     booking_items: Mapped[list['BookingItem']] = relationship(
         back_populates='booking',
         cascade='all, delete-orphan',

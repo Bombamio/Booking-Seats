@@ -24,11 +24,15 @@ class CafeBase(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
     name: str = Field(
-        ..., min_length=ct.MIN_NAME_LEN, max_length=ct.MAX_NAME_LEN,
-        title='Название кафе', description='Можно вводить в любом регистре',
+        ...,
+        min_length=ct.MIN_NAME_LEN,
+        max_length=ct.MAX_NAME_LEN,
+        title='Название кафе',
+        description='Можно вводить в любом регистре',
     )
     address: str = Field(
-        ..., max_length=ct.MAX_ADDRESS_LEN,
+        ...,
+        max_length=ct.MAX_ADDRESS_LEN,
         title='Адрес кафе',
     )
     phone: str = Field(
@@ -100,11 +104,15 @@ class CafeUpdate(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
     name: str | None = Field(
-        None, min_length=ct.MIN_NAME_LEN, max_length=ct.MAX_NAME_LEN,
-        title='Название кафе', description='Можно вводить в любом регистре',
+        None,
+        min_length=ct.MIN_NAME_LEN,
+        max_length=ct.MAX_NAME_LEN,
+        title='Название кафе',
+        description='Можно вводить в любом регистре',
     )
     address: str | None = Field(
-        None, max_length=ct.MAX_ADDRESS_LEN,
+        None,
+        max_length=ct.MAX_ADDRESS_LEN,
         title='Адрес кафе',
     )
     phone: str | None = Field(

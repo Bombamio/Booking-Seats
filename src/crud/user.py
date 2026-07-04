@@ -30,7 +30,8 @@ class CRUDUser(CRUDBase):
     ) -> User:
         """Создание пользователя."""
         if await self.duplicate_login(
-            session, login=user_create.email or user_create.phone,
+            session,
+            login=user_create.email or user_create.phone,
         ):
             raise ValueError('Пользователь с таким email/phone уже существует')
         password_hash = hash_password(user_create.password)
@@ -68,8 +69,7 @@ class CRUDUser(CRUDBase):
         user_update_payload = user_update.model_dump(exclude_unset=True)
 
         if 'password' in user_update_payload:
-            user_update_payload['password_hash'] = hash_password(
-                user_update_payload.pop('password'))
+            user_update_payload['password_hash'] = hash_password(user_update_payload.pop('password'))
 
         for field, value in user_update_payload.items():
             if field in self.model_fields:

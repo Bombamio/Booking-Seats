@@ -1,11 +1,12 @@
+import uuid
 from http import HTTPStatus
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.crud import action_crud
-from src.models import User
+from src.models import Action, User
 from src.schemas import ActionCreate, ActionUpdate
 
 
@@ -21,8 +22,8 @@ class ActionService:
         session: AsyncSession,
         user: User,
         show_active: Optional[bool] = None,
-        cafe_id=None,
-    ) -> List:
+        cafe_id: Optional[uuid.UUID] = None,
+    ) -> list[Action]:
         """Получить список акций с фильтрацией."""
         if user.role == user.role.USER:
             show_active = True
@@ -36,14 +37,19 @@ class ActionService:
         self,
         action_create: ActionCreate,
         session: AsyncSession,
-    ):
+    ) -> Action:
         """Создать новую акцию."""
         return await self.crud.create(
             action_create=action_create,
             session=session,
         )
 
-    async def get_action(self, action_id, session: AsyncSession, user: User):
+    async def get_action(
+        self,
+        action_id: uuid.UUID,
+        session: AsyncSession,
+        user: User,
+    ) -> Action:
         """Получить акцию по ID с проверкой прав доступа."""
         action = await self.crud.get(action_id, session)
         if action is None:
@@ -60,10 +66,10 @@ class ActionService:
 
     async def update_action(
         self,
-        action_id,
+        action_id: uuid.UUID,
         action_update: ActionUpdate,
         session: AsyncSession,
-    ):
+    ) -> Action:
         """Обновить существующую акцию."""
         action = await self.crud.get(action_id, session)
         if action is None:

@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api import error_responses as er
@@ -18,7 +18,7 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 
 @router.get(
-    '/',
+    '',
     response_model=list[schema.TableInfo],
     response_model_exclude_none=True,
     summary='Получение списка столов в кафе',
@@ -45,14 +45,12 @@ async def get_tables_list(
 
 
 @router.post(
-    '/',
+    '',
     response_model=schema.TableInfo,
     response_model_exclude_none=True,
+    status_code=status.HTTP_201_CREATED,
     summary='Новый стол в кафе',
-    description=(
-        'Создает новый стол кафе.'
-        'Только для администраторов и менеджеров.'
-    ),
+    description=('Создает новый стол кафе.Только для администраторов и менеджеров.'),
 )
 @with_error_responses(er.ERRORS_4XX_FULL)
 async def create_table(
@@ -102,10 +100,7 @@ async def get_table(
     response_model=schema.TableInfo,
     response_model_exclude_none=True,
     summary='Обновление информации о столе в кафе по его ID',
-    description=(
-        'Обновление информации о столе в кафе по его ID.'
-        'Только для администраторов и менеджеров.'
-    ),
+    description=('Обновление информации о столе в кафе по его ID.Только для администраторов и менеджеров.'),
 )
 @with_error_responses(er.ERRORS_4XX_FULL)
 async def update_table(

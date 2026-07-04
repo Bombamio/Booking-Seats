@@ -32,8 +32,7 @@ async def http_exception_handler(
     """Вернет ответ с ошибкой в формате CustomError для HTTPException."""
     message = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
     bookingseats_logger.warning(
-        f'HTTPException: {message} | '
-        f'URL: {request.url} | Status code: {exc.status_code}',
+        f'HTTPException: {message} | URL: {request.url} | Status code: {exc.status_code}',
     )
     return build_error_response(exc.status_code, message)
 
@@ -46,8 +45,7 @@ async def validation_error_handler(
     #  не мы задаем сообщение, его генерит FastAPI, надо выдать его в строку
     #  для этого складываем красиво из тех кусочков, что выдает FastAPI
     message = '; '.join(
-        f'{" -> ".join(str(loc) for loc in error["loc"])}: {error["msg"]}'
-        for error in exc.errors()
+        f'{" -> ".join(str(loc) for loc in error["loc"])}: {error["msg"]}' for error in exc.errors()
     )
     bookingseats_logger.warning(
         f'RequestValidationError: {message} | URL: {request.url}',

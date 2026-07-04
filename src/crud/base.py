@@ -60,8 +60,7 @@ class CRUDBase:
         ```
         """
         bookingseats_logger.debug(
-            f'get {self.model.__name__}: '
-            f'filters=[{self._format_filters(*filters)}]',
+            f'get {self.model.__name__}: filters=[{self._format_filters(*filters)}]',
         )
 
         self._check_filters(*filters)
@@ -93,8 +92,7 @@ class CRUDBase:
             self._check_filters(*filters)
 
         bookingseats_logger.debug(
-            f'get_multi {self.model.__name__}: '
-            f'filters=[{self._format_filters(*filters)}]',
+            f'get_multi {self.model.__name__}: filters=[{self._format_filters(*filters)}]',
         )
         result = await session.execute(stmt)
 
@@ -121,9 +119,7 @@ class CRUDBase:
         ```
         """
         create_payload = {
-            key: value
-            for key, value in create_data.model_dump().items()
-            if key in self.model_fields
+            key: value for key, value in create_data.model_dump().items() if key in self.model_fields
         }
         created_entity = self.model(**create_payload)
 
@@ -217,8 +213,7 @@ class CRUDBase:
         ```
         """
         bookingseats_logger.debug(
-            f'exists {self.model.__name__}: '
-            f'filters=[{self._format_filters(*filters)}]',
+            f'exists {self.model.__name__}: filters=[{self._format_filters(*filters)}]',
         )
 
         self._check_filters(*filters)

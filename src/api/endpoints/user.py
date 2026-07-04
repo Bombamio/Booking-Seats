@@ -18,8 +18,7 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
     '/',
     response_model=list[schema.UserInfo],
     summary='Получение списка пользователей',
-    description=('Возвращает информацию о всех пользователях.'
-                 'Только для администраторов или менеджеров'),
+    description=('Возвращает информацию о всех пользователях.Только для администраторов или менеджеров'),
 )
 async def get_users_list(
     session: SessionDep,
@@ -45,8 +44,7 @@ async def get_user(
 
     Только для администраторов или менеджеров.
     """
-    return await user_service.get_user(
-        session=session, user_id=user_id, current_user=current_user)
+    return await user_service.get_user(session=session, user_id=user_id, current_user=current_user)
 
 
 @router.post(

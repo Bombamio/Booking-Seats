@@ -59,13 +59,14 @@ class UserService(CRUDUser, BaseService):
             self.raise_not_found()
 
         update_data = user_in.model_dump(exclude_unset=True)
-        login = update_data.get("email") or update_data.get("phone")
+        login = update_data.get('email') or update_data.get('phone')
         if login and login != user.email and login != user.phone:
             if await user_crud.duplicate_login(
-                session, login, exclude_id=user_id,
+                session,
+                login,
+                exclude_id=user_id,
             ):
-                self.raise_unprocessable_entity(
-                    "Пользователь с таким email/phone уже существует")
+                self.raise_unprocessable_entity('Пользователь с таким email/phone уже существует')
 
         return await self.update(user, user_in, session)
 

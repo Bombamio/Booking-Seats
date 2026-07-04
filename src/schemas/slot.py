@@ -47,10 +47,6 @@ class TimeSlotUpdate(BaseProjectCreate):
     @model_validator(mode='after')
     def check_time_order(self) -> 'TimeSlotUpdate':
         """Проверяет, что `end_time` позже `start_time`, если оба заданы."""
-        if (
-            self.start_time is not None
-            and self.end_time is not None
-            and self.end_time <= self.start_time
-        ):
+        if self.start_time is not None and self.end_time is not None and self.end_time <= self.start_time:
             raise ValueError('end_time должно быть позже start_time.')
         return self

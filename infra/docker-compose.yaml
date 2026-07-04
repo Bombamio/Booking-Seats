@@ -8,6 +8,44 @@ services:
     ports:
       - "8000:8000"
 
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    env_file:
+      - ./.env
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    healthcheck: 
+      test: ["CMD", "rabbitmq-diagnostics ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - "rabbitmq_data:/var/lib/rabbitmq"
+
+  flower:
+    image: mher/flower
+    env_file:
+      - ./.env
+    environment:
+      CELERY_BROKER_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@${RABBITMQ_HOST}:${RABBITMQ_PORT}//
+      # CELERY_RESULT_BACKEND: redis://redis
+    healthcheck: 
+      test: ["CMD", "curl", "-f", "http://localhost:5555/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    ports:
+      - "5555:5555"
+    restart: unless-stopped
+    depends_on:
+      - rabbitmq
+      # - redis
+
   db:
     image: postgres:17-alpine
     env_file:
@@ -33,3 +71,4 @@ services:
 
 volumes:
   pgdata:
+  rabbitmq_data:

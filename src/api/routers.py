@@ -27,7 +27,7 @@ main_router.include_router(
 main_router.include_router(
     table_router,
     prefix='/cafes/{cafe_id}/tables',
-    tags=['Tables'],
+    tags=[{'name': 'Столы', 'description': 'Управление столами в кафе'}],
 )
 
 main_router.include_router(

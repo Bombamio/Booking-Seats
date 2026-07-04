@@ -38,13 +38,9 @@ class DishService(CRUDDish, BaseService):
         """Проверяет что менеджер имеет доступ к кафе из списка."""
         if user.role != UserRole.MANAGER:
             return
-        if (
-            (check_len and len(cafes_id) != 1)
-            or (user.cafe_id not in cafes_id)
-        ):
+        if (check_len and len(cafes_id) != 1) or (user.cafe_id not in cafes_id):
             self.log_warning(
-                f'Пользователь {user.id} попытался получить доступ '
-                f'к кафе {cafes_id} без разрешения',
+                f'Пользователь {user.id} попытался получить доступ к кафе {cafes_id} без разрешения',
             )
             self.raise_forbidden()
 
@@ -56,8 +52,7 @@ class DishService(CRUDDish, BaseService):
         """Проверит, что все переданные ID кафе существуют."""
         if len(cafes) != len(cafes_id):
             self.log_warning(
-                f'Задано {len(cafes_id)} кафе -'
-                f'вернулось {len(cafes)}.',
+                f'Задано {len(cafes_id)} кафе -вернулось {len(cafes)}.',
             )
             self.raise_unprocessable_entity()
 
@@ -82,18 +77,10 @@ class DishService(CRUDDish, BaseService):
         if cafe_id is not None:
             filters.append(self.model.cafes.any(Cafe.id == cafe_id))
 
-        if (
-            user.role == UserRole.USER
-            or show_active
-            or user.role == UserRole.MANAGER and show_active is None
-        ):
+        if user.role == UserRole.USER or show_active or user.role == UserRole.MANAGER and show_active is None:
             filters.append(Dish.is_active.is_(True))
 
-        elif (
-            show_active is False
-            and user.role == UserRole.MANAGER
-            and cafe_id is not None
-        ):
+        elif show_active is False and user.role == UserRole.MANAGER and cafe_id is not None:
             filters.append(
                 Dish.cafes.any(Cafe.managers.any(User.id == user.id)),
             )

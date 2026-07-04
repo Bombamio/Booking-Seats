@@ -4,7 +4,7 @@ from datetime import date
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    from src.models import BookingItem, Cafe, Dish, User
+    from src.models import BookingItem, Cafe, User
 
 from sqlalchemy import Date, Enum, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -67,7 +67,7 @@ class Booking(Base):
         back_populates='bookings',
     )
     cafe: Mapped['Cafe'] = relationship()
-    dish: Mapped['Dish'] = relationship()
+    #  dish: Mapped['Dish'] = relationship()
     booking_items: Mapped[list['BookingItem']] = relationship(
         back_populates='booking',
         cascade='all, delete-orphan',

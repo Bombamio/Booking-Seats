@@ -6,12 +6,10 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from src.core import constants as ct
 from src.models import BookingStatus
-from src.schemas import (
-    CafeShortInfo,
-    TableShortInfo,
-    TimeSlotShortInfo,
-    UserShortInfo,
-)
+from src.schemas.cafe import CafeShortInfo
+from src.schemas.slot import TimeSlotShortInfo
+from src.schemas.table import TableShortInfo
+from src.schemas.user import UserShortInfo
 
 
 class BookingTableSlot(BaseModel):

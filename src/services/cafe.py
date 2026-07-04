@@ -114,11 +114,7 @@ class CafeService:
         await self._validate_unique_cafe_and_address(
             name=cafe_in.name or cafe_old_db.name,
             address=cafe_in.address or cafe_old_db.address,
-            is_active=(
-                cafe_in.is_active
-                if cafe_in.is_active is not None
-                else cafe_old_db.is_active
-            ),
+            is_active=(cafe_in.is_active if cafe_in.is_active is not None else cafe_old_db.is_active),
             exclude_id=cafe_id,
         )
 
@@ -130,12 +126,8 @@ class CafeService:
             new_managers = set(cafe_in.managers_id).difference(id_exist_managers)
             unset_managers = id_exist_managers.difference(cafe_in.managers_id)
 
-            new_managers_obj = [
-                manager for manager in managers_objs if manager.id in new_managers
-            ]
-            unset_managers_obj = [
-                manager for manager in cafe_old_db.managers if manager.id in unset_managers
-            ]
+            new_managers_obj = [manager for manager in managers_objs if manager.id in new_managers]
+            unset_managers_obj = [manager for manager in cafe_old_db.managers if manager.id in unset_managers]
 
             await user_crud.update_link_in_cafe(
                 self.session,

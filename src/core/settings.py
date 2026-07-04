@@ -48,9 +48,7 @@ class Settings(BaseSettings):
     def redis_url(self) -> str:
         """Строка подключения к Redis."""
         if self.redis_password:
-            return f'redis://:{self.redis_password}@{
-                self.redis_host
-            }:{self.redis_port}/{self.redis_db}'
+            return f'redis://:{self.redis_password}@{self.redis_host}:{self.redis_port}/{self.redis_db}'
         return f'redis://{self.redis_host}:{self.redis_port}/{self.redis_db}'
 
 

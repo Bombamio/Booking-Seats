@@ -32,11 +32,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             return response
         # при любом исходе записываем время, метод, url, статус в лог
         finally:
-            duration_ms = (
-                time.perf_counter() - start_time
-            ) * ct.MILLISECONDS_IN_SECOND
+            duration_ms = (time.perf_counter() - start_time) * ct.MILLISECONDS_IN_SECOND
             bookingseats_logger.info(
-                f'{request.method} {request.url.path} | '
-                f'status={status_code} | '
-                f'{duration_ms:.2f}ms',
+                f'{request.method} {request.url.path} | status={status_code} | {duration_ms:.2f}ms',
             )

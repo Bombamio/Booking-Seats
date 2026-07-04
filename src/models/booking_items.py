@@ -7,7 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.core.base_model import Base
 
 if TYPE_CHECKING:
-    from src.models import Booking, Dish, Slot, Table
+    from src.models import Booking, Slot, Table
 
 
 class BookingItem(Base):
@@ -48,7 +48,7 @@ class BookingItem(Base):
     )
 
     booking: Mapped['Booking'] = relationship(back_populates='booking_items')
-    dish: Mapped['Dish'] = relationship(back_populates='booking_items')
+    #  dish: Mapped['Dish'] = relationship(back_populates='booking_items')
     table: Mapped['Table'] = relationship(back_populates='booking_items')
     slot: Mapped['Slot'] = relationship(back_populates='booking_items')
 

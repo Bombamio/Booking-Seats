@@ -67,6 +67,4 @@ class Cafe(Base):
         back_populates='cafes',
     )
 
-    __table_args__ = (
-        UniqueConstraint('name', 'address', name='uq_cafe_name_address'),
-    )
+    __table_args__ = (UniqueConstraint('name', 'address', name='uq_cafe_name_address'),)

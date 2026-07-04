@@ -1,4 +1,3 @@
-import os
 import uuid
 from datetime import datetime
 from http import HTTPStatus
@@ -7,7 +6,6 @@ from typing import Any, Optional
 from fastapi import Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core import constants as ct
 from src.core.security import get_current_user
 from src.crud import dish_crud
 from src.models import User, UserRole
@@ -136,18 +134,6 @@ async def check_cafe_managers(
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN,
             detail='Доступ запрещен',
-        )
-
-
-async def get_size(
-    file_id: uuid.UUID,
-) -> None:
-    """Валидатор проверки размера файла."""
-    # TODO: Скорее всего неправильно написал. Просто пример.
-    if os.path.getsize(file_id) > ct.MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
-            detail='Ошибка валидации данных',
         )
 
 

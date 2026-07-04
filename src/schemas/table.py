@@ -8,6 +8,7 @@ from src.schemas.base import (
     BaseProjectInfo,
     BaseProjectShortInfo,
 )
+from src.schemas.cafe import CafeShortInfo
 
 
 class TableBaseMixin:
@@ -32,7 +33,7 @@ class TableCreate(TableBaseMixin, BaseProjectCreate):
 class TableInfo(TableBaseMixin, BaseProjectInfo):
     """Схема данных для предоставления информации о столике."""
 
-    cafe: Any  # до появления схемы CafeShortInfo
+    cafe: CafeShortInfo | None = None
 
 
 class TableShortInfo(TableBaseMixin, BaseProjectShortInfo):

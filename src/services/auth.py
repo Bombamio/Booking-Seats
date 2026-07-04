@@ -32,7 +32,7 @@ class AuthService(BaseService):
 
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
-            data={"sub": str(user.id)},
+            data={'sub': str(user.id)},
             expires_delta=access_token_expires,
         )
-        return AuthToken(access_token=access_token, token_type="Bearer")
+        return AuthToken(access_token=access_token, token_type='Bearer')

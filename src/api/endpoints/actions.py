@@ -1,4 +1,5 @@
-from typing import Annotated, List, Optional
+import uuid
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,13 +17,13 @@ action_service = ActionService()
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 
-@router.get('/', response_model=List[ActionInfo])
+@router.get('/', response_model=list[ActionInfo])
 async def get_actions(
     session: SessionDep,
     show_active: Optional[bool] = Query(None),
-    cafe_id: Optional[str] = Query(None),
+    cafe_id: Optional[uuid.UUID] = Query(None),
     user: User = Depends(vt.current_user_is_active),
-):
+) -> list[ActionInfo]:
     """Вернет список акций с фильтрацией."""
     return await action_service.get_actions(
         session=session,
@@ -37,7 +38,7 @@ async def create_action(
     action_in: ActionCreate,
     session: SessionDep,
     user: User = Depends(vt.current_admin_or_manager),
-):
+) -> ActionInfo:
     """Создаст новую акцию."""
     return await action_service.create_action(
         action_create=action_in,
@@ -47,10 +48,10 @@ async def create_action(
 
 @router.get('/{action_id}', response_model=ActionInfo)
 async def get_action(
-    action_id,
+    action_id: uuid.UUID,
     session: SessionDep,
     user: User = Depends(vt.current_user_is_active),
-):
+) -> ActionInfo:
     """Вернет акцию по идентификатору."""
     return await action_service.get_action(
         action_id=action_id,
@@ -61,11 +62,11 @@ async def get_action(
 
 @router.patch('/{action_id}', response_model=ActionInfo)
 async def update_action(
-    action_id,
+    action_id: uuid.UUID,
     action_in: ActionUpdate,
     session: SessionDep,
     user: User = Depends(vt.current_admin_or_manager),
-):
+) -> ActionInfo:
     """Обновит данные существующей акции."""
     return await action_service.update_action(
         action_id=action_id,

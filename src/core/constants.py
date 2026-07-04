@@ -1,6 +1,6 @@
 from pathlib import Path
 
-PHONE_NUMBER_PATTERN = r"^\+?[0-9]{7,15}$"
+PHONE_NUMBER_PATTERN = r'^\+?[0-9]{7,15}$'
 # Основные числа: 1, 8, 16, 32, 64, 128, 256, 512, 1024, и т.д.
 SECRET_KEY = 'bd125ffa58cbb4303de365029c44cdda23830f7181e18d158cc3e95d6b55c963'
 # Пока будет здесь, сгенерирован с помощью команды в терминале:

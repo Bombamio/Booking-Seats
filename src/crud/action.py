@@ -87,7 +87,7 @@ class CRUDAction(CRUDBase):
         session: AsyncSession,
     ) -> List[Action]:
         """Получение активных акций с кешированием."""
-        cache_key = f"actions:cafe:{cafe_id}:active"
+        cache_key = f'actions:cafe:{cafe_id}:active'
 
         cached_data = await cache.get(cache_key)
         if cached_data:
@@ -108,8 +108,8 @@ class CRUDAction(CRUDBase):
     ) -> None:
         """Очистка кеша акций."""
         if cafe_id:
-            await cache.delete(f"actions:cafe:{cafe_id}:active")
-        await cache.clear_pattern("actions:cafe:*")
+            await cache.delete(f'actions:cafe:{cafe_id}:active')
+        await cache.clear_pattern('actions:cafe:*')
 
 
 action_crud = CRUDAction(Action)

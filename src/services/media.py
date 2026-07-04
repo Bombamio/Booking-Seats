@@ -60,8 +60,7 @@ class MediaService(BaseService):
                 total_size += len(chunk)
                 if total_size > ct.MAX_FILE_SIZE:
                     self.log_warning(
-                        f'Пользователь {user.id} попытался загрузить файл, '
-                        f'превышающий допустимый размер',
+                        f'Пользователь {user.id} попытался загрузить файл, превышающий допустимый размер',
                     )
                     raise BookingSeatsAppError(
                         status.HTTP_422_UNPROCESSABLE_ENTITY,

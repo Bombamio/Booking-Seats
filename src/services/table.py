@@ -5,6 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.crud import CRUDTable, cafe_crud
 from src.models import Cafe, Table, User, UserRole
 from src.schemas import TableCreate, TableUpdate
+from src.schemas.cafe import CafeShortInfo
+from src.schemas.table import TableInfo
 from src.services.base import BaseService
 
 
@@ -15,6 +17,16 @@ from src.services.base import BaseService
 # объекты в сессии.
 class TableService(CRUDTable, BaseService):
     """Обработает операции со столиками кафе."""
+
+    @staticmethod
+    def _to_table_info(
+        table: Table,
+        cafe: Cafe,
+    ) -> TableInfo:
+        """Соберет схему ответа стола с краткой информацией о кафе."""
+        table_info = TableInfo.model_validate(table, from_attributes=True)
+        table_info.cafe = CafeShortInfo.model_validate(cafe, from_attributes=True)
+        return table_info
 
     async def ensure_manager_cafe_access(
         self,
@@ -27,8 +39,7 @@ class TableService(CRUDTable, BaseService):
             return
         if user.cafe_id is None or user.cafe_id != cafe_id:
             self.log_warning(
-                f'Пользователь {user.id} попытался получить доступ к'
-                f'кафе {cafe_id} без разрешения',
+                f'Пользователь {user.id} попытался получить доступ ккафе {cafe_id} без разрешения',
             )
             self.raise_forbidden('Доступ запрещен')
 
@@ -50,7 +61,7 @@ class TableService(CRUDTable, BaseService):
         session: AsyncSession,
         user: User,
         show_active: bool = True,
-    ) -> list[Table]:
+    ) -> list[TableInfo]:
         """Вернет список столиков кафе с учётом роли пользователя.
 
         Пользователь всегда получит только активные столы.
@@ -58,7 +69,7 @@ class TableService(CRUDTable, BaseService):
         при ``show_active=False`` — все столы кафе.
         """
         await self.ensure_manager_cafe_access(user, cafe_id, session)
-        await self.ensure_exists(
+        cafe = await self.get_or_raise(
             cafe_crud,
             session,
             Cafe.id == cafe_id,
@@ -70,10 +81,9 @@ class TableService(CRUDTable, BaseService):
 
         tables = list(await self.get_multi(session, *filters))
         self.log_info(
-            f'Пользователь {user.id} получил список из {len(tables)}'
-            f'столов для кафе {cafe_id}',
+            f'Пользователь {user.id} получил список из {len(tables)}столов для кафе {cafe_id}',
         )
-        return tables
+        return [self._to_table_info(table, cafe) for table in tables]
 
     async def create_with_cafe(
         self,
@@ -81,7 +91,7 @@ class TableService(CRUDTable, BaseService):
         table_create: TableCreate,
         session: AsyncSession,
         user: User,
-    ) -> Table:
+    ) -> TableInfo:
         """Создаст столик, привязанный к указанному кафе."""
         cafe = await self.get_or_raise(
             cafe_crud,
@@ -100,7 +110,7 @@ class TableService(CRUDTable, BaseService):
         self.log_info(
             f'Пользователь {user.id} создал стол {table.id} в кафе {cafe_id}',
         )
-        return table
+        return self._to_table_info(table, cafe)
 
     async def get_by_cafe_and_id(
         self,
@@ -108,10 +118,10 @@ class TableService(CRUDTable, BaseService):
         table_id: uuid.UUID,
         session: AsyncSession,
         user: User,
-    ) -> Table:
+    ) -> TableInfo:
         """Вернет столик кафе по его ID."""
         await self.ensure_manager_cafe_access(user, cafe_id, session)
-        await self.ensure_exists(
+        cafe = await self.get_or_raise(
             cafe_crud,
             session,
             Cafe.id == cafe_id,
@@ -127,10 +137,9 @@ class TableService(CRUDTable, BaseService):
             await self.ensure_is_active(table)
 
         self.log_info(
-            f'Пользователь {user.id} получил информацию о столе {table.id}'
-            f'из кафе {cafe_id}',
+            f'Пользователь {user.id} получил информацию о столе {table.id}из кафе {cafe_id}',
         )
-        return table
+        return self._to_table_info(table, cafe)
 
     async def update_table(
         self,
@@ -139,7 +148,7 @@ class TableService(CRUDTable, BaseService):
         table_update: TableUpdate,
         session: AsyncSession,
         user: User,
-    ) -> Table:
+    ) -> TableInfo:
         """Обновит информацию о столике кафе.
 
         При деактивации (``is_active=False``) вызовет ``soft_delete`` из
@@ -174,10 +183,9 @@ class TableService(CRUDTable, BaseService):
 
         await session.commit()
         self.log_info(
-            f'Пользователь {user.id} обновил стол {table_id} в'
-            f'кафе {cafe_id} (деактивирован: {deactivate})',
+            f'Пользователь {user.id} обновил стол {table_id} вкафе {cafe_id} (деактивирован: {deactivate})',
         )
-        return table
+        return self._to_table_info(table, cafe)
 
 
 table_service = TableService(Table)

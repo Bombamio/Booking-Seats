@@ -6,7 +6,8 @@ from typing import Any, NoReturn
 from fastapi import status
 from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import RelationshipDirection
+from sqlalchemy.orm import RelationshipDirection, load_only
+from sqlalchemy.sql import select
 
 from src.core.exceptions import BookingSeatsAppError
 from src.core.logger import bookingseats_logger
@@ -147,8 +148,7 @@ class BaseService:
             return
         if user.cafe_id is None or user.cafe_id != cafe_id:
             self.log_warning(
-                f'Пользователь {user.id} попытался получить доступ '
-                f'к кафе {cafe_id} без разрешения',
+                f'Пользователь {user.id} попытался получить доступ к кафе {cafe_id} без разрешения',
             )
             self.raise_forbidden()
 
@@ -163,7 +163,7 @@ class BaseService:
         """
         visited: set[tuple[type[Any], Any]] = set()
 
-        def deactivate_recursive(current: Any) -> None:
+        async def deactivate_recursive(current: Any) -> None:
             """Рекурсивно деактивирует объект и его связанные сущности."""
             if current is None:
                 return
@@ -182,16 +182,23 @@ class BaseService:
             for relationship in mapper.relationships:
                 if relationship.direction is not RelationshipDirection.ONETOMANY:
                     continue
-                related = getattr(current, relationship.key)
 
-                if related is None:
+                child_model = relationship.mapper.class_
+                child_mapper = sa_inspect(child_model)
+                child_filters = []
+                for local_column, remote_column in relationship.local_remote_pairs:
+                    child_filters.append(
+                        remote_column == getattr(current, local_column.key),
+                    )
+
+                if not child_filters:
                     continue
 
-                if relationship.uselist:
-                    for child in related:
-                        deactivate_recursive(child)
-                else:
-                    deactivate_recursive(related)
+                pk_columns = [getattr(child_model, column.key) for column in child_mapper.primary_key]
+                child_query = select(child_model).options(load_only(*pk_columns)).where(*child_filters)
+                child_entities = (await session.execute(child_query)).scalars().all()
+                for child in child_entities:
+                    await deactivate_recursive(child)
 
-        deactivate_recursive(entity)
+        await deactivate_recursive(entity)
         return entity

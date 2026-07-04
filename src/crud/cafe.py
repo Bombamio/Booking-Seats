@@ -34,11 +34,7 @@ class CRUDCafe(CRUDBase):
         """
         model_fields = self.model.__table__.columns.keys()
 
-        cafe_payload = {
-            key: value
-            for key, value in cafe_create.model_dump().items()
-            if key in model_fields
-        }
+        cafe_payload = {key: value for key, value in cafe_create.model_dump().items() if key in model_fields}
 
         cafe_entity = self.model(**cafe_payload)
 
@@ -66,11 +62,7 @@ class CRUDCafe(CRUDBase):
 
         С подгрузкой менеджеров через relationships.
         """
-        stmt = (
-            select(self.model)
-            .options(selectinload(Cafe.managers))
-            .where(*filters)
-        )
+        stmt = select(self.model).options(selectinload(Cafe.managers)).where(*filters)
         result = await session.execute(stmt)
         return result.scalars().all()
 
@@ -84,9 +76,7 @@ class CRUDCafe(CRUDBase):
         С подгрузкой менеджеров через relationships.
         """
         result = await session.execute(
-            select(self.model)
-            .options(selectinload(Cafe.managers))
-            .where(*filters),
+            select(self.model).options(selectinload(Cafe.managers)).where(*filters),
         )
         return result.scalars().first()
 

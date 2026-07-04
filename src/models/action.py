@@ -41,6 +41,6 @@ class Action(Base):
         """Вернет краткое представление акции для отладки."""
         return (
             f"<Action(id={self.id}, description='"
-            f'{self.description[:ct.ACTION_REPR_DESCRIPTION_PREVIEW_LEN]}...'
+            f'{self.description[: ct.ACTION_REPR_DESCRIPTION_PREVIEW_LEN]}...'
             "')>"
         )

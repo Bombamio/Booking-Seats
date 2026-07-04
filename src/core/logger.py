@@ -78,7 +78,7 @@ class InterceptHandler(logging.Handler):
         try:
             level = logger.level(record.levelname).name
         except ValueError:
-            level = "INFO"
+            level = 'INFO'
         logger.log(level, record.getMessage())
 
 

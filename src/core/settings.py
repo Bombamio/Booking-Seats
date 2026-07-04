@@ -30,6 +30,12 @@ class Settings(BaseSettings):
     cache_expire_menu: int = 300
     cache_expire_actions: int = 600
 
+    # Настройки Celery
+    rabbitmq_host: str = 'rabbitmq'
+    rabbitmq_port: int = 5672
+    rabbitmq_password: str = 'guest'
+    rabbitmq_user: str = 'guest'
+
     model_config = SettingsConfigDict(
         env_file=BASE_DIR / '../infra/.env',
         env_file_encoding='utf-8',
@@ -50,6 +56,14 @@ class Settings(BaseSettings):
         if self.redis_password:
             return f'redis://:{self.redis_password}@{self.redis_host}:{self.redis_port}/{self.redis_db}'
         return f'redis://{self.redis_host}:{self.redis_port}/{self.redis_db}'
+
+    @property
+    def rabbitmq_url(self) -> str:
+        """Строка подключения к rabbitmq."""
+        return (
+            f'amqp://{self.rabbitmq_user}:{self.rabbitmq_password}@'
+            f'{self.rabbitmq_host}:{self.rabbitmq_port}//'
+        )
 
 
 settings = Settings()  # type: ignore

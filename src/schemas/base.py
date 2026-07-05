@@ -7,6 +7,32 @@ from pydantic import BaseModel, ConfigDict, Field
 from src.core import constants as ct
 
 
+class BaseCreate(BaseModel):
+    """Базовая схема создания без общих полей модели."""
+
+    __abstract__ = True
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+
+
+class BaseShortInfo(BaseModel):
+    """Базовая краткая схема без поля description."""
+
+    id: Optional[uuid.UUID] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class BaseInfo(BaseShortInfo):
+    """Базовая полная схема без поля description."""
+
+    is_active: Optional[bool] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+
 # Не подходит для User, Action и Booking.
 class BaseProjectCreate(BaseModel):
     """Базовая абстрактная схема для создания новой модели.

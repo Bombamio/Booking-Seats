@@ -6,6 +6,7 @@ from fastapi import FastAPI
 
 from src.api.routers import main_router
 from src.core.cache import cache
+from src.core.constants import OPENAPI_TAGS
 from src.core.error_handlers import register_error_handlers
 from src.core.logger import bookingseats_logger
 from src.core.logging_middleware import LoggingMiddleware
@@ -29,6 +30,7 @@ app = FastAPI(
     title=settings.title,
     version=settings.version,
     description=settings.description,
+    openapi_tags=OPENAPI_TAGS,
     lifespan=lifespan,
 )
 

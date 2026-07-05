@@ -5,6 +5,7 @@ from src.api.endpoints import (
     auth_router,
     cafe_router,
     dish_router,
+    health_router,
     media_router,
     slot_router,
     table_router,
@@ -12,6 +13,9 @@ from src.api.endpoints import (
 )
 
 main_router = APIRouter(prefix='/api/v1')
+
+main_router.include_router(health_router)
+
 main_router.include_router(
     dish_router,
     prefix='/dishes',

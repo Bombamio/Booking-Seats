@@ -26,6 +26,12 @@ ERROR_404 = {
         'description': 'Данные не найдены',
     },
 }
+ERROR_409 = {
+    status.HTTP_409_CONFLICT: {
+        'model': CustomError,
+        'description': 'Конфликт данных',
+    },
+}
 # для Users описание не подходит, поэтому не используем
 ERROR_422 = {
     status.HTTP_422_UNPROCESSABLE_ENTITY: {
@@ -64,9 +70,16 @@ ERRORS_POST = {**ERRORS_POST_BOOKING, **ERROR_403}
 ERRORS_4XX_FULL = {**ERRORS_POST, **ERROR_404}
 
 # группа, отличающаяся для USER
+ERRORS_AUTH = {**ERROR_422_AUTH}
+ERRORS_POST_USERS = {**ERROR_400, **ERROR_422}
 ERRORS_GET_MULTI_USERS = {**ERROR_401, **ERROR_403, **ERROR_422}
 ERRORS_PATCH_ME = {**ERROR_400, **ERROR_403, **ERROR_422}
 ERRORS_GET_USERS = {**ERROR_401, **ERROR_403, **ERROR_404, **ERROR_422}
+ERRORS_GET_ME = {**ERROR_401}
+ERRORS_UPDATE_ME = {**ERROR_400, **ERROR_401, **ERROR_422}
+
+ERRORS_POST_CAFE = {**ERRORS_POST, **ERROR_404, **ERROR_409}
+ERRORS_4XX_FULL_WITH_409 = {**ERRORS_4XX_FULL, **ERROR_409}
 
 # для GET и POST у MEDIA
 ERRORS_GET_MEDIA = {**ERROR_404, **ERROR_422}

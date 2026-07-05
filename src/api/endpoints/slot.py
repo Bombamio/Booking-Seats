@@ -1,9 +1,10 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.api import error_responses as er
 from src.api import validators as vt
 from src.core.db import get_session
 from src.crud import cafe_crud, slot_crud
@@ -19,6 +20,7 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
     '/',
     response_model=list[schema.TimeSlotInfo],
     response_model_exclude_none=True,
+    responses=er.ERRORS_GET_MULTI_WITH_404,
 )
 async def get_time_slots_list(  # noqa: ANN201
     cafe_id: uuid.UUID,
@@ -44,6 +46,8 @@ async def get_time_slots_list(  # noqa: ANN201
     '/',
     response_model=schema.TimeSlotInfo,
     response_model_exclude_none=True,
+    status_code=status.HTTP_201_CREATED,
+    responses=er.ERRORS_4XX_FULL,
 )
 async def create_time_slot(  # noqa: ANN201
     cafe_id: uuid.UUID,
@@ -90,6 +94,7 @@ async def create_time_slot(  # noqa: ANN201
     '/{slot_id}',
     response_model=schema.TimeSlotInfo,
     response_model_exclude_none=True,
+    responses=er.ERRORS_4XX_FULL,
 )
 async def get_time_slot_by_id(  # noqa: ANN201
     cafe_id: uuid.UUID,
@@ -125,6 +130,7 @@ async def get_time_slot_by_id(  # noqa: ANN201
     '/{slot_id}',
     response_model=schema.TimeSlotInfo,
     response_model_exclude_none=True,
+    responses=er.ERRORS_4XX_FULL,
 )
 async def update_time_slot(  # noqa: ANN201
     cafe_id: uuid.UUID,

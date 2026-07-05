@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.api import error_responses as er
 from src.core.db import get_session
 from src.core.security import get_current_user
 from src.models import User
@@ -18,6 +19,7 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
     '/',
     response_model=list[schema.UserInfo],
     summary='Получение списка пользователей',
+    responses=er.ERRORS_GET_MULTI_USERS,
     description=('Возвращает информацию о всех пользователях.Только для администраторов или менеджеров'),
 )
 async def get_users_list(
@@ -34,6 +36,7 @@ async def get_users_list(
 @router.get(
     '/{user_id}',
     response_model=schema.UserInfo,
+    responses=er.ERRORS_GET_USERS,
 )
 async def get_user(
     session: SessionDep,
@@ -50,6 +53,7 @@ async def get_user(
 @router.post(
     '/',
     response_model=schema.UserInfo,
+    responses=er.ERRORS_POST_USERS,
 )
 async def create_user(
     user_in: schema.UserCreate,
@@ -65,6 +69,7 @@ async def create_user(
 @router.put(
     '/{user_id}',
     response_model=schema.UserInfo,
+    responses=er.ERRORS_4XX_FULL,
 )
 async def update_user(
     session: SessionDep,
@@ -81,6 +86,7 @@ async def update_user(
 @router.get(
     '/me',
     response_model=schema.UserInfo,
+    responses=er.ERRORS_GET_ME,
 )
 async def get_me(
     session: SessionDep,
@@ -93,6 +99,7 @@ async def get_me(
 @router.put(
     '/me',
     response_model=schema.UserInfo,
+    responses=er.ERRORS_UPDATE_ME,
 )
 async def update_me(
     session: SessionDep,

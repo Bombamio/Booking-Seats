@@ -20,6 +20,7 @@ from src.models import (
     UserRole,
 )
 from src.services.base import BaseService
+from src.tasks.notifications import notify_admin
 
 
 class BookingService(CRUDBooking, BaseService):
@@ -319,6 +320,15 @@ class BookingService(CRUDBooking, BaseService):
         self.log_info(
             f'Пользователь {user.id} создал бронирование {booking.id}.',
         )
+        for manager in created_booking.cafe.managers:
+            notify_admin.delay(
+                cafe_name=created_booking.cafe.name,
+                booking_date=str(created_booking.booking_date),
+                admin_email=manager.email,
+                username=created_booking.user.username,
+                user_email=created_booking.user.email,
+                user_phone=created_booking.user.phone,
+            )
         return self._to_booking_info(created_booking)
 
     async def get_booking_by_id(

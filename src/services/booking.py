@@ -1,11 +1,12 @@
 import uuid
-from datetime import date
+from datetime import date, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 import src.schemas as schema
+from src.core.settings import settings
 from src.crud import CRUDBooking, booking_crud, cafe_crud, slot_crud, table_crud
 from src.models import (
     Booking,
@@ -20,6 +21,8 @@ from src.models import (
     UserRole,
 )
 from src.services.base import BaseService
+from src.tasks.notifications import notify_admin
+from src.tasks.reminders import send_reminder
 
 
 class BookingService(CRUDBooking, BaseService):
@@ -318,6 +321,28 @@ class BookingService(CRUDBooking, BaseService):
         created_booking = await self._get_booking_or_raise(booking.id, session)
         self.log_info(
             f'Пользователь {user.id} создал бронирование {booking.id}.',
+        )
+        # ставим задачи на отправку уведомления менеджерам кафе
+        for manager in created_booking.cafe.managers:
+            notify_admin.delay(
+                cafe_name=created_booking.cafe.name,
+                booking_date=str(created_booking.booking_date),
+                admin_email=manager.email,
+                username=created_booking.user.username,
+                user_email=created_booking.user.email,
+                user_phone=created_booking.user.phone,
+            )
+        # ставим задачи на отправку напоминаний о брони клиентам
+        start_time = created_booking.booking_items[0].slot.start_time
+        time_reminder = start_time - timedelta(minutes=settings.reminder_minutes_before)
+        send_reminder.apply_async(
+            kwargs={
+                'cafe_name': created_booking.cafe.name,
+                'booking_date': str(created_booking.booking_date),
+                'username': created_booking.user.username,
+                'user_email': created_booking.user.email,
+            },
+            eta=time_reminder,
         )
         return self._to_booking_info(created_booking)
 

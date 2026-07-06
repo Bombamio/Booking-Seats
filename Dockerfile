@@ -2,7 +2,7 @@ FROM python:3.12-slim
 
 SHELL ["/bin/sh", "-exc"]
 
-RUN apt-get update && apt-get upgrade -y && apt-get install --quiet --no-install-recommends --assume-yes netcat-traditional
+RUN apt-get update && apt-get upgrade -y && apt-get install --quiet --no-install-recommends --assume-yes netcat-traditional curl
 
 COPY --link --from=ghcr.io/astral-sh/uv:0.4 /uv /usr/local/bin/uv
 

@@ -9,7 +9,7 @@ from src.core.base_model import Base
 from src.models.association_tables import cafe_dishes
 
 if TYPE_CHECKING:
-    from src.models import Cafe
+    from src.models import Booking, BookingDish, Cafe
 
 
 class Dish(Base):
@@ -44,4 +44,12 @@ class Dish(Base):
     cafes: Mapped[list['Cafe']] = relationship(
         secondary=cafe_dishes,
         back_populates='dishes',
+    )
+    bookings: Mapped[list['Booking']] = relationship(
+        secondary='booking_dishes',
+        back_populates='dishes',
+        viewonly=True,
+    )
+    booking_dishes: Mapped[list['BookingDish']] = relationship(
+        back_populates='dish',
     )

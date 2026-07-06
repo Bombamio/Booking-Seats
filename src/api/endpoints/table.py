@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.api import error_responses as er
 from src.api import validators as vt
 from src.core.db import get_session
-from src.core.decorators import with_error_responses
 from src.models import Table, User
 from src.schemas import table as schema
 from src.services import table_service
@@ -22,13 +21,13 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
     response_model=list[schema.TableInfo],
     response_model_exclude_none=True,
     summary='Получение списка столов в кафе',
+    responses=er.ERRORS_GET_MULTI_WITH_404,
     description=(
         'Получение списка доступных для бронирования столов в кафе.'
         'Для администраторов и менеджеров - все столы (с возможностью выбора),'
         'для пользователей - только активные.'
     ),
 )
-@with_error_responses(er.ERRORS_GET_MULTI_WITH_404)
 async def get_tables_list(
     cafe_id: uuid.UUID,
     user: Annotated[User, Depends(vt.current_user_is_active)],
@@ -50,9 +49,9 @@ async def get_tables_list(
     response_model_exclude_none=True,
     status_code=status.HTTP_201_CREATED,
     summary='Новый стол в кафе',
+    responses=er.ERRORS_4XX_FULL,
     description=('Создает новый стол кафе.Только для администраторов и менеджеров.'),
 )
-@with_error_responses(er.ERRORS_4XX_FULL)
 async def create_table(
     cafe_id: uuid.UUID,
     table_create: schema.TableCreate,
@@ -73,13 +72,13 @@ async def create_table(
     response_model=schema.TableInfo,
     response_model_exclude_none=True,
     summary='Информация о столе в кафе по его ID',
+    responses=er.ERRORS_4XX_FULL,
     description=(
         'Получение информации о столе в кафе по его ID.'
         'Для администраторов и менеджеров - все столы,'
         'для пользователей - только активные.'
     ),
 )
-@with_error_responses(er.ERRORS_4XX_FULL)
 async def get_table(
     cafe_id: uuid.UUID,
     table_id: uuid.UUID,
@@ -100,9 +99,9 @@ async def get_table(
     response_model=schema.TableInfo,
     response_model_exclude_none=True,
     summary='Обновление информации о столе в кафе по его ID',
+    responses=er.ERRORS_4XX_FULL,
     description=('Обновление информации о столе в кафе по его ID.Только для администраторов и менеджеров.'),
 )
-@with_error_responses(er.ERRORS_4XX_FULL)
 async def update_table(
     cafe_id: uuid.UUID,
     table_id: uuid.UUID,

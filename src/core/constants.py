@@ -7,7 +7,15 @@ SECRET_KEY = 'bd125ffa58cbb4303de365029c44cdda23830f7181e18d158cc3e95d6b55c963'
 # openssl rand -hex 32
 ALGORITHM = 'HS256'
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+DEFAULT_GUEST_NUMBER = 1
+MIN_DISH_QUANTITY = 1
 MILLISECONDS_IN_SECOND = 1000
+OPENAPI_TAGS = [
+    {
+        'name': 'Бронирования',
+        'description': 'Управление бронированиями',
+    },
+]
 
 MAX_EMAIL_LEN = 256
 MIN_USERNAME_LEN = 3

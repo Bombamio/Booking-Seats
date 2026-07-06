@@ -1,91 +1,64 @@
 import uuid
-from datetime import date, datetime
-from typing import Optional
+from datetime import date
+from typing import Any, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, PositiveInt, field_validator, model_validator
 
 from src.core import constants as ct
 from src.models import BookingStatus
+from src.schemas.base import BaseCreate, BaseInfo
 from src.schemas.cafe import CafeShortInfo
+from src.schemas.dish import DishInfo
 from src.schemas.slot import TimeSlotShortInfo
 from src.schemas.table import TableShortInfo
 from src.schemas.user import UserShortInfo
 
 
-class BookingTableSlot(BaseModel):
+class BookingTableSlot(BaseCreate):
     """Базовая схема для бронирования."""
 
-    table_id: uuid.UUID = Field(..., description='ID стола')
-    slot_id: uuid.UUID = Field(..., description='ID временного слота')
-    dishes_id: Optional[list[uuid.UUID]] = Field(
-        None,
-        description='Список ID заказанных блюд',
-    )
+    table_id: uuid.UUID
+    slot_id: uuid.UUID
 
-    model_config = ConfigDict(
-        extra='forbid',
-    )
+
+class BookingDishCreate(BaseCreate):
+    """Схема блюда в предзаказе бронирования."""
+
+    dish_id: uuid.UUID
+    quantity: PositiveInt
+
+
+class BookingDishInfo(BaseModel):
+    """Информация о блюде в предзаказе бронирования."""
+
+    dish: DishInfo
+    quantity: PositiveInt
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class BookingTableSlotShortInfo(BaseModel):
     """Краткая информация о бронировании."""
 
-    table: Optional['TableShortInfo']
-    slot: Optional['TimeSlotShortInfo']
+    table: TableShortInfo
+    slot: TimeSlotShortInfo
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class BookingCreate(BaseModel):
-    """Схема для создания нового бронирования."""
+class _BookingBase(BaseModel):
+    """Миксин с атрибутами бронирования."""
 
-    cafe_id: uuid.UUID
-    tables_slots: list[BookingTableSlot]
-    guest_number: int
+    preordered_dishes: Optional[list[BookingDishCreate]] = Field(default_factory=list)
+    guest_number: Optional[PositiveInt] = None
+    booking_date: Optional[date] = None
     note: Optional[str] = Field(
         None,
         max_length=ct.MAX_DESCRIPTION_LEN,
         description='Примечание к бронированию',
     )
-    booking_date: date
 
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-
-    @field_validator('booking_date')
-    @classmethod
-    def validate_booking_date(cls, v: date) -> date:
-        """Валидация даты бронирования (не может быть в прошлом)."""
-        if v < date.today():
-            raise ValueError('Дата бронирования не может быть в прошлом')
-        return v
-
-
-class BookingUpdate(BookingCreate):
-    """Схема для обновления существующего бронирования."""
-
-    tables_slots: Optional[list[BookingTableSlot]] = None
-    guest_number: Optional[int] = None
-    booking_date: Optional[date] = Field(
-        None,
-        description='Дата бронирования',
-    )
-    status: Optional[BookingStatus] = Field(
-        None,
-        description='Статус бронирования',
-    )
-    note: Optional[str] = Field(
-        None,
-        max_length=ct.MAX_DESCRIPTION_LEN,
-        description='Примечание к бронированию',
-    )
-    is_active: Optional[bool] = Field(
-        None,
-        description='Активность бронирования',
-    )
-
-    @field_validator('booking_date')
+    @field_validator('booking_date', check_fields=False)
     @classmethod
     def validate_booking_date(cls, v: Optional[date]) -> Optional[date]:
         """Валидация даты бронирования (не может быть в прошлом)."""
@@ -94,26 +67,40 @@ class BookingUpdate(BookingCreate):
         return v
 
 
-class BookingInfo(BaseModel):
+class BookingCreate(_BookingBase, BaseCreate):
+    """Схема для создания нового бронирования."""
+
+    cafe_id: uuid.UUID
+    tables_slots: list[BookingTableSlot] = Field(min_length=1)
+    guest_number: PositiveInt
+    booking_date: date
+
+
+class BookingUpdate(_BookingBase, BaseCreate):
+    """Схема для обновления существующего бронирования."""
+
+    tables_slots: Optional[list[BookingTableSlot]] = Field(None)
+    status: Optional[BookingStatus] = Field(
+        None,
+        description='Статус бронирования',
+    )
+    is_active: Optional[bool] = Field(None)
+
+    @model_validator(mode='before')
+    @classmethod
+    def reject_null(cls, values: Any) -> Any:
+        """Сообщит об ошибке, если в полях запроса передано значение Null."""
+        for field in cls.model_fields:
+            if field in values and values[field] is None:
+                raise ValueError(f'Поле "{field}" не может быть пустым.')
+        return values
+
+
+class BookingInfo(_BookingBase, BaseInfo):
     """Полная информация о бронировании для ответа API."""
 
-    id: Optional[uuid.UUID] = None
-    user: Optional[UserShortInfo] = None
-    cafe: Optional[CafeShortInfo] = None
-    tables_slots: Optional[list[BookingTableSlot]] = None
-    guest_number: Optional[int] = None
-    note: Optional[str] = Field(
-        None,
-        max_length=ct.MAX_DESCRIPTION_LEN,
-        description='Примечание к бронированию',
-    )
-    status: Optional[BookingStatus] = None
-    booking_date: Optional[date] = None
-    is_active: Optional[bool] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
-
-    class Config:
-        """Конфигурация для модели."""
-
-        from_attributes = True
+    user: UserShortInfo
+    cafe: CafeShortInfo
+    tables_slots: list[BookingTableSlotShortInfo]
+    preordered_dishes: list[BookingDishInfo] = Field(default_factory=list)
+    status: BookingStatus

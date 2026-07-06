@@ -4,6 +4,7 @@ from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.api import error_responses as er
 from src.api import validators as vt
 from src.core.db import get_session
 from src.models import User
@@ -17,7 +18,11 @@ action_service = ActionService()
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 
-@router.get('/', response_model=list[ActionInfo])
+@router.get(
+    '/',
+    response_model=list[ActionInfo],
+    responses=er.ERRORS_GET_MULTI,
+)
 async def get_actions(
     session: SessionDep,
     show_active: Optional[bool] = Query(None),
@@ -33,7 +38,12 @@ async def get_actions(
     )
 
 
-@router.post('/', response_model=ActionInfo, status_code=status.HTTP_201_CREATED)
+@router.post(
+    '/',
+    response_model=ActionInfo,
+    status_code=status.HTTP_201_CREATED,
+    responses=er.ERRORS_POST,
+)
 async def create_action(
     action_in: ActionCreate,
     session: SessionDep,
@@ -46,7 +56,11 @@ async def create_action(
     )
 
 
-@router.get('/{action_id}', response_model=ActionInfo)
+@router.get(
+    '/{action_id}',
+    response_model=ActionInfo,
+    responses=er.ERRORS_4XX_FULL,
+)
 async def get_action(
     action_id: uuid.UUID,
     session: SessionDep,
@@ -60,7 +74,11 @@ async def get_action(
     )
 
 
-@router.patch('/{action_id}', response_model=ActionInfo)
+@router.patch(
+    '/{action_id}',
+    response_model=ActionInfo,
+    responses=er.ERRORS_4XX_FULL,
+)
 async def update_action(
     action_id: uuid.UUID,
     action_in: ActionUpdate,

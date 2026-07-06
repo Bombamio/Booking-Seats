@@ -79,7 +79,7 @@ class UserInfo(UserBase):
 class UserShortInfo(UserBase):
     """Схема краткой информации о пользователе."""
 
-    id: int
+    id: uuid.UUID
 
     model_config = ConfigDict(from_attributes=True)
 

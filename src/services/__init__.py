@@ -1,6 +1,7 @@
 from src.services.action import ActionService
 from src.services.auth import AuthService
 from src.services.base import BaseService
+from src.services.booking import BookingService, booking_service
 from src.services.cafe import CafeService, get_cafe_service
 from src.services.dish import DishService, dish_service
 from src.services.media import MediaService, media_service
@@ -11,11 +12,13 @@ __all__ = [
     'ActionService',
     'AuthService',
     'BaseService',
+    'BookingService',
     'CafeService',
     'DishService',
     'MediaService',
     'TableService',
     'UserService',
+    'booking_service',
     'dish_service',
     'get_cafe_service',
     'media_service',

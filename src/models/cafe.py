@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    from src.models import Action, Dish, Slot, Table, User
+    from src.models import Action, Booking, Dish, Slot, Table, User
 
 import uuid
 
@@ -65,6 +65,10 @@ class Cafe(Base):
     actions: Mapped[list[Action]] = relationship(
         secondary=cafe_actions,
         back_populates='cafes',
+    )
+
+    bookings: Mapped[list['Booking']] = relationship(
+        back_populates='cafe',
     )
 
     __table_args__ = (UniqueConstraint('name', 'address', name='uq_cafe_name_address'),)

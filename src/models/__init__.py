@@ -1,6 +1,7 @@
 from src.models.action import Action
 from src.models.association_tables import cafe_actions, cafe_dishes
 from src.models.booking import Booking, BookingStatus
+from src.models.booking_dishes import BookingDish
 from src.models.booking_items import BookingItem
 from src.models.cafe import Cafe
 from src.models.dish import Dish
@@ -11,6 +12,7 @@ from src.models.user import User, UserRole
 __all__ = [
     'Action',
     'Booking',
+    'BookingDish',
     'BookingItem',
     'BookingStatus',
     'Cafe',

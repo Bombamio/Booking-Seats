@@ -14,6 +14,8 @@ from src.schemas.base import (
 )
 from src.schemas.booking import (
     BookingCreate,
+    BookingDishCreate,
+    BookingDishInfo,
     BookingInfo,
     BookingTableSlot,
     BookingTableSlotShortInfo,
@@ -62,6 +64,8 @@ __all__ = [
     'BaseProjectInfo',
     'BaseProjectShortInfo',
     'BookingCreate',
+    'BookingDishCreate',
+    'BookingDishInfo',
     'BookingInfo',
     'BookingTableSlot',
     'BookingTableSlotShortInfo',

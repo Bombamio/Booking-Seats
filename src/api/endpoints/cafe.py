@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.api import error_responses as er
 from src.api import validators as vt
 from src.core.db import get_session
 from src.models import User
@@ -20,6 +21,7 @@ CafeServiceDep = Annotated[CafeService, Depends(get_cafe_service)]
     '/',
     response_model=list[CafeInfo],
     summary='Получение списка кафе',
+    responses=er.ERRORS_GET_MULTI,
 )
 async def get_cafes(
     service: CafeServiceDep,
@@ -38,6 +40,7 @@ async def get_cafes(
     '/',
     response_model=CafeInfo,
     summary='Создание нового кафе',
+    responses=er.ERRORS_POST_CAFE,
     dependencies=[Depends(vt.current_admin_or_manager)],
 )
 async def create_cafe(
@@ -55,6 +58,7 @@ async def create_cafe(
     '/{cafe_id}',
     response_model=CafeInfo,
     summary='Получение информации о кафе по его ID',
+    responses=er.ERRORS_4XX_FULL,
 )
 async def get_cafe(
     cafe_id: uuid.UUID,
@@ -73,6 +77,7 @@ async def get_cafe(
     '/{cafe_id}',
     response_model=CafeInfo,
     summary='Обновление информации о кафе по его ID',
+    responses=er.ERRORS_4XX_FULL_WITH_409,
     dependencies=[Depends(vt.current_admin_or_manager)],
 )
 async def update_cafe(

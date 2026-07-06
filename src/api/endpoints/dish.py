@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.api import error_responses as er
 from src.api import validators as vt
 from src.core.db import get_session
-from src.core.decorators import with_error_responses
 from src.models import Dish, User
 from src.schemas import dish as schema
 from src.services import dish_service
@@ -20,8 +19,8 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 @router.get(
     '/',
     response_model=list[schema.DishInfo],
+    responses=er.ERRORS_GET_MULTI_WITH_404,
 )
-@with_error_responses(er.ERRORS_GET_MULTI_WITH_404)
 async def get_multi(
     cafe_id: Optional[uuid.UUID],
     user: Annotated[User, Depends(vt.current_user_is_active)],
@@ -40,8 +39,8 @@ async def get_multi(
 @router.post(
     '/',
     response_model=schema.DishInfo,
+    responses=er.ERRORS_POST,
 )
-@with_error_responses(er.ERRORS_POST)
 async def create(
     dish_create: schema.DishCreate,
     user: Annotated[User, Depends(vt.current_admin_or_manager)],
@@ -58,8 +57,8 @@ async def create(
 @router.get(
     '/{dish_id}',
     response_model=schema.DishInfo,
+    responses=er.ERRORS_4XX_FULL,
 )
-@with_error_responses(er.ERRORS_4XX_FULL)
 async def get_by_id(
     dish_id: uuid.UUID,
     user: Annotated[User, Depends(vt.current_user_is_active)],
@@ -76,8 +75,8 @@ async def get_by_id(
 @router.patch(
     '/{dish_id}',
     response_model=schema.DishInfo,
+    responses=er.ERRORS_4XX_FULL,
 )
-@with_error_responses(er.ERRORS_4XX_FULL)
 async def update(
     dish_id: uuid.UUID,
     dish_update: schema.DishUpdate,

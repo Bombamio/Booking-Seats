@@ -28,12 +28,6 @@ class BookingItem(Base):
             ondelete='CASCADE',
         ),
     )
-    dish_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey(
-            'dishes.id',
-            ondelete='CASCADE',
-        ),
-    )
     table_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey(
             'tables.id',
@@ -47,17 +41,25 @@ class BookingItem(Base):
         ),
     )
 
-    booking: Mapped['Booking'] = relationship(back_populates='booking_items')
-    #  dish: Mapped['Dish'] = relationship(back_populates='booking_items')
-    table: Mapped['Table'] = relationship(back_populates='booking_items')
-    slot: Mapped['Slot'] = relationship(back_populates='booking_items')
+    booking: Mapped['Booking'] = relationship(
+        back_populates='booking_items',
+        lazy='raise',
+        passive_deletes=True,
+    )
+    table: Mapped['Table'] = relationship(
+        back_populates='booking_items',
+        lazy='raise',
+    )
+    slot: Mapped['Slot'] = relationship(
+        back_populates='booking_items',
+        lazy='raise',
+    )
 
     def __repr__(self) -> str:
         """Вернет краткое представление связки бронирования."""
         return (
             f'BookingItem(id={self.id!r}, '
             f'booking_id={self.booking_id!r}, '
-            f'dish_id={self.dish_id!r}, '
             f'table_id={self.table_id!r}, '
             f'slot_id={self.slot_id!r})'
         )

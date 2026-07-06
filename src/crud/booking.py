@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from src.crud.base import CRUDBase
-from src.models import Booking, BookingDish, BookingItem, BookingStatus, Dish, User, UserRole
+from src.models import Booking, BookingDish, BookingItem, BookingStatus, Cafe, Dish, User, UserRole
 
 
 class CRUDBooking(CRUDBase):
@@ -18,7 +18,7 @@ class CRUDBooking(CRUDBase):
         """Вернет опции загрузки связей для ответа API."""
         return (
             selectinload(Booking.user),
-            selectinload(Booking.cafe),
+            selectinload(Booking.cafe).selectinload(Cafe.managers),
             selectinload(Booking.booking_items).selectinload(BookingItem.table),
             selectinload(Booking.booking_items).selectinload(BookingItem.slot),
             selectinload(Booking.booking_dishes).selectinload(BookingDish.dish).selectinload(Dish.cafes),

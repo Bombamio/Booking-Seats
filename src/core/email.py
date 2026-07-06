@@ -24,5 +24,6 @@ def send_email(
 
         message.attach(MIMEText(body, 'plain'))
 
+        # отправляем сообщение
         server.sendmail(settings.email_address, recipient_email, message.as_string())
         bookingseats_logger.info(f'Email отправлен на {recipient_email}')

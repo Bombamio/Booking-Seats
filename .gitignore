@@ -208,3 +208,7 @@ __marimo__/
 
 # docs
 openapi.yml
+
+# macOS file
+.DS_Store
+**/.DS_Store

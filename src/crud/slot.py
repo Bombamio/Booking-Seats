@@ -54,9 +54,14 @@ class CRUDSlot(CRUDBase):
         session: AsyncSession,
     ) -> Slot:
         """Создаёт временной слот, привязанный к переданному кафе."""
+        slot_data = {
+            key: value
+            for key, value in slot_create.model_dump().items()
+            if key in self.model_fields
+        }
         slot_entity = self.model(
             cafe_id=cafe_id,
-            **slot_create.model_dump(),
+            **slot_data,
         )
         session.add(slot_entity)
         await session.flush()

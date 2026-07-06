@@ -14,7 +14,7 @@ def notify_admin(
     user_email: str,
     user_phone: str,
 ) -> None:
-    """Тестовая задача уведомления."""
+    """Задача для уведомления менеджера кафе."""
     text_message = (
         f'Появилось новое бронирование\n'
         f'Кафе: {cafe_name}\n'

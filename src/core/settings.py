@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     rabbitmq_password: str = 'guest'
     rabbitmq_user: str = 'guest'
 
+    # Настройки напоминаний
+    reminder_minutes_before: int = 30
+
     # Настройки для SMTP
     smtp_server: str = 'smtp.gmail.com'
     smtp_port: int = 587

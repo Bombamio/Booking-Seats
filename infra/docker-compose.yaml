@@ -34,7 +34,7 @@ services:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics ping"]
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -63,6 +63,16 @@ services:
     depends_on:
       - rabbitmq
       # - redis
+
+  celery_worker:
+    build: ../
+    env_file:
+      - ./.env
+    command: celery -A src.core.celery_app worker --loglevel=INFO
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
 
   db:
     image: postgres:17-alpine

@@ -13,7 +13,7 @@ services:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics ping"]
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -29,11 +29,6 @@ services:
     environment:
       CELERY_BROKER_URL: amqp://guest:guest@rabbitmq:5672//
       # CELERY_RESULT_BACKEND: redis://redis
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5555/"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
     ports:
       - "5555:5555"
     restart: unless-stopped

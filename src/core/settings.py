@@ -36,6 +36,12 @@ class Settings(BaseSettings):
     rabbitmq_password: str = 'guest'
     rabbitmq_user: str = 'guest'
 
+    # Настройки для SMTP
+    smtp_server: str = 'smtp.gmail.com'
+    smtp_port: int = 587
+    email_address: str = ''
+    email_password: str = ''
+
     model_config = SettingsConfigDict(
         env_file=BASE_DIR / '../infra/.env',
         env_file_encoding='utf-8',

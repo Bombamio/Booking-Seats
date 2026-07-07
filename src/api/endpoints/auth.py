@@ -25,7 +25,7 @@ async def login(
     session: SessionDep,
 ) -> schema.AuthToken:
     """Получение токена авторизации."""
-    return await AuthService.authenticate_user(
+    return await AuthService().authenticate_user(
         session,
         auth_data.login,
         auth_data.password,

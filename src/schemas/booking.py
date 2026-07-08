@@ -1,103 +1,182 @@
+"""Схемы бронирования.
+
+Модуль описывает входные и выходные схемы для создания и управления бронированиями.
+
+Локальные миксины:
+   - `BookingBaseMixin` — основные поля бронирования и вложенные списки.
+   - `BookingDateValidationMixin` — дата бронирования не может быть в прошлом.
+   - `BookingTableSlotMixin` / `BookingDishMixin` — вложенные сущности в запросе и ответе.
+
+Схемы API:
+   - `BookingCreate` — создание бронирования с обязательными полями и `cafe_id`.
+   - `BookingUpdate` — частичное обновление; переданные NOT NULL-поля не принимают `null`.
+   - `BookingInfo` — полный ответ API с пользователем, кафе, столами, блюдами и статусом.
+
+Наследование:
+   - входные схемы — `BaseCreate` / `BaseUpdate` (без `description`);
+   - выходная схема — `BaseInfo`;
+   - вложенные схемы — `BaseCreate`, `BaseShortInfo`, `BaseInfo`.
+
+Общие правила наследования и базовые миксины — в `src/schemas/base.py`.
+"""
+
 import uuid
 from datetime import date
-from typing import Any, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, PositiveInt, field_validator, model_validator
+from pydantic import Field, PositiveInt, field_validator
 
 from src.core import constants as ct
 from src.models import BookingStatus
-from src.schemas.base import BaseCreate, BaseInfo
+from src.schemas.base import BaseCreate, BaseInfo, BaseShortInfo, BaseUpdate
 from src.schemas.cafe import CafeShortInfo
-from src.schemas.dish import DishInfo
-from src.schemas.slot import TimeSlotShortInfo
-from src.schemas.table import TableShortInfo
 from src.schemas.user import UserShortInfo
 
 
-class BookingTableSlot(BaseCreate):
-    """Базовая схема для бронирования."""
+class BookingTableSlotMixin:
+    """Миксин с атрибутами пары столик-слот бронирования."""
 
     table_id: uuid.UUID
     slot_id: uuid.UUID
 
 
-class BookingDishCreate(BaseCreate):
-    """Схема блюда в предзаказе бронирования."""
+class BookingTableSlotCreate(BookingTableSlotMixin, BaseCreate):
+    """Базовая схема для бронирования."""
+
+
+class BookingTableSlotShortInfo(BookingTableSlotMixin, BaseShortInfo):
+    """Краткая информация о бронировании.
+
+    Поля (включая унаследованные):
+        table_id (UUID): идентификатор столика.
+        slot_id (UUID): идентификатор временного слота.
+        id (UUID): идентификатор записи.
+        is_active (bool | None): признак активности.
+    """
+
+
+class BookingDishMixin:
+    """Миксин с атрибутами блюда в предзаказе бронирования."""
 
     dish_id: uuid.UUID
     quantity: PositiveInt
 
 
-class BookingDishInfo(BaseModel):
-    """Информация о блюде в предзаказе бронирования."""
+class BookingDishCreate(BookingDishMixin, BaseCreate):
+    """Схема блюда в предзаказе бронирования.
 
-    dish: DishInfo
-    quantity: PositiveInt
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class BookingTableSlotShortInfo(BaseModel):
-    """Краткая информация о бронировании."""
-
-    table: TableShortInfo
-    slot: TimeSlotShortInfo
-
-    model_config = ConfigDict(from_attributes=True)
+    Поля (включая унаследованные):
+        dish_id (UUID): идентификатор блюда; обязательное.
+        quantity (PositiveInt): количество порций; обязательное.
+    """
 
 
-class _BookingBase(BaseModel):
-    """Миксин с атрибутами бронирования."""
+class BookingDishInfo(BookingDishMixin, BaseInfo):
+    """Информация о блюде в предзаказе бронирования.
 
-    preordered_dishes: Optional[list[BookingDishCreate]] = Field(default_factory=list)
-    guest_number: Optional[PositiveInt] = None
-    booking_date: Optional[date] = None
-    note: Optional[str] = Field(
+    Поля (включая унаследованные):
+        dish_id (UUID): идентификатор блюда.
+        quantity (PositiveInt): количество порций.
+        id (UUID): идентификатор записи.
+        is_active (bool | None): признак активности.
+        created_at (datetime): дата создания.
+        updated_at (datetime): дата обновления.
+    """
+
+
+class BookingBaseMixin:
+    """Миксин с атрибутами бронирования.
+
+    Поля:
+        booking_date (date): дата бронирования; обязательное.
+        guest_number (PositiveInt): количество гостей; обязательное.
+        note (str | None): примечание; необязательное.
+        tables_slots (list[BookingTableSlotCreate]): столики и слоты; обязательное.
+        pre_ordered_dishes (list[BookingDishCreate] | None): предзаказ блюд; необязательное.
+    """
+
+    booking_date: date = Field(description='Дата бронирования')
+    guest_number: PositiveInt = Field(description='Количество гостей')
+    note: str | None = Field(
         None,
         max_length=ct.MAX_DESCRIPTION_LEN,
         description='Примечание к бронированию',
     )
+    tables_slots: list[BookingTableSlotCreate] = Field(min_length=ct.MIN_TABLE_SLOT_COUNT)
+    pre_ordered_dishes: list[BookingDishCreate] | None = Field(
+        default_factory=list,
+        description='Список блюд, предварительно заказанных клиентом',
+    )
+
+
+class BookingDateValidationMixin:
+    """Миксин с валидацией даты бронирования."""
 
     @field_validator('booking_date', check_fields=False)
     @classmethod
-    def validate_booking_date(cls, v: Optional[date]) -> Optional[date]:
+    def validate_booking_date(cls, booking_date: date | None) -> date | None:
         """Валидация даты бронирования (не может быть в прошлом)."""
-        if v and v < date.today():
+        if booking_date and booking_date < date.today():
             raise ValueError('Дата бронирования не может быть в прошлом')
-        return v
+        return booking_date
 
 
-class BookingCreate(_BookingBase, BaseCreate):
-    """Схема для создания нового бронирования."""
+class BookingCreate(BookingDateValidationMixin, BookingBaseMixin, BaseCreate):
+    """Схема для создания нового бронирования.
+
+    Поля (включая унаследованные):
+        booking_date (date): дата бронирования; обязательное.
+        guest_number (PositiveInt): количество гостей; обязательное.
+        note (str | None): примечание; необязательное.
+        tables_slots (list[BookingTableSlotCreate]): столики и слоты; обязательное.
+        pre_ordered_dishes (list[BookingDishCreate] | None): предзаказ блюд; необязательное.
+        cafe_id (UUID): идентификатор кафе; обязательное.
+    """
 
     cafe_id: uuid.UUID
-    tables_slots: list[BookingTableSlot] = Field(min_length=1)
-    guest_number: PositiveInt
-    booking_date: date
 
 
-class BookingUpdate(_BookingBase, BaseCreate):
-    """Схема для обновления существующего бронирования."""
+class BookingUpdate(BookingDateValidationMixin, BookingBaseMixin, BaseUpdate):
+    """Схема для обновления существующего бронирования.
 
-    tables_slots: Optional[list[BookingTableSlot]] = Field(None)
-    status: Optional[BookingStatus] = Field(
+    Поля (включая унаследованные):
+        booking_date (date | None): дата бронирования; необязательное; явный null запрещён.
+        guest_number (PositiveInt | None): количество гостей; необязательное; явный null запрещён.
+        note (str | None): примечание; необязательное.
+        tables_slots (list[BookingTableSlotShortInfo] | None): столики и слоты; необязательное;
+        явный null запрещён.
+        pre_ordered_dishes (list[BookingDishCreate] | None): предзаказ блюд; необязательное.
+        status (BookingStatus | None): статус бронирования; необязательное; явный null запрещён.
+        is_active (bool | None): признак активности; необязательное; явный null запрещён.
+    """
+
+    booking_date: date | None = Field(None, description='Дата бронирования')
+    guest_number: PositiveInt | None = Field(None, description='Количество гостей')
+    tables_slots: list[BookingTableSlotShortInfo] | None = None
+    status: BookingStatus | None = Field(
         None,
         description='Статус бронирования',
     )
-    is_active: Optional[bool] = Field(None)
 
-    @model_validator(mode='before')
-    @classmethod
-    def reject_null(cls, values: Any) -> Any:
-        """Сообщит об ошибке, если в полях запроса передано значение Null."""
-        for field in cls.model_fields:
-            if field in values and values[field] is None:
-                raise ValueError(f'Поле "{field}" не может быть пустым.')
-        return values
+    _not_null_fields: set[str] = {'booking_date', 'guest_number', 'tables_slots', 'status', 'is_active'}
 
 
-class BookingInfo(_BookingBase, BaseInfo):
-    """Полная информация о бронировании для ответа API."""
+class BookingInfo(BookingBaseMixin, BaseInfo):
+    """Полная информация о бронировании для ответа API.
+
+    Поля (включая унаследованные):
+        booking_date (date): дата бронирования.
+        guest_number (PositiveInt): количество гостей.
+        note (str | None): примечание.
+        id (UUID): идентификатор бронирования.
+        is_active (bool | None): признак активности.
+        created_at (datetime): дата создания.
+        updated_at (datetime): дата обновления.
+        user (UserShortInfo): пользователь.
+        cafe (CafeShortInfo): кафе.
+        tables_slots (list[BookingTableSlotShortInfo]): столики и слоты.
+        preordered_dishes (list[BookingDishInfo]): предзаказ блюд.
+        status (BookingStatus): статус бронирования.
+    """
 
     user: UserShortInfo
     cafe: CafeShortInfo

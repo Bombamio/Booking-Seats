@@ -1,86 +1,154 @@
+"""Базовые схемы для всех сущностей проекта.
+
+Архитектура наследования разделена на входные и выходные ветки:
+
+1. **Входные схемы** (Create, Update)
+   - `BaseCreate` / `BaseUpdate` — базовые схемы без поля `description`.
+   - `BaseDescriptionCreate` / `BaseDescriptionUpdate` — наследники с миксином `DescriptionMixin`.
+   - `model_config.extra = 'forbid'` и валидация пустых строк — в `BaseCreate`.
+   - В `BaseUpdate` — механизм `_not_null_fields`: запрещает передавать явный `null`
+     для полей, которые в БД являются NOT NULL. Имена полей перечисляются
+     в атрибуте `_not_null_fields` класса-наследника.
+   - Поле `is_active` со значением по умолчанию `None` добавляется через `IsActiveMixin`
+     в `BaseUpdate` и выходных схемах.
+
+2. **Выходные схемы** (Info, ShortInfo)
+   - `BaseShortInfo` / `BaseInfo` — базовые схемы без поля `description`.
+   - `BaseDescriptionShortInfo` / `BaseDescriptionInfo` — наследники с `DescriptionMixin`.
+   - `model_config.from_attributes = True` — в `FromAttributesMixin`, примешивается
+     к выходным схемам.
+   - Не содержат валидаторов входящих запросов.
+
+Вспомогательные миксины:
+   - `DescriptionMixin` — поле `description`, примешивается через `BaseDescription*`.
+   - `FromAttributesMixin` — чтение из ORM-моделей, для выходных схем.
+   - `IsActiveMixin` — флаг активности, используется в `BaseUpdate` и выходных схемах.
+   - `PhotoIdMixin` — идентификатор фото, примешивается в схемы сущностей по необходимости.
+
+Как создавать схемы для новой сущности:
+   1. Создать миксин `EntityMixin` с полями сущности (поля — опциональны).
+   2. Создать `EntityCreate(EntityMixin, BaseCreate)` или `EntityCreate(EntityMixin, BaseDescriptionCreate)`,
+      если нужно поле `description`; переопределить обязательные поля.
+   3. Создать `EntityUpdate(EntityMixin, BaseUpdate)` или `EntityUpdate(EntityMixin, BaseDescriptionUpdate)`.
+   4. Создать `EntityInfo(EntityMixin, BaseInfo)` / `EntityShortInfo(EntityMixin, BaseShortInfo)`
+      или их `BaseDescription*` варианты.
+   5. При необходимости добавить другие миксины (например, `PhotoIdMixin`).
+
+Важно:
+   - Не добавлять валидаторы входящих запросов в выходные схемы.
+   - Не допускать `null` в `_not_null_fields` для обязательных полей.
+   - Для некоторых сущностей (например, User) эта схема наследования не подходит —
+     схемы наследуют от `BaseModel` или выборочно от базовых классов.
+
+Пример:
+   - `src/schemas/booking.py`
+   - `src/schemas/table.py`
+"""
+
 import uuid
 from datetime import datetime
-from typing import Optional
+from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from src.core import constants as ct
 
 
-class BaseCreate(BaseModel):
-    """Базовая схема создания без общих полей модели."""
+class DescriptionMixin:
+    """Миксин с полем description."""
 
-    __abstract__ = True
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
+    description: str | None = Field(None, max_length=ct.MAX_DESCRIPTION_LEN)
 
 
-class BaseShortInfo(BaseModel):
-    """Базовая краткая схема без поля description."""
-
-    id: Optional[uuid.UUID] = None
+class FromAttributesMixin:
+    """Миксин для чтения схем из ORM-моделей."""
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class BaseInfo(BaseShortInfo):
-    """Базовая полная схема без поля description."""
+class IsActiveMixin:
+    """Добавляет признак активности (доступности) объекта в схему."""
 
-    is_active: Optional[bool] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    is_active: bool | None = Field(None, description='Признак активности (доступности) объекта')
 
 
-# Не подходит для User, Action и Booking.
-class BaseProjectCreate(BaseModel):
-    """Базовая абстрактная схема для создания новой модели.
+class PhotoIdMixin:
+    """Миксин для добавления photo_id в схему."""
 
-    * `description` - string.
-    """
+    photo_id: uuid.UUID | None = None
+
+
+class BaseCreate(BaseModel):
+    """Базовая схема для создания объекта."""
 
     __abstract__ = True
 
-    description: Optional[str] = Field(
-        None,
-        max_length=ct.MAX_DESCRIPTION_LEN,
-        min_length=ct.MIN_DESCRIPTION_LEN,
-    )
+    model_config = ConfigDict(extra='forbid')
 
-    model_config = ConfigDict(
-        extra='forbid',
-    )
+    @model_validator(mode='before')
+    @classmethod
+    def reject_empty_strings(cls, values: Any) -> Any:
+        """Проверит, что значения не являются пустыми строками."""
+        for field_name in cls.model_fields:
+            if field_name in values and isinstance(values[field_name], str) and values[field_name] == '':
+                raise ValueError(f'Поле "{field_name}" не может быть пустой строкой.')
+        return values
 
 
-# Не подходит для User и BookingTableSlot.
-class BaseProjectShortInfo(BaseProjectCreate):
-    """Базовая абстрактная схема с короткой сводки информации.
+class BaseDescriptionCreate(DescriptionMixin, BaseCreate):
+    """Базовая схема для создания объекта с полем description."""
 
-    * `id` - uuid;
-    * `description` - string.
-    """
+    __abstract__ = True
+
+
+class BaseUpdate(IsActiveMixin, BaseCreate):
+    """Базовая схема для обновления объекта."""
+
+    __abstract__ = True
+
+    _not_null_fields: set[str] = set()
+
+    @model_validator(mode='before')
+    @classmethod
+    def reject_null_for_not_null_fields(cls, values: Any) -> Any:
+        """Проверит, что значения не являются null для полей, которые заявлены в модели как обязательные."""
+        not_null_fields = getattr(cls, '_not_null_fields', set())
+        for field_name in not_null_fields:
+            if field_name in values and values[field_name] is None:
+                raise ValueError(f'Поле "{field_name}" не может быть null.')
+        return values
+
+
+class BaseDescriptionUpdate(DescriptionMixin, BaseUpdate):
+    """Базовая схема для обновления объекта с полем description."""
+
+    __abstract__ = True
+
+
+class BaseShortInfo(IsActiveMixin, FromAttributesMixin, BaseModel):
+    """Базовая схема с краткой информацией об объекте."""
 
     __abstract__ = True
 
     id: uuid.UUID
 
-    model_config = ConfigDict(from_attributes=True)
 
-
-# Не подходит для User и Booking.
-class BaseProjectInfo(BaseProjectShortInfo):
-    """Базовая абстрактная схема с полной информацией о модели.
-
-    * `id` - uuid;
-    * `description` - string;
-    * `is_active` - boolean;
-    * `created_at` - date-time;
-    * `updated_at` - date-time.
-    """
+class BaseDescriptionShortInfo(DescriptionMixin, BaseShortInfo):
+    """Базовая схема с краткой информацией об объекте и полем description."""
 
     __abstract__ = True
 
-    is_active: bool
+
+class BaseInfo(BaseShortInfo):
+    """Базовая абстрактная схема с полной информацией о объекте."""
+
+    __abstract__ = True
+
     created_at: datetime
     updated_at: datetime
+
+
+class BaseDescriptionInfo(DescriptionMixin, BaseInfo):
+    """Базовая схема с полной информацией об объекте и полем description."""
+
+    __abstract__ = True

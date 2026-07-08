@@ -11,7 +11,7 @@ from src.models import User
 from src.schemas import ActionCreate, ActionInfo, ActionUpdate
 from src.services import ActionService
 
-router = APIRouter(prefix='/actions', tags=['Акции'])
+router = APIRouter()
 
 action_service = ActionService()
 

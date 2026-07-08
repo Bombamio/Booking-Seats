@@ -7,7 +7,7 @@ from src.core import constants as cs
 from src.crud import CRUDAction, action_crud, cafe_crud
 from src.models import Action, Cafe, User, UserRole
 from src.schemas import ActionCreate, ActionUpdate
-from src.services import BaseService
+from src.services.base import BaseService
 
 
 class ActionService(CRUDAction, BaseService):

@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.crud import CRUDDish, cafe_crud, dish_crud
 from src.models import Cafe, Dish, User, UserRole
 from src.schemas import DishCreate, DishUpdate
-from src.services import BaseService
+from src.services.base import BaseService
 
 
 class DishService(CRUDDish, BaseService):

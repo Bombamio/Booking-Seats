@@ -9,7 +9,7 @@ from src.core.db import get_session
 from src.crud import CRUDSlot, cafe_crud, slot_crud
 from src.models import Cafe, Slot, User, UserRole
 from src.schemas.slot import TimeSlotCreate, TimeSlotUpdate
-from src.services import BaseService
+from src.services.base import BaseService
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 

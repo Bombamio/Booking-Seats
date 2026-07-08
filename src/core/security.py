@@ -5,7 +5,7 @@ import jwt
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt.exceptions import InvalidTokenError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,7 +22,7 @@ ph = PasswordHasher(
     salt_len=ct.HASH_SALT_LEN,
 )
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl='auth/login')
+security = HTTPBearer()
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
@@ -63,7 +63,7 @@ def create_access_token(
 
 
 async def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)],
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
     session: SessionDep,
 ) -> User:
     """Получение текущего пользователя."""
@@ -72,6 +72,7 @@ async def get_current_user(
         detail='Неверные имя пользователя или пароль',
         headers={'WWW-Authenticate': 'Bearer'},
     )
+    token = credentials.credentials
     try:
         payload = jwt.decode(token, ct.SECRET_KEY, algorithms=[ct.ALGORITHM])
         user_id = payload.get('sub')

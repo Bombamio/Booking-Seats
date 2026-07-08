@@ -1,12 +1,12 @@
 import uuid
-from typing import Any, Optional
+from typing import Optional, Sequence
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.crud import CRUDDish, cafe_crud, dish_crud
 from src.models import Cafe, Dish, User, UserRole
 from src.schemas import DishCreate, DishUpdate
-from src.services.base import BaseService
+from src.services import BaseService
 
 
 class DishService(CRUDDish, BaseService):
@@ -19,41 +19,15 @@ class DishService(CRUDDish, BaseService):
         exclude_id: uuid.UUID | None = None,
     ) -> None:
         """Проверит уникальность названия блюда."""
-        if await self.duplicate_exists(
-            name=name,
+        filters = [Dish.name == name]
+        if exclude_id is not None:
+            filters.append(Dish.id != exclude_id)
+
+        if await self.exists(
             session=session,
-            exclude_id=exclude_id,
+            *filters,
         ):
-            self.log_warning(
-                f'Блюдо с назанием {name} - уже существует.',
-            )
-            self.raise_unprocessable_entity()
-
-    async def _ensure_manajer_cafe_list_access(
-        self,
-        user: User,
-        cafes_id: list[uuid.UUID],
-        check_len: bool = False,
-    ) -> None:
-        """Проверяет что менеджер имеет доступ к кафе из списка."""
-        if user.role != UserRole.MANAGER:
-            return
-        if (check_len and len(cafes_id) != 1) or (user.cafe_id not in cafes_id):
-            self.log_warning(
-                f'Пользователь {user.id} попытался получить доступ к кафе {cafes_id} без разрешения',
-            )
-            self.raise_forbidden()
-
-    async def _ensure_cafes_len(
-        self,
-        cafes: Any,
-        cafes_id: list[uuid.UUID],
-    ) -> None:
-        """Проверит, что все переданные ID кафе существуют."""
-        if len(cafes) != len(cafes_id):
-            self.log_warning(
-                f'Задано {len(cafes_id)} кафе -вернулось {len(cafes)}.',
-            )
+            self.log_warning(f'Блюдо с назанием {name} - уже существует.')
             self.raise_unprocessable_entity()
 
     async def get_multi_dishes(
@@ -62,7 +36,7 @@ class DishService(CRUDDish, BaseService):
         user: User,
         session: AsyncSession,
         show_active: Optional[bool],
-    ) -> list[Optional[Dish]]:
+    ) -> Sequence[Dish]:
         """Вернет список блюд с учётом роли пользователя.
 
         По умолчанию показывает:
@@ -75,7 +49,7 @@ class DishService(CRUDDish, BaseService):
         filters = []
 
         if cafe_id is not None:
-            filters.append(self.model.cafes.any(Cafe.id == cafe_id))
+            filters.append(Dish.cafes.any(Cafe.id == cafe_id))
 
         if user.role == UserRole.USER or show_active or user.role == UserRole.MANAGER and show_active is None:
             filters.append(Dish.is_active.is_(True))
@@ -88,10 +62,8 @@ class DishService(CRUDDish, BaseService):
         elif user.role != UserRole.USER and show_active is not None:
             filters.append(Dish.is_active.is_(show_active))
 
-        dishes = list(await self.get_multi(session, *filters))
-        self.log_info(
-            f'Пользователь {user.id} получил список из {len(dishes)} блюд.',
-        )
+        dishes = await self.get_multi(session, *filters)
+        self.log_info(f'Пользователь {user.id} получил список из {len(dishes)} блюд.')
         return dishes
 
     async def create_dish(
@@ -109,11 +81,11 @@ class DishService(CRUDDish, BaseService):
             Cafe.id.in_(dish_create.cafes_id),
         )
 
-        await self._ensure_cafes_len(
+        await self.ensure_cafes_len(
             cafes=cafes,
             cafes_id=dish_create.cafes_id,
         )
-        await self._ensure_manajer_cafe_list_access(
+        await self.ensure_manajer_cafe_list_access(
             user=user,
             cafes_id=dish_create.cafes_id,
             check_len=True,
@@ -129,9 +101,7 @@ class DishService(CRUDDish, BaseService):
             cafes=cafes,
         )
 
-        self.log_info(
-            f'Пользователь {user.id} создал блюдо {dish_create.name}',
-        )
+        self.log_info(f'Пользователь {user.id} создал блюдо {dish_create.name}.')
 
         return result
 
@@ -156,14 +126,12 @@ class DishService(CRUDDish, BaseService):
             *filters,
         )
 
-        await self._ensure_manajer_cafe_list_access(
+        await self.ensure_manajer_cafe_list_access(
             user=user,
             cafes_id=[cafe.id for cafe in dish.cafes],
         )
 
-        self.log_info(
-            f'Пользователь {user.id} получил информацию о блюде {dish_id}',
-        )
+        self.log_info(f'Пользователь {user.id} получил информацию о блюде {dish_id}.')
 
         return dish
 
@@ -192,13 +160,13 @@ class DishService(CRUDDish, BaseService):
                 Cafe.id.in_(dish_update.cafes_id),
             )
 
-            await self._ensure_cafes_len(
+            await self.ensure_cafes_len(
                 cafes=cafes,
                 cafes_id=dish_update.cafes_id,
             )
 
             if user.role.MANAGER:
-                await self._ensure_manajer_cafe_list_access(
+                await self.ensure_manajer_cafe_list_access(
                     user=user,
                     cafes_id=dish_update.cafes_id,
                     check_len=True,
@@ -220,9 +188,7 @@ class DishService(CRUDDish, BaseService):
             **relations,
         )
 
-        self.log_info(
-            f'Пользователь {user.id} изменил информацию о блюде {dish_id}',
-        )
+        self.log_info(f'Пользователь {user.id} изменил информацию о блюде {dish_id}.')
 
         return result
 

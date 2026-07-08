@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 
 from sqlalchemy import or_
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,8 +16,8 @@ class CRUDUser(CRUDBase):
     async def duplicate_login(
         self,
         session: AsyncSession,
-        login: str,
-    ) -> bool:
+        login: Optional[str],
+    ) -> Optional[bool]:
         """Проверка, есть ли такой логин в БД."""
         filters = [or_(User.email == login, User.phone == login)]
         return await self.exists(session, *filters)

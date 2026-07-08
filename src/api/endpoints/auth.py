@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,7 +23,7 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 async def login(
     auth_data: schema.AuthData,
     session: SessionDep,
-) -> schema.AuthToken:
+) -> Optional[schema.AuthToken]:
     """Получение токена авторизации."""
     return await AuthService().authenticate_user(
         session,

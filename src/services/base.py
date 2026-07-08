@@ -133,7 +133,11 @@ class BaseService:
 
         В противном случае сообщит об ошибке 404.
         """
-        # нужно написать если подход будет использован
+        if data.cafe_id != cafe_id:
+            self.log_warning(
+                f'Объект {data} - не принадлежит кафе {cafe_id}.',
+            )
+            self.raise_not_found()
 
     async def ensure_manager_cafe_access(
         self,
@@ -151,6 +155,31 @@ class BaseService:
                 f'Пользователь {user.id} попытался получить доступ к кафе {cafe_id} без разрешения',
             )
             self.raise_forbidden()
+
+    async def ensure_manajer_cafe_list_access(
+        self,
+        user: User,
+        cafes_id: list[uuid.UUID],
+        check_len: bool = False,
+    ) -> None:
+        """Проверяет что менеджер имеет доступ к кафе из списка."""
+        if user.role != UserRole.MANAGER:
+            return
+        if (check_len and len(cafes_id) != 1) or (user.cafe_id not in cafes_id):
+            self.log_warning(
+                f'Пользователь {user.id} попытался получить доступ к кафе {cafes_id} без разрешения.',
+            )
+            self.raise_forbidden()
+
+    async def ensure_cafes_len(
+        self,
+        cafes: Any,
+        cafes_id: list[uuid.UUID],
+    ) -> None:
+        """Проверит, что все переданные ID кафе существуют."""
+        if len(cafes) != len(cafes_id):
+            self.log_warning(f'Задано {len(cafes_id)} кафе, вернулось - {len(cafes)}.')
+            self.raise_unprocessable_entity()
 
     async def soft_delete(
         self,

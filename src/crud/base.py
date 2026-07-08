@@ -1,4 +1,3 @@
-import uuid
 from typing import Any, Optional
 
 from sqlalchemy import exists, select
@@ -219,25 +218,6 @@ class CRUDBase:
         self._check_filters(*filters)
         result = select(
             exists().where(*filters),
-        )
-
-        return await session.scalar(result)
-
-    async def duplicate_exists(
-        self,
-        name: str,
-        exclude_id: Optional[uuid.UUID],
-        session: AsyncSession,
-    ) -> Optional[bool]:
-        """Проверяет, существует ли объект с таким именем."""
-        filters = [self.model.name == name]
-        if exclude_id is not None:
-            # Текущее объект не считается дубликатом.
-            filters.append(self.model.id != exclude_id)
-        result = select(
-            exists().where(
-                *filters,
-            ),
         )
 
         return await session.scalar(result)

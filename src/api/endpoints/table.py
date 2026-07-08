@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.api import error_responses as er
 from src.api import validators as vt
 from src.core.db import get_session
-from src.models import Table, User
+from src.models import User
 from src.schemas import table as schema
 from src.services import table_service
 
@@ -33,7 +33,7 @@ async def get_tables_list(
     user: Annotated[User, Depends(vt.current_user_is_active)],
     session: SessionDep,
     show_active: bool = True,
-) -> list[Table]:
+) -> list[schema.TableInfo]:
     """Получение списка столиков в кафе."""
     return await table_service.get_multi_by_cafe(
         cafe_id=cafe_id,
@@ -57,7 +57,7 @@ async def create_table(
     table_create: schema.TableCreate,
     user: Annotated[User, Depends(vt.current_admin_or_manager)],
     session: SessionDep,
-) -> Table:
+) -> schema.TableInfo:
     """Создание столика."""
     return await table_service.create_with_cafe(
         cafe_id=cafe_id,
@@ -84,7 +84,7 @@ async def get_table(
     table_id: uuid.UUID,
     user: Annotated[User, Depends(vt.current_user_is_active)],
     session: SessionDep,
-) -> Table:
+) -> schema.TableInfo:
     """Получение столика по ID."""
     return await table_service.get_by_cafe_and_id(
         cafe_id=cafe_id,
@@ -108,7 +108,7 @@ async def update_table(
     table_update: schema.TableUpdate,
     user: Annotated[User, Depends(vt.current_admin_or_manager)],
     session: SessionDep,
-) -> Table:
+) -> schema.TableInfo:
     """Обновление информации о столике в кафе по его ID."""
     return await table_service.update_table(
         cafe_id=cafe_id,

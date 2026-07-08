@@ -1,5 +1,5 @@
 import uuid
-from typing import Annotated, Optional
+from typing import Annotated, Optional, Sequence
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,13 +7,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.api import error_responses as er
 from src.api import validators as vt
 from src.core.db import get_session
-from src.models import User
+from src.models import Action, User
 from src.schemas import ActionCreate, ActionInfo, ActionUpdate
-from src.services import ActionService
+from src.services import action_service
 
 router = APIRouter()
-
-action_service = ActionService()
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
@@ -28,7 +26,7 @@ async def get_actions(
     show_active: Optional[bool] = Query(None),
     cafe_id: Optional[uuid.UUID] = Query(None),
     user: User = Depends(vt.current_user_is_active),
-) -> list[ActionInfo]:
+) -> Sequence[Action]:
     """Вернет список акций с фильтрацией."""
     return await action_service.get_actions(
         session=session,
@@ -48,10 +46,11 @@ async def create_action(
     action_in: ActionCreate,
     session: SessionDep,
     user: User = Depends(vt.current_admin_or_manager),
-) -> ActionInfo:
+) -> Action:
     """Создаст новую акцию."""
     return await action_service.create_action(
         action_create=action_in,
+        user=user,
         session=session,
     )
 
@@ -65,9 +64,9 @@ async def get_action(
     action_id: uuid.UUID,
     session: SessionDep,
     user: User = Depends(vt.current_user_is_active),
-) -> ActionInfo:
+) -> Action:
     """Вернет акцию по идентификатору."""
-    return await action_service.get_action(
+    return await action_service.get_action_by_id(
         action_id=action_id,
         session=session,
         user=user,
@@ -84,10 +83,11 @@ async def update_action(
     action_in: ActionUpdate,
     session: SessionDep,
     user: User = Depends(vt.current_admin_or_manager),
-) -> ActionInfo:
+) -> Action:
     """Обновит данные существующей акции."""
     return await action_service.update_action(
         action_id=action_id,
         action_update=action_in,
+        user=user,
         session=session,
     )

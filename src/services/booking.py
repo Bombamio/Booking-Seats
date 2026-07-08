@@ -1,5 +1,5 @@
 import uuid
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -37,8 +37,14 @@ class BookingService(CRUDBooking, BaseService):
             cafe=schema.CafeShortInfo.model_validate(booking.cafe, from_attributes=True),
             tables_slots=[
                 schema.BookingTableSlotShortInfo(
-                    table=schema.TableShortInfo.model_validate(item.table, from_attributes=True),
-                    slot=schema.TimeSlotShortInfo.model_validate(item.slot, from_attributes=True),
+                    table=schema.TableShortInfo.model_validate(
+                        item.table,
+                        from_attributes=True,
+                    ),
+                    slot=schema.TimeSlotShortInfo.model_validate(
+                        item.slot,
+                        from_attributes=True,
+                    ),
                 )
                 for item in booking.booking_items
             ],
@@ -60,7 +66,7 @@ class BookingService(CRUDBooking, BaseService):
 
     def _pairs_from_tables_slots(
         self,
-        tables_slots: list[schema.BookingTableSlot],
+        tables_slots: list[schema.BookingTableSlotCreate],
     ) -> list[tuple[uuid.UUID, uuid.UUID]]:
         """Вернет уникальные пары стол-слот из входной схемы."""
         pairs = [(item.table_id, item.slot_id) for item in tables_slots]
@@ -140,7 +146,7 @@ class BookingService(CRUDBooking, BaseService):
     async def _validate_tables_slots(
         self,
         cafe_id: uuid.UUID,
-        tables_slots: list[schema.BookingTableSlot],
+        tables_slots: list[schema.BookingTableSlotCreate],
         booking_date: date,
         session: AsyncSession,
         exclude_booking_id: uuid.UUID | None = None,
@@ -296,7 +302,7 @@ class BookingService(CRUDBooking, BaseService):
         )
         booking_dishes = await self._build_booking_dishes(
             cafe_id=booking_create.cafe_id,
-            preordered_dishes=booking_create.preordered_dishes or [],
+            preordered_dishes=booking_create.pre_ordered_dishes or [],
             session=session,
         )
 
@@ -333,8 +339,9 @@ class BookingService(CRUDBooking, BaseService):
                 user_phone=created_booking.user.phone,
             )
         # ставим задачи на отправку напоминаний о брони клиентам
-        start_time = created_booking.booking_items[0].slot.start_time
-        time_reminder = start_time - timedelta(minutes=settings.reminder_minutes_before)
+        slot_start = created_booking.booking_items[0].slot.start_time
+        booking_start = datetime.combine(created_booking.booking_date, slot_start)
+        time_reminder = booking_start - timedelta(minutes=settings.reminder_minutes_before)
         send_reminder.apply_async(
             kwargs={
                 'cafe_name': created_booking.cafe.name,
@@ -376,10 +383,10 @@ class BookingService(CRUDBooking, BaseService):
         update_data = booking_update.model_dump(exclude_unset=True)
         tables_slots = booking_update.tables_slots if 'tables_slots' in updated_fields else None
         preordered_dishes = (
-            booking_update.preordered_dishes if 'preordered_dishes' in updated_fields else None
+            booking_update.pre_ordered_dishes if 'pre_ordered_dishes' in updated_fields else None
         )
         update_data.pop('tables_slots', None)
-        update_data.pop('preordered_dishes', None)
+        update_data.pop('pre_ordered_dishes', None)
         booking_date_updated = 'booking_date' in update_data
         guest_number = update_data.get('guest_number', booking.guest_number)
         deactivate = update_data.get('is_active') is False

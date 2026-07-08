@@ -44,6 +44,7 @@ class Dish(Base):
     cafes: Mapped[list['Cafe']] = relationship(
         secondary=cafe_dishes,
         back_populates='dishes',
+        lazy='raise',
     )
     bookings: Mapped[list['Booking']] = relationship(
         secondary='booking_dishes',

@@ -7,17 +7,12 @@ from src.schemas.auth import (
     AuthData,
     AuthToken,
 )
-from src.schemas.base import (
-    BaseProjectCreate,
-    BaseProjectInfo,
-    BaseProjectShortInfo,
-)
 from src.schemas.booking import (
     BookingCreate,
     BookingDishCreate,
     BookingDishInfo,
     BookingInfo,
-    BookingTableSlot,
+    BookingTableSlotCreate,
     BookingTableSlotShortInfo,
     BookingUpdate,
 )
@@ -60,14 +55,11 @@ __all__ = [
     'ActionUpdate',
     'AuthData',
     'AuthToken',
-    'BaseProjectCreate',
-    'BaseProjectInfo',
-    'BaseProjectShortInfo',
     'BookingCreate',
     'BookingDishCreate',
     'BookingDishInfo',
     'BookingInfo',
-    'BookingTableSlot',
+    'BookingTableSlotCreate',
     'BookingTableSlotShortInfo',
     'BookingUpdate',
     'CafeCreate',

@@ -35,6 +35,7 @@ class Action(Base):
         'Cafe',
         secondary=cafe_actions,
         back_populates='actions',
+        lazy='raise',
     )
 
     def __repr__(self) -> str:

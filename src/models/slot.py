@@ -1,8 +1,8 @@
 import uuid
-from datetime import datetime
+from datetime import time
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey
+from sqlalchemy import ForeignKey, Time
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.schema import CheckConstraint
 
@@ -23,15 +23,11 @@ class Slot(Base):
     )
 
     cafe_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey('cafes.id', ondelete='CASCADE'),
+        ForeignKey('cafes.id', ondelete='RESTRICT'),
         index=True,
     )
-    start_time: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-    )
-    end_time: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-    )
+    start_time: Mapped[time] = mapped_column(Time)
+    end_time: Mapped[time] = mapped_column(Time)
 
     cafe: Mapped['Cafe'] = relationship(back_populates='slots')
     booking_items: Mapped[list['BookingItem']] = relationship(

@@ -56,12 +56,10 @@ class Booking(Base):
         lazy='selectin',
     )
     booking_items: Mapped[list['BookingItem']] = relationship(
-        back_populates='booking',
         cascade='all, delete-orphan',
         lazy='raise',
     )
     booking_dishes: Mapped[list['BookingDish']] = relationship(
-        back_populates='booking',
         cascade='all, delete-orphan',
         lazy='raise',
     )

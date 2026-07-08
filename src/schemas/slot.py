@@ -62,7 +62,7 @@ class TimeSlotCreate(TimeSlotValidationMixin, TimeSlotBaseMixin, BaseDescription
     """
 
 
-class TimeSlotUpdate(TimeSlotValidationMixin, TimeSlotBaseMixin, BaseDescriptionUpdate):
+class TimeSlotUpdate(TimeSlotValidationMixin, BaseDescriptionUpdate):
     """Схема для обновления существующего временного слота.
 
     Поля (включая унаследованные):

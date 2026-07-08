@@ -47,7 +47,7 @@ class TableCreate(TableBaseMixin, BaseDescriptionCreate):
     """
 
 
-class TableUpdate(TableBaseMixin, BaseDescriptionUpdate):
+class TableUpdate(BaseDescriptionUpdate):
     """Схема данных для обновления столика в кафе.
 
     Поля (включая унаследованные):

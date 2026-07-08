@@ -54,7 +54,7 @@ class DishCreate(DishBaseMixin, PhotoIdMixin, BaseDescriptionCreate):
     cafes_id: list[uuid.UUID]
 
 
-class DishUpdate(DishBaseMixin, PhotoIdMixin, BaseDescriptionUpdate):
+class DishUpdate(PhotoIdMixin, BaseDescriptionUpdate):
     """Схема для обновления существующего блюда.
 
     Поля (включая унаследованные):

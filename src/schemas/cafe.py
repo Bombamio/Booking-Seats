@@ -75,7 +75,7 @@ class CafeCreate(CafeBaseMixin, PhotoIdMixin, BaseDescriptionCreate):
     managers_id: list[uuid.UUID] = Field(default_factory=list)
 
 
-class CafeUpdate(CafeBaseMixin, PhotoIdMixin, BaseDescriptionUpdate):
+class CafeUpdate(PhotoIdMixin, BaseDescriptionUpdate):
     """Схема для обновления информации о кафе.
 
     Поля (включая унаследованные):

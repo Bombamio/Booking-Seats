@@ -8,7 +8,7 @@ from src.core import constants as ct
 from src.core.base_model import Base
 
 if TYPE_CHECKING:
-    from src.models import Booking, Dish
+    from src.models import Dish
 
 
 class BookingDish(Base):
@@ -37,9 +37,6 @@ class BookingDish(Base):
     )
     quantity: Mapped[int] = mapped_column(default=ct.MIN_DISH_QUANTITY)
 
-    booking: Mapped['Booking'] = relationship(
-        back_populates='booking_dishes',
-    )
     dish: Mapped['Dish'] = relationship(
         back_populates='booking_dishes',
         lazy='selectin',

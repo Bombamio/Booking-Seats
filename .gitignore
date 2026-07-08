@@ -209,7 +209,7 @@ __marimo__/
 # docs
 openapi.yml
 
-# Local dev / test scripts (not for version control)
+# Local utility scripts (not tracked)
 scripts/
 
 # macOS file

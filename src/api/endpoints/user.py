@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api import error_responses as er
@@ -53,6 +53,7 @@ async def get_user(
 @router.post(
     '/',
     response_model=schema.UserInfo,
+    status_code=status.HTTP_201_CREATED,
     responses=er.ERRORS_POST_USERS,
 )
 async def create_user(

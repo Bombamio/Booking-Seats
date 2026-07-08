@@ -1,3 +1,4 @@
+from typing import Sequence
 from uuid import UUID
 
 from sqlalchemy import select
@@ -14,7 +15,7 @@ class CRUDTable(CRUDBase):
         self,
         cafe_id: UUID,
         session: AsyncSession,
-    ) -> list[Table]:
+    ) -> Sequence[Table]:
         """Вернет все столы заданного кафе."""
         tables = await session.execute(
             select(self.model).where(self.model.cafe_id == cafe_id),

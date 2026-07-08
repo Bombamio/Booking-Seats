@@ -1,6 +1,6 @@
 import uuid
 from datetime import date
-from typing import Any, Optional
+from typing import Any, Optional, Sequence
 
 from sqlalchemy import delete, exists, select, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -39,7 +39,7 @@ class CRUDBooking(CRUDBase):
         self,
         session: AsyncSession,
         *filters: Any,
-    ) -> list[Booking]:
+    ) -> Sequence[Booking]:
         """Вернет список бронирований со связями для ответа API."""
         result = await session.execute(
             select(self.model)
@@ -57,7 +57,7 @@ class CRUDBooking(CRUDBase):
         user_id: uuid.UUID,
         session: AsyncSession,
         include_inactive: bool = False,
-    ) -> list[Booking]:
+    ) -> Sequence[Booking]:
         """Получение всех бронирований пользователя."""
         filters = [self.model.user_id == user_id]
 
@@ -80,7 +80,7 @@ class CRUDBooking(CRUDBase):
         session: AsyncSession,
         booking_date: Optional[date] = None,
         include_inactive: bool = False,
-    ) -> list[Booking]:
+    ) -> Sequence[Booking]:
         """Получение всех бронирований кафе (опционально по дате)."""
         filters = [self.model.cafe_id == cafe_id]
 
@@ -108,7 +108,7 @@ class CRUDBooking(CRUDBase):
         booking_date: date,
         session: AsyncSession,
         exclude_booking_id: Optional[uuid.UUID] = None,
-    ) -> list[Booking]:
+    ) -> Sequence[Booking]:
         """Получение бронирований конкретной пары стол-слот на дату."""
         filters = [
             self.model.booking_date == booking_date,
@@ -136,7 +136,7 @@ class CRUDBooking(CRUDBase):
         session: AsyncSession,
         booking_date: Optional[date] = None,
         include_inactive: bool = False,
-    ) -> list[Booking]:
+    ) -> Sequence[Booking]:
         """Получение бронирований для менеджера (только его кафе)."""
         if user.role != UserRole.MANAGER:
             return []

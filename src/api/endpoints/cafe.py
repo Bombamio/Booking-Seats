@@ -1,5 +1,5 @@
 import uuid
-from typing import Annotated
+from typing import Annotated, Sequence
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.api import error_responses as er
 from src.api import validators as vt
 from src.core.db import get_session
-from src.models import User
+from src.models import Cafe, User
 from src.schemas import CafeCreate, CafeInfo, CafeUpdate
 from src.services import CafeService, get_cafe_service
 
@@ -27,7 +27,7 @@ async def get_cafes(
     service: CafeServiceDep,
     user: Annotated[User, Depends(vt.current_user_is_active)],
     show_active: bool = True,
-) -> list[CafeInfo]:
+) -> Sequence[Cafe]:
     """Получение списка кафе.
 
     Для администраторов и менеджеров - все кафе (с возможностью выбора),
@@ -47,7 +47,7 @@ async def get_cafes(
 async def create_cafe(
     cafe: CafeCreate,
     service: CafeServiceDep,
-) -> CafeInfo:
+) -> Cafe:
     """Создает новое кафе.
 
     Только для администраторов и менеджеров.
@@ -65,7 +65,7 @@ async def get_cafe(
     cafe_id: uuid.UUID,
     service: CafeServiceDep,
     user: Annotated[User, Depends(vt.current_user_is_active)],
-) -> CafeInfo:
+) -> Cafe:
     """Получение информации о кафе по его ID.
 
     Для администраторов и менеджеров - все кафе, для пользователей
@@ -85,7 +85,7 @@ async def update_cafe(
     cafe_id: uuid.UUID,
     cafe: CafeUpdate,
     service: CafeServiceDep,
-) -> CafeInfo:
+) -> Cafe:
     """Обновление информации о кафе по его ID.
 
     Только для администраторов и менеджеров.

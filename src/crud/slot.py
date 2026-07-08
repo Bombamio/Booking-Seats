@@ -1,70 +1,101 @@
 import uuid
 from datetime import time
-from typing import Optional
+from typing import Any, Optional, Sequence
 
-from sqlalchemy import select
+from sqlalchemy import Select, exists, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from src.crud.base import CRUDBase
-from src.models import Slot
-from src.schemas import TimeSlotCreate
+from src.models import Cafe, Slot
+from src.schemas import TimeSlotCreate, TimeSlotUpdate
 
 
 class CRUDSlot(CRUDBase):
     """CRUD класс для модели Slot."""
 
-    async def get_multi_by_cafe(
+    def _stmt_with_cafe(self) -> Select[tuple[Slot]]:
+        """Соберёт запрос с предзагрузкой кафе."""
+        return select(self.model).options(selectinload(self.model.cafe))
+
+    async def _reload_with_cafe(
         self,
-        cafe_id: uuid.UUID,
         session: AsyncSession,
-        show_active: bool = True,
-    ) -> list[Slot]:
-        """Возвращает список временных слотов конкретного кафе."""
-        query = select(self.model).where(self.model.cafe_id == cafe_id)
-        if show_active:
-            query = query.where(self.model.is_active.is_(True))
+        slot_id: uuid.UUID,
+    ) -> Slot:
+        """Перечитает временной слот из БД с предзагруженным кафе."""
+        result = await session.execute(
+            self._stmt_with_cafe().where(self.model.id == slot_id),
+        )
+        return result.scalars().one()
 
-        result = await session.execute(query)
-        return result.scalars().all()
-
-    async def get_overlapping(
+    async def exists_overlapping(
         self,
         cafe_id: uuid.UUID,
         start_time: time,
         end_time: time,
         session: AsyncSession,
         exclude_id: Optional[uuid.UUID] = None,
-    ) -> Optional[Slot]:
+    ) -> Optional[bool]:
         """Ищет временной слот этого кафе, пересекающийся по времени."""
-        query = select(self.model).where(
-            self.model.cafe_id == cafe_id,
-            self.model.start_time < end_time,
-            self.model.end_time > start_time,
+        query = select(
+            exists().where(
+                Slot.cafe.any(Cafe.id == cafe_id),
+                Slot.start_time < end_time,
+                Slot.end_time > start_time,
+            ),
         )
         if exclude_id is not None:
             query = query.where(self.model.id != exclude_id)
 
-        result = await session.execute(query)
+        return await session.scalar(query)
+
+    async def get(
+        self,
+        session: AsyncSession,
+        *filters: Any,
+    ) -> Optional[Slot]:
+        """Вернёт временной слот с предзагруженными кафе."""
+        stmt = self._stmt_with_cafe()
+        if filters:
+            stmt = stmt.where(*filters)
+            self._check_filters(*filters)
+        result = await session.execute(stmt)
         return result.scalars().first()
 
-    async def create_with_cafe(
+    async def get_multi(
         self,
-        slot_create: TimeSlotCreate,
-        cafe_id: uuid.UUID,
         session: AsyncSession,
+        *filters: Any,
+    ) -> Sequence[Slot]:
+        """Вернёт список временных слотов с предзагруженными кафе."""
+        stmt = self._stmt_with_cafe()
+        if filters:
+            stmt = stmt.where(*filters)
+            self._check_filters(*filters)
+        result = await session.execute(stmt)
+        return result.scalars().all()
+
+    async def create(
+        self,
+        create_data: TimeSlotCreate,
+        session: AsyncSession,
+        **relations: Any,
     ) -> Slot:
-        """Создаёт временной слот, привязанный к переданному кафе."""
-        slot_data = {
-            key: value for key, value in slot_create.model_dump().items() if key in self.model_fields
-        }
-        slot_entity = self.model(
-            cafe_id=cafe_id,
-            **slot_data,
-        )
-        session.add(slot_entity)
-        await session.flush()
-        await session.refresh(slot_entity)
-        return slot_entity
+        """Создаст временной слот и вернёт его с предзагруженными кафе."""
+        slot = await super().create(create_data, session, **relations)
+        return await self._reload_with_cafe(session, slot.id)
+
+    async def update(
+        self,
+        db_entity: Slot,
+        update_data: TimeSlotUpdate,
+        session: AsyncSession,
+        **relations: Any,
+    ) -> Slot:
+        """Обновит временной слот и вернёт его с предзагруженными кафе."""
+        slot = await super().update(db_entity, update_data, session, **relations)
+        return await self._reload_with_cafe(session, slot.id)
 
 
 slot_crud = CRUDSlot(Slot)

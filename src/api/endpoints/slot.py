@@ -1,11 +1,11 @@
 import uuid
-from typing import Annotated
+from typing import Annotated, Optional, Sequence
 
 from fastapi import APIRouter, Depends, status
 
 from src.api import error_responses as er
 from src.api import validators as vt
-from src.models import User
+from src.models import Slot, User
 from src.schemas import slot as schema
 from src.services.slot import SlotService, get_slot_service
 
@@ -24,10 +24,10 @@ async def get_time_slots_list(
     cafe_id: uuid.UUID,
     service: SlotServiceDep,
     user: Annotated[User, Depends(vt.current_user_is_active)],
-    show_active: bool = True,
-) -> list[schema.TimeSlotInfo]:
+    show_active: Optional[bool],
+) -> Sequence[Slot]:
     """Получение списка доступных для бронирования временных слотов в кафе."""
-    return await service.get_slots(cafe_id, show_active)
+    return await service.get_slots(cafe_id, user, show_active)
 
 
 @router.post(
@@ -42,7 +42,7 @@ async def create_time_slot(
     slot_in: schema.TimeSlotCreate,
     service: SlotServiceDep,
     user: Annotated[User, Depends(vt.current_admin_or_manager)],
-) -> schema.TimeSlotInfo:
+) -> Slot:
     """Создает новый временной слот в кафе."""
     return await service.create_slot(cafe_id, slot_in, user)
 
@@ -58,7 +58,7 @@ async def get_time_slot_by_id(
     slot_id: uuid.UUID,
     service: SlotServiceDep,
     user: Annotated[User, Depends(vt.current_user_is_active)],
-) -> schema.TimeSlotInfo:
+) -> Slot:
     """Получение информации о временном слоте в кафе по его ID."""
     return await service.get_slot(cafe_id, slot_id, user)
 
@@ -75,6 +75,6 @@ async def update_time_slot(
     slot_in: schema.TimeSlotUpdate,
     service: SlotServiceDep,
     user: Annotated[User, Depends(vt.current_admin_or_manager)],
-) -> schema.TimeSlotInfo:
+) -> Slot:
     """Обновление информации о временном слоте в кафе по его ID."""
     return await service.update_slot(cafe_id, slot_id, slot_in, user)

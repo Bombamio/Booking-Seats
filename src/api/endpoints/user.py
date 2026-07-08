@@ -1,4 +1,5 @@
-from typing import Annotated
+from typing import Annotated, Sequence
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,7 +26,7 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 async def get_users_list(
     session: SessionDep,
     current_user: User = Depends(get_current_user),
-) -> list[schema.UserInfo]:
+) -> Sequence[User]:
     """Получение списка пользователей.
 
     Только для администраторов или менеджеров.
@@ -40,9 +41,9 @@ async def get_users_list(
 )
 async def get_user(
     session: SessionDep,
-    user_id: str,
+    user_id: UUID,
     current_user: User = Depends(get_current_user),
-) -> schema.UserInfo:
+) -> User:
     """Получение информации о пользователе по его ID.
 
     Только для администраторов или менеджеров.
@@ -59,7 +60,7 @@ async def get_user(
 async def create_user(
     user_in: schema.UserCreate,
     session: SessionDep,
-) -> schema.UserInfo:
+) -> User:
     """Создание нового пользователя."""
     return await user_service.create_user(
         session=session,
@@ -76,7 +77,7 @@ async def update_user(
     session: SessionDep,
     user_id: str,
     current_user: User = Depends(get_current_user),
-) -> schema.UserInfo:
+) -> User:
     """Обновление информации о пользователе по его ID.
 
     Только для администраторов или менеджеров
@@ -92,7 +93,7 @@ async def update_user(
 async def get_me(
     session: SessionDep,
     current_user: User = Depends(get_current_user),
-) -> schema.UserInfo:
+) -> User:
     """Получение информации о текущем пользователе."""
     return await user_service.get_me(session, current_user)
 
@@ -105,6 +106,6 @@ async def get_me(
 async def update_me(
     session: SessionDep,
     current_user: User = Depends(get_current_user),
-) -> schema.UserInfo:
+) -> User:
     """Обновление информации о текущем пользователе."""
     return await user_service.update_me(session, current_user)

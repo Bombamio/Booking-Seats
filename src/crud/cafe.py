@@ -1,3 +1,5 @@
+from typing import Any, Optional, Sequence
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.inspection import inspect
@@ -10,12 +12,12 @@ from src.models import Cafe
 class CRUDCafe(CRUDBase):
     """CRUD функции для модели Cafe."""
 
-    async def create_cafe(  # noqa: ANN201
+    async def create_cafe(
         self,
-        cafe_create,  # noqa: ANN001
+        cafe_create: Any,
         session: AsyncSession,
-        **relations,  # noqa: ANN003
-    ):
+        **relations: Any,
+    ) -> Cafe:
         """Метод создает объект, но не делает commit.
 
         Commit должен выполняться на стороне сервиса
@@ -56,8 +58,8 @@ class CRUDCafe(CRUDBase):
     async def get_multi_with_managers(
         self,
         session: AsyncSession,
-        *filters,  # noqa: ANN002
-    ) -> list[Cafe]:
+        *filters: Any,
+    ) -> Sequence[Cafe]:
         """GET-функция, возвращает список объектов.
 
         С подгрузкой менеджеров через relationships.
@@ -69,8 +71,8 @@ class CRUDCafe(CRUDBase):
     async def get_with_managers(
         self,
         session: AsyncSession,
-        *filters,  # noqa: ANN002
-    ) -> Cafe:
+        *filters: Any,
+    ) -> Optional[Cafe]:
         """GET-функция, возвращает объект по заданным фильтрам.
 
         С подгрузкой менеджеров через relationships.
@@ -82,8 +84,8 @@ class CRUDCafe(CRUDBase):
 
     async def update_cafe(
         self,
-        cafe_entity,  # noqa: ANN001
-        cafe_update,  # noqa: ANN001
+        cafe_entity: Any,
+        cafe_update: Any,
         session: AsyncSession,
     ) -> Cafe:
         """PATCH-функция, обновляет информацю о кафе.

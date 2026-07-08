@@ -1,5 +1,5 @@
 import uuid
-from typing import Any
+from typing import Any, Sequence
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,6 +18,17 @@ class CRUDDish(CRUDBase):
         """Соберёт запрос с предзагрузкой связанных кафе."""
         return select(self.model).options(selectinload(self.model.cafes))
 
+    async def _reload_with_cafes(
+        self,
+        session: AsyncSession,
+        dish_id: uuid.UUID,
+    ) -> Dish:
+        """Перечитает блюдо из БД с предзагруженными кафе."""
+        result = await session.execute(
+            self._stmt_with_cafes().where(self.model.id == dish_id),
+        )
+        return result.scalars().one()
+
     async def get(
         self,
         session: AsyncSession,
@@ -35,7 +46,7 @@ class CRUDDish(CRUDBase):
         self,
         session: AsyncSession,
         *filters: Any,
-    ) -> list[Dish]:
+    ) -> Sequence[Dish]:
         """Вернёт список блюд с предзагруженными кафе."""
         stmt = self._stmt_with_cafes()
         if filters:
@@ -43,17 +54,6 @@ class CRUDDish(CRUDBase):
             self._check_filters(*filters)
         result = await session.execute(stmt)
         return result.scalars().all()
-
-    async def _reload_with_cafes(
-        self,
-        session: AsyncSession,
-        dish_id: uuid.UUID,
-    ) -> Dish:
-        """Перечитает блюдо из БД с предзагруженными кафе."""
-        result = await session.execute(
-            self._stmt_with_cafes().where(self.model.id == dish_id),
-        )
-        return result.scalars().one()
 
     async def create(
         self,

@@ -1,3 +1,4 @@
+from typing import Sequence
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -37,7 +38,7 @@ class UserService(CRUDUser, BaseService):
         self,
         session: AsyncSession,
         current_user: User,
-    ) -> list[User]:
+    ) -> Sequence[User]:
         """Получение списка пользователей."""
         if current_user.role not in [UserRole.ADMIN, UserRole.MANAGER]:
             self.raise_forbidden('Доступ запрещен')

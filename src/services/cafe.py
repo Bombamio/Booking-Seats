@@ -1,5 +1,5 @@
 import uuid
-from typing import Annotated
+from typing import Annotated, Sequence
 
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -57,7 +57,7 @@ class CafeService:
         self,
         user: User,
         show_active: bool,
-    ) -> list[Cafe]:
+    ) -> Sequence[Cafe]:
         """Метод возвращает список кафе, в зависимости от роли пользователя."""
         if user.role == UserRole.USER:
             return await cafe_crud.get_multi_with_managers(

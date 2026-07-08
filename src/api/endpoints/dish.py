@@ -1,5 +1,5 @@
 import uuid
-from typing import Annotated, Optional
+from typing import Annotated, Optional, Sequence
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,7 +26,7 @@ async def get_multi(
     user: Annotated[User, Depends(vt.current_user_is_active)],
     session: SessionDep,
     show_active: Optional[bool],
-) -> list[Optional[Dish]]:
+) -> Sequence[Dish]:
     """GET `/dishes` - Получение списка блюд."""
     return await dish_service.get_multi_dishes(
         cafe_id=cafe_id,

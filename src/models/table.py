@@ -22,7 +22,7 @@ class Table(Base):
         ),
     )
     cafe_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey('cafes.id', ondelete='CASCADE'),
+        ForeignKey('cafes.id', ondelete='RESTRICT'),
         index=True,
     )
     seat_number: Mapped[int]

@@ -1,12 +1,34 @@
-import re
-import uuid
-from datetime import datetime
-from enum import StrEnum
-from typing import Optional
+"""Схемы пользователя.
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+Модуль описывает входные и выходные схемы для управления пользователями системы.
+
+Локальные миксины:
+   - `UserBaseMixin` — имя, контакты и Telegram ID; форматы email и телефона
+     проверяются через `pattern` из констант.
+   - `UserContactValidationMixin` — при создании и обновлении требуется хотя бы одно
+     из полей `email` / `phone`.
+
+Схемы API:
+   - `UserCreate` — регистрация пользователя с обязательным паролем.
+   - `UserUpdate` — частичное обновление; `cafe_id` допустимо только для роли `MANAGER`.
+   - `UserShortInfo` — краткая информация для вложенных ответов.
+   - `UserInfo` — полный ответ API с ролью и привязкой к кафе.
+
+Наследование:
+   - входные схемы — `BaseCreate` / `BaseUpdate` (без `description`);
+   - выходные схемы — `BaseShortInfo` / `BaseInfo`.
+
+Общие правила наследования и базовые миксины — в `src/schemas/base.py`.
+"""
+
+import uuid
+from enum import StrEnum
+from typing import ClassVar
+
+from pydantic import Field, model_validator
 
 from src.core import constants as ct
+from src.schemas.base import BaseCreate, BaseInfo, BaseShortInfo, BaseUpdate
 
 
 class UserRole(StrEnum):
@@ -17,39 +39,24 @@ class UserRole(StrEnum):
     USER = 'USER'
 
 
-class UserBase(BaseModel):
-    """Базовая схема пользователя."""
+class UserBaseMixin:
+    """Миксин с атрибутами пользователя.
+
+    Поля:
+        username (str): имя пользователя; обязательное.
+        email (str | None): адрес электронной почты; необязательное.
+        phone (str | None): номер телефона; необязательное.
+        tg_id (str | None): идентификатор Telegram; необязательное.
+    """
 
     username: str = Field(min_length=ct.MIN_USERNAME_LEN, max_length=ct.MAX_USERNAME_LEN)
-    email: Optional[str] = Field(default=None, max_length=ct.MAX_EMAIL_LEN)
-    phone: Optional[str] = Field(default=None, max_length=ct.MAX_PHONE_LEN)
-    tg_id: Optional[str] = Field(max_length=ct.MAX_TG_ID_LEN)
-
-    @field_validator('phone')
-    @classmethod
-    def validate_phone(cls, value: str) -> str:
-        """Валидация номера телефона."""
-        regex_for_phone = r'^\+\d{1,15}$'
-        if not re.match(regex_for_phone, value):
-            raise ValueError('Номер телефона должен начинаться с "+" исодержать от 1 до 15 цифр')
-        return value
-
-    @field_validator('email')
-    @classmethod
-    def validate_email(cls, value: str) -> str:
-        """Валидация email."""
-        regex_for_email = r'^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-        if not re.match(regex_for_email, value):
-            raise ValueError('Неверный формат email')
-        return value
+    email: str | None = Field(None, max_length=ct.MAX_EMAIL_LEN, pattern=ct.USER_EMAIL_PATTERN)
+    phone: str | None = Field(None, max_length=ct.MAX_PHONE_LEN, pattern=ct.USER_PHONE_PATTERN)
+    tg_id: str | None = Field(None, max_length=ct.MAX_TG_ID_LEN)
 
 
-class UserCreate(UserBase):
-    """Схема создания пользователя."""
-
-    password: str = Field(min_length=ct.MIN_PASSWORD_LEN, max_length=ct.MAX_PASSWORD_LEN)
-
-    model_config = ConfigDict(from_attributes=True)
+class UserContactValidationMixin:
+    """Миксин с валидацией контактных данных пользователя."""
 
     @model_validator(mode='after')
     def validate_contact_info(self) -> 'UserCreate':
@@ -63,42 +70,83 @@ class UserCreate(UserBase):
         return self
 
 
-class UserInfo(UserBase):
-    """Схема информации о пользователе."""
+class UserCreate(UserContactValidationMixin, UserBaseMixin, BaseCreate):
+    """Схема создания пользователя.
 
-    id: int
-    role: UserRole
-    cafe_id: uuid.UUID = None
-    is_active: bool
-    created_at: datetime
-    updated_at: datetime
+    Поля (включая унаследованные):
+        username (str): имя пользователя; обязательное.
+        email (str | None): адрес электронной почты; необязательное.
+        phone (str | None): номер телефона; необязательное.
+        tg_id (str | None): идентификатор Telegram; необязательное.
+        password (str): пароль; обязательное.
+    """
 
-    model_config = ConfigDict(from_attributes=True)
-
-
-class UserShortInfo(UserBase):
-    """Схема краткой информации о пользователе."""
-
-    id: uuid.UUID
-
-    model_config = ConfigDict(from_attributes=True)
+    password: str = Field(min_length=ct.MIN_PASSWORD_LEN, max_length=ct.MAX_PASSWORD_LEN)
 
 
-class UserUpdate(BaseModel):
-    """Схема обнолвения информации о пользователе."""
+class UserUpdate(UserContactValidationMixin, UserBaseMixin, BaseUpdate):
+    """Схема обновления информации о пользователе.
 
-    username: Optional[str] = Field(min_length=ct.MIN_USERNAME_LEN, max_length=ct.MAX_USERNAME_LEN)
-    email: Optional[str] = Field(max_length=ct.MAX_EMAIL_LEN)
-    phone: Optional[str] = Field(max_length=ct.MAX_PHONE_LEN)
-    tg_id: Optional[str] = Field(max_length=ct.MAX_TG_ID_LEN)
-    role: Optional[UserRole] = Field(default=UserRole.USER)
-    cafe_id: Optional[uuid.UUID] = Field(default=None)
-    password: Optional[str] = Field(min_length=ct.MIN_PASSWORD_LEN, max_length=ct.MAX_PASSWORD_LEN)
+    Поля (включая унаследованные):
+        username (str | None): имя пользователя; необязательное; явный null запрещён.
+        email (str | None): адрес электронной почты; необязательное.
+        phone (str | None): номер телефона; необязательное.
+        tg_id (str | None): идентификатор Telegram; необязательное.
+        password (str | None): пароль; необязательное; явный null запрещён.
+        role (UserRole): роль пользователя; необязательное; явный null запрещён.
+        cafe_id (UUID | None): идентификатор кафе; необязательное; явный null запрещён.
+        is_active (bool | None): признак активности; необязательное; явный null запрещён.
+    """
+
+    username: str | None = Field(None, min_length=ct.MIN_USERNAME_LEN, max_length=ct.MAX_USERNAME_LEN)
+    password: str | None = Field(None, min_length=ct.MIN_PASSWORD_LEN, max_length=ct.MAX_PASSWORD_LEN)
+    role: UserRole = Field(default=UserRole.USER)
+    cafe_id: uuid.UUID | None = Field(default=None)
+
+    _not_null_fields: ClassVar[set[str]] = {
+        'username',
+        'password',
+        'role',
+        'cafe_id',
+        'is_active',
+    }
 
     @model_validator(mode='after')
     def validate_cafe_id(self) -> 'UserUpdate':
         """Валидация кафе для роли пользователя: менеджер."""
         if self.role != UserRole.MANAGER and self.cafe_id is not None:
-            raise ValueError('Кафе может быть назначено только менеджерам(cafe_id должно быть None).')
-
+            raise ValueError('Кафе может быть назначено только менеджерам (cafe_id должно быть None).')
         return self
+
+
+class UserShortInfo(UserBaseMixin, BaseShortInfo):
+    """Схема краткой информации о пользователе.
+
+    Поля (включая унаследованные):
+        username (str): имя пользователя.
+        email (str | None): адрес электронной почты.
+        phone (str | None): номер телефона.
+        tg_id (str | None): идентификатор Telegram.
+        id (UUID): идентификатор пользователя.
+        is_active (bool | None): признак активности.
+    """
+
+
+class UserInfo(UserBaseMixin, BaseInfo):
+    """Схема краткой информации о пользователе.
+
+    Поля (включая унаследованные):
+        username (str): имя пользователя.
+        email (str | None): адрес электронной почты.
+        phone (str | None): номер телефона.
+        tg_id (str | None): идентификатор Telegram.
+        id (UUID): идентификатор пользователя.
+        is_active (bool | None): признак активности.
+        created_at (datetime): дата создания.
+        updated_at (datetime): дата обновления.
+        role (UserRole): роль пользователя.
+        cafe_id (UUID | None): идентификатор кафе.
+    """
+
+    role: UserRole
+    cafe_id: uuid.UUID | None = None

@@ -50,7 +50,7 @@ class CRUDBooking(CRUDBase):
                 self.model.created_at.desc(),
             ),
         )
-        return list(result.scalars().all())
+        return result.scalars().all()
 
     async def get_by_user(
         self,
@@ -72,7 +72,7 @@ class CRUDBooking(CRUDBase):
                 self.model.booking_date.desc(),
             ),
         )
-        return list(result.scalars().all())
+        return result.scalars().all()
 
     async def get_by_cafe(
         self,
@@ -99,7 +99,7 @@ class CRUDBooking(CRUDBase):
                 self.model.created_at,
             ),
         )
-        return list(result.scalars().all())
+        return result.scalars().all()
 
     async def get_by_table_slot_and_date(
         self,
@@ -128,7 +128,7 @@ class CRUDBooking(CRUDBase):
             filters.append(self.model.id != exclude_booking_id)
 
         result = await session.execute(select(self.model).where(*filters))
-        return list(result.scalars().all())
+        return result.scalars().all()
 
     async def get_by_manager(
         self,
@@ -158,7 +158,7 @@ class CRUDBooking(CRUDBase):
                 self.model.created_at,
             ),
         )
-        return list(result.scalars().all())
+        return result.scalars().all()
 
     async def has_table_slot_conflicts(
         self,

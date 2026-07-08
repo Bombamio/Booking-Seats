@@ -1,12 +1,33 @@
-from typing import Any, Optional
+"""Схемы столика.
 
-from pydantic import Field, PositiveInt, model_validator
+Модуль описывает входные и выходные схемы для управления столиками в кафе.
+
+Локальные миксины:
+   - `TableBaseMixin` — количество мест за столиком.
+
+Схемы API:
+   - `TableCreate` — создание столика; `description` опционально.
+   - `TableUpdate` — частичное обновление; `seat_number` и `is_active` не принимают `null`.
+   - `TableShortInfo` — краткая информация для вложенных ответов.
+   - `TableInfo` — полный ответ API с данными кафе.
+
+Наследование:
+   - входные схемы — `BaseDescriptionCreate` / `BaseDescriptionUpdate`;
+   - выходные схемы — `BaseDescriptionShortInfo` / `BaseDescriptionInfo`.
+
+Общие правила наследования и базовые миксины — в `src/schemas/base.py`.
+"""
+
+from typing import ClassVar
+
+from pydantic import Field, PositiveInt
 
 from src.core.constants import MIN_SEATS
 from src.schemas.base import (
-    BaseProjectCreate,
-    BaseProjectInfo,
-    BaseProjectShortInfo,
+    BaseDescriptionCreate,
+    BaseDescriptionInfo,
+    BaseDescriptionShortInfo,
+    BaseDescriptionUpdate,
 )
 from src.schemas.cafe import CafeShortInfo
 
@@ -14,42 +35,56 @@ from src.schemas.cafe import CafeShortInfo
 class TableBaseMixin:
     """Миксин с атрибутами столика."""
 
-    seat_number: Optional[PositiveInt] = Field(
+    seat_number: PositiveInt = Field(description=f'Количество мест столика (не менее {MIN_SEATS}).')
+
+
+class TableCreate(TableBaseMixin, BaseDescriptionCreate):
+    """Схема данных для создания столика в кафе.
+
+    Поля (включая унаследованные):
+        description (str | None): описание столика; необязательное.
+        seat_number (PositiveInt): количество мест; обязательное.
+    """
+
+
+class TableUpdate(BaseDescriptionUpdate):
+    """Схема данных для обновления столика в кафе.
+
+    Поля (включая унаследованные):
+        description (str | None): описание столика; необязательное.
+        seat_number (PositiveInt | None): количество мест; необязательное; явный null запрещён.
+        is_active (bool | None): признак активности; необязательное; явный null запрещён.
+    """
+
+    seat_number: PositiveInt | None = Field(
         None,
-        examples=[MIN_SEATS],
-        description=f'Количество мест столика (не менее {MIN_SEATS}).',
+        description='Количество мест столика (не менее {MIN_SEATS}).',
     )
+    _not_null_fields: ClassVar[set[str]] = {'seat_number', 'is_active'}
 
 
-class TableCreate(TableBaseMixin, BaseProjectCreate):
-    """Схема данных для создания столика в кафе."""
+class TableShortInfo(TableBaseMixin, BaseDescriptionShortInfo):
+    """Схема данных для предоставления краткого инфо о столике.
 
-    seat_number: PositiveInt = Field(
-        examples=[MIN_SEATS],
-        description=f'Количество мест столика (не менее {MIN_SEATS}).',
-    )
-
-
-class TableInfo(TableBaseMixin, BaseProjectInfo):
-    """Схема данных для предоставления информации о столике."""
-
-    cafe: CafeShortInfo | None = None
+    Поля (включая унаследованные):
+        description (str | None): описание столика.
+        is_active (bool | None): признак активности.
+        id (UUID): идентификатор столика.
+        seat_number (PositiveInt): количество мест.
+    """
 
 
-class TableShortInfo(TableBaseMixin, BaseProjectShortInfo):
-    """Схема данных для предоставления краткого инфо о столике."""
+class TableInfo(TableBaseMixin, BaseDescriptionInfo):
+    """Схема данных для предоставления информации о столике.
 
+    Поля (включая унаследованные):
+        description (str | None): описание столика.
+        is_active (bool | None): признак активности.
+        id (UUID): идентификатор столика.
+        created_at (datetime): дата создания.
+        updated_at (datetime): дата обновления.
+        seat_number (PositiveInt): количество мест.
+        cafe (CafeShortInfo): кафе столика.
+    """
 
-class TableUpdate(TableBaseMixin, BaseProjectCreate):
-    """Схема данных для создания столика в кафе."""
-
-    is_active: Optional[bool] = Field(None)
-
-    @model_validator(mode='before')
-    @classmethod
-    def reject_null(cls, values: Any) -> Any:
-        """Сообщит об ошибке, если в полях запроса передано значение Null."""
-        for field in cls.model_fields:
-            if field in values and values[field] is None:
-                raise ValueError(f'Поле "{field}" не может быть пустым.')
-        return values
+    cafe: CafeShortInfo

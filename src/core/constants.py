@@ -1,6 +1,8 @@
 from pathlib import Path
 
 PHONE_NUMBER_PATTERN = r'^\+?[0-9]{7,15}$'
+USER_PHONE_PATTERN = r'^\+\d{1,15}$'
+USER_EMAIL_PATTERN = r'^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
 # Основные числа: 1, 8, 16, 32, 64, 128, 256, 512, 1024, и т.д.
 SECRET_KEY = 'bd125ffa58cbb4303de365029c44cdda23830f7181e18d158cc3e95d6b55c963'
 # Пока будет здесь, сгенерирован с помощью команды в терминале:
@@ -9,8 +11,41 @@ ALGORITHM = 'HS256'
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 DEFAULT_GUEST_NUMBER = 1
 MIN_DISH_QUANTITY = 1
+MIN_TABLE_SLOT_COUNT = 1
 MILLISECONDS_IN_SECOND = 1000
 OPENAPI_TAGS = [
+    {
+        'name': 'Аутентификация',
+        'description': 'Получение данных для последующей авторизации',
+    },
+    {
+        'name': 'Пользователи',
+        'description': 'Управление пользователями',
+    },
+    {
+        'name': 'Кафе',
+        'description': 'Управление кафе',
+    },
+    {
+        'name': 'Столы',
+        'description': 'Управление столами в кафе',
+    },
+    {
+        'name': 'Временные слоты',
+        'description': 'Управление временными слотами',
+    },
+    {
+        'name': 'Блюда',
+        'description': 'Управление блюдами',
+    },
+    {
+        'name': 'Акции',
+        'description': 'Управление акциями',
+    },
+    {
+        'name': 'Медиа',
+        'description': 'Управление изображениями',
+    },
     {
         'name': 'Бронирования',
         'description': 'Управление бронированиями',

@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import time
 from http import HTTPStatus
 from typing import Any, Optional
 
@@ -140,8 +140,8 @@ async def check_cafe_managers(
 async def check_slot_overlap(
     crud: Any,
     cafe_id: uuid.UUID,
-    start_time: datetime,
-    end_time: datetime,
+    start_time: time,
+    end_time: time,
     session: AsyncSession,
     exclude_id: Optional[uuid.UUID] = None,
 ) -> None:

@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import time
 from typing import Optional
 
 from sqlalchemy import select
@@ -30,8 +30,8 @@ class CRUDSlot(CRUDBase):
     async def get_overlapping(
         self,
         cafe_id: uuid.UUID,
-        start_time: datetime,
-        end_time: datetime,
+        start_time: time,
+        end_time: time,
         session: AsyncSession,
         exclude_id: Optional[uuid.UUID] = None,
     ) -> Optional[Slot]:
@@ -55,9 +55,7 @@ class CRUDSlot(CRUDBase):
     ) -> Slot:
         """Создаёт временной слот, привязанный к переданному кафе."""
         slot_data = {
-            key: value
-            for key, value in slot_create.model_dump().items()
-            if key in self.model_fields
+            key: value for key, value in slot_create.model_dump().items() if key in self.model_fields
         }
         slot_entity = self.model(
             cafe_id=cafe_id,

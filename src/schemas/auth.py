@@ -12,7 +12,7 @@
 
 from pydantic import BaseModel, Field
 
-from schemas.base import FromAttributesMixin
+from src.schemas.base import FromAttributesMixin
 
 
 class AuthToken(FromAttributesMixin, BaseModel):

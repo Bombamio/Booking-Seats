@@ -21,7 +21,8 @@
 """
 
 import uuid
-from datetime import datetime
+from datetime import time
+from typing import ClassVar, Self
 
 from pydantic import model_validator
 
@@ -36,15 +37,15 @@ from src.schemas.base import (
 class TimeSlotBaseMixin:
     """Миксин с атрибутами временного слота."""
 
-    start_time: datetime
-    end_time: datetime
+    start_time: time
+    end_time: time
 
 
 class TimeSlotValidationMixin:
     """Миксин с валидацией порядка времени слота."""
 
     @model_validator(mode='after')
-    def check_time_order(self) -> 'TimeSlotCreate':
+    def check_time_order(self) -> Self:
         """Проверяет, что `end_time` позже `start_time`."""
         if self.end_time <= self.start_time:
             raise ValueError('end_time должно быть позже start_time.')
@@ -56,8 +57,8 @@ class TimeSlotCreate(TimeSlotValidationMixin, TimeSlotBaseMixin, BaseDescription
 
     Поля (включая унаследованные):
         description (str | None): описание слота; необязательное.
-        start_time (datetime): время начала слота; обязательное.
-        end_time (datetime): время окончания слота; обязательное.
+        start_time (time): время начала слота; обязательное.
+        end_time (time): время окончания слота; обязательное.
     """
 
 
@@ -66,15 +67,15 @@ class TimeSlotUpdate(TimeSlotValidationMixin, TimeSlotBaseMixin, BaseDescription
 
     Поля (включая унаследованные):
         description (str | None): описание слота; необязательное.
-        start_time (datetime | None): время начала слота; необязательное; явный null запрещён.
-        end_time (datetime | None): время окончания слота; необязательное; явный null запрещён.
+        start_time (time | None): время начала слота; необязательное; явный null запрещён.
+        end_time (time | None): время окончания слота; необязательное; явный null запрещён.
         is_active (bool | None): признак активности; необязательное; явный null запрещён.
     """
 
-    start_time: datetime | None = None
-    end_time: datetime | None = None
+    start_time: time | None = None
+    end_time: time | None = None
 
-    _not_null_fields: set[str] = {'start_time', 'end_time', 'is_active'}
+    _not_null_fields: ClassVar[set[str]] = {'start_time', 'end_time', 'is_active'}
 
 
 class TimeSlotShortInfo(TimeSlotBaseMixin, BaseDescriptionShortInfo):
@@ -84,8 +85,8 @@ class TimeSlotShortInfo(TimeSlotBaseMixin, BaseDescriptionShortInfo):
         description (str | None): описание слота.
         is_active (bool | None): признак активности.
         id (UUID): идентификатор слота.
-        start_time (datetime): время начала слота.
-        end_time (datetime): время окончания слота.
+        start_time (time): время начала слота.
+        end_time (time): время окончания слота.
     """
 
 
@@ -98,8 +99,8 @@ class TimeSlotInfo(TimeSlotBaseMixin, BaseDescriptionInfo):
         id (UUID): идентификатор слота.
         created_at (datetime): дата создания.
         updated_at (datetime): дата обновления.
-        start_time (datetime): время начала слота.
-        end_time (datetime): время окончания слота.
+        start_time (time): время начала слота.
+        end_time (time): время окончания слота.
         cafe_id (UUID): идентификатор кафе.
     """
 

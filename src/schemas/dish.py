@@ -19,6 +19,7 @@
 """
 
 import uuid
+from typing import ClassVar
 
 from pydantic import Field, PositiveInt
 
@@ -69,7 +70,7 @@ class DishUpdate(DishBaseMixin, PhotoIdMixin, BaseDescriptionUpdate):
     price: PositiveInt | None = Field(None)
     cafes_id: list[uuid.UUID] | None = None
 
-    _not_null_fields: set[str] = {'name', 'price', 'cafes_id', 'is_active'}
+    _not_null_fields: ClassVar[set[str]] = {'name', 'price', 'cafes_id', 'is_active'}
 
 
 class DishInfo(DishBaseMixin, PhotoIdMixin, BaseDescriptionInfo):

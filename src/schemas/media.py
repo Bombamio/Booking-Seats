@@ -13,7 +13,7 @@ import uuid
 
 from pydantic import BaseModel
 
-from schemas.base import FromAttributesMixin
+from src.schemas.base import FromAttributesMixin
 
 
 class MediaInfo(FromAttributesMixin, BaseModel):

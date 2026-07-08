@@ -23,6 +23,7 @@
 
 import uuid
 from enum import StrEnum
+from typing import ClassVar
 
 from pydantic import Field, model_validator
 
@@ -102,7 +103,7 @@ class UserUpdate(UserContactValidationMixin, UserBaseMixin, BaseUpdate):
     role: UserRole = Field(default=UserRole.USER)
     cafe_id: uuid.UUID | None = Field(default=None)
 
-    _not_null_fields: set[str] = {
+    _not_null_fields: ClassVar[set[str]] = {
         'username',
         'password',
         'role',

@@ -18,6 +18,8 @@
 Общие правила наследования и базовые миксины — в `src/schemas/base.py`.
 """
 
+from typing import ClassVar
+
 from pydantic import Field, PositiveInt
 
 from src.core.constants import MIN_SEATS
@@ -58,7 +60,7 @@ class TableUpdate(TableBaseMixin, BaseDescriptionUpdate):
         None,
         description='Количество мест столика (не менее {MIN_SEATS}).',
     )
-    _not_null_fields: set[str] = {'seat_number', 'is_active'}
+    _not_null_fields: ClassVar[set[str]] = {'seat_number', 'is_active'}
 
 
 class TableShortInfo(TableBaseMixin, BaseDescriptionShortInfo):

@@ -20,6 +20,7 @@
 """
 
 import uuid
+from typing import ClassVar
 
 from pydantic import Field
 
@@ -106,7 +107,7 @@ class CafeUpdate(CafeBaseMixin, PhotoIdMixin, BaseDescriptionUpdate):
     )
     managers_id: list[uuid.UUID] | None = None
 
-    _not_null_fields: set[str] = {'name', 'address', 'phone', 'managers_id', 'is_active'}
+    _not_null_fields: ClassVar[set[str]] = {'name', 'address', 'phone', 'managers_id', 'is_active'}
 
 
 class CafeShortInfo(CafeBaseMixin, PhotoIdMixin, BaseDescriptionShortInfo):

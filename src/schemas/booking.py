@@ -22,13 +22,17 @@
 
 import uuid
 from datetime import date
+from typing import ClassVar
 
-from pydantic import Field, PositiveInt, field_validator
+from pydantic import BaseModel, Field, PositiveInt, field_validator
 
 from src.core import constants as ct
 from src.models import BookingStatus
-from src.schemas.base import BaseCreate, BaseInfo, BaseShortInfo, BaseUpdate
+from src.schemas.base import BaseCreate, BaseInfo, BaseUpdate, FromAttributesMixin
 from src.schemas.cafe import CafeShortInfo
+from src.schemas.dish import DishInfo
+from src.schemas.slot import TimeSlotShortInfo
+from src.schemas.table import TableShortInfo
 from src.schemas.user import UserShortInfo
 
 
@@ -43,15 +47,16 @@ class BookingTableSlotCreate(BookingTableSlotMixin, BaseCreate):
     """Базовая схема для бронирования."""
 
 
-class BookingTableSlotShortInfo(BookingTableSlotMixin, BaseShortInfo):
-    """Краткая информация о бронировании.
+class BookingTableSlotShortInfo(FromAttributesMixin, BaseModel):
+    """Краткая информация о паре столик-слот в бронировании.
 
-    Поля (включая унаследованные):
-        table_id (UUID): идентификатор столика.
-        slot_id (UUID): идентификатор временного слота.
-        id (UUID): идентификатор записи.
-        is_active (bool | None): признак активности.
+    Поля:
+        table (TableShortInfo): столик.
+        slot (TimeSlotShortInfo): временной слот.
     """
+
+    table: TableShortInfo
+    slot: TimeSlotShortInfo
 
 
 class BookingDishMixin:
@@ -70,17 +75,16 @@ class BookingDishCreate(BookingDishMixin, BaseCreate):
     """
 
 
-class BookingDishInfo(BookingDishMixin, BaseInfo):
+class BookingDishInfo(FromAttributesMixin, BaseModel):
     """Информация о блюде в предзаказе бронирования.
 
-    Поля (включая унаследованные):
-        dish_id (UUID): идентификатор блюда.
+    Поля:
+        dish (DishInfo): информация о блюде.
         quantity (PositiveInt): количество порций.
-        id (UUID): идентификатор записи.
-        is_active (bool | None): признак активности.
-        created_at (datetime): дата создания.
-        updated_at (datetime): дата обновления.
     """
+
+    dish: DishInfo
+    quantity: PositiveInt
 
 
 class BookingBaseMixin:
@@ -142,7 +146,7 @@ class BookingUpdate(BookingDateValidationMixin, BookingBaseMixin, BaseUpdate):
         booking_date (date | None): дата бронирования; необязательное; явный null запрещён.
         guest_number (PositiveInt | None): количество гостей; необязательное; явный null запрещён.
         note (str | None): примечание; необязательное.
-        tables_slots (list[BookingTableSlotShortInfo] | None): столики и слоты; необязательное;
+        tables_slots (list[BookingTableSlotCreate] | None): столики и слоты; необязательное;
         явный null запрещён.
         pre_ordered_dishes (list[BookingDishCreate] | None): предзаказ блюд; необязательное.
         status (BookingStatus | None): статус бронирования; необязательное; явный null запрещён.
@@ -151,13 +155,19 @@ class BookingUpdate(BookingDateValidationMixin, BookingBaseMixin, BaseUpdate):
 
     booking_date: date | None = Field(None, description='Дата бронирования')
     guest_number: PositiveInt | None = Field(None, description='Количество гостей')
-    tables_slots: list[BookingTableSlotShortInfo] | None = None
+    tables_slots: list[BookingTableSlotCreate] | None = None
     status: BookingStatus | None = Field(
         None,
         description='Статус бронирования',
     )
 
-    _not_null_fields: set[str] = {'booking_date', 'guest_number', 'tables_slots', 'status', 'is_active'}
+    _not_null_fields: ClassVar[set[str]] = {
+        'booking_date',
+        'guest_number',
+        'tables_slots',
+        'status',
+        'is_active',
+    }
 
 
 class BookingInfo(BookingBaseMixin, BaseInfo):
@@ -174,12 +184,12 @@ class BookingInfo(BookingBaseMixin, BaseInfo):
         user (UserShortInfo): пользователь.
         cafe (CafeShortInfo): кафе.
         tables_slots (list[BookingTableSlotShortInfo]): столики и слоты.
-        preordered_dishes (list[BookingDishInfo]): предзаказ блюд.
+        pre_ordered_dishes (list[BookingDishInfo]): предзаказ блюд.
         status (BookingStatus): статус бронирования.
     """
 
     user: UserShortInfo
     cafe: CafeShortInfo
     tables_slots: list[BookingTableSlotShortInfo]
-    preordered_dishes: list[BookingDishInfo] = Field(default_factory=list)
+    pre_ordered_dishes: list[BookingDishInfo] | None = Field(default=None, exclude=True)
     status: BookingStatus

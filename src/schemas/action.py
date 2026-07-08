@@ -15,6 +15,7 @@
 """
 
 import uuid
+from typing import ClassVar
 
 from pydantic import Field
 
@@ -48,7 +49,7 @@ class ActionUpdate(PhotoIdMixin, BaseDescriptionUpdate):
     """
 
     cafes_id: list[uuid.UUID] | None = None
-    _not_null_fields: set[str] = {'cafes_id', 'description', 'is_active'}
+    _not_null_fields: ClassVar[set[str]] = {'cafes_id', 'description', 'is_active'}
 
 
 class ActionInfo(PhotoIdMixin, BaseDescriptionInfo):

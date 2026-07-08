@@ -8,7 +8,7 @@
    - `model_config.extra = 'forbid'` и валидация пустых строк — в `BaseCreate`.
    - В `BaseUpdate` — механизм `_not_null_fields`: запрещает передавать явный `null`
      для полей, которые в БД являются NOT NULL. Имена полей перечисляются
-     в атрибуте `_not_null_fields` класса-наследника.
+     в атрибуте `_not_null_fields: ClassVar[set[str]]` класса-наследника.
    - Поле `is_active` со значением по умолчанию `None` добавляется через `IsActiveMixin`
      в `BaseUpdate` и выходных схемах.
 
@@ -47,7 +47,7 @@
 
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import Any, ClassVar
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -106,13 +106,15 @@ class BaseUpdate(IsActiveMixin, BaseCreate):
 
     __abstract__ = True
 
-    _not_null_fields: set[str] = set()
+    _not_null_fields: ClassVar[set[str]] = set()
 
     @model_validator(mode='before')
     @classmethod
     def reject_null_for_not_null_fields(cls, values: Any) -> Any:
         """Проверит, что значения не являются null для полей, которые заявлены в модели как обязательные."""
-        not_null_fields = getattr(cls, '_not_null_fields', set())
+        if not isinstance(values, dict):
+            return values
+        not_null_fields = cls.__dict__.get('_not_null_fields', BaseUpdate._not_null_fields)
         for field_name in not_null_fields:
             if field_name in values and values[field_name] is None:
                 raise ValueError(f'Поле "{field_name}" не может быть null.')

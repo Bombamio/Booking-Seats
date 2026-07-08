@@ -209,6 +209,9 @@ __marimo__/
 # docs
 openapi.yml
 
+# Local dev / test scripts (not for version control)
+scripts/
+
 # macOS file
 .DS_Store
 **/.DS_Store

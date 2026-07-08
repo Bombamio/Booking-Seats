@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api import error_responses as er
@@ -39,6 +39,7 @@ async def get_cafes(
 @router.post(
     '/',
     response_model=CafeInfo,
+    status_code=status.HTTP_201_CREATED,
     summary='Создание нового кафе',
     responses=er.ERRORS_POST_CAFE,
     dependencies=[Depends(vt.current_admin_or_manager)],

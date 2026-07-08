@@ -209,6 +209,9 @@ __marimo__/
 # docs
 openapi.yml
 
+# Local utility scripts (not tracked)
+scripts/
+
 # macOS file
 .DS_Store
 **/.DS_Store

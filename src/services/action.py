@@ -51,7 +51,7 @@ class ActionService:
         user: User,
     ) -> Action:
         """Получить акцию по ID с проверкой прав доступа."""
-        action = await self.crud.get(action_id, session)
+        action = await self.crud.get(session, Action.id == action_id)
         if action is None:
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND,
@@ -71,7 +71,7 @@ class ActionService:
         session: AsyncSession,
     ) -> Action:
         """Обновить существующую акцию."""
-        action = await self.crud.get(action_id, session)
+        action = await self.crud.get(session, Action.id == action_id)
         if action is None:
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND,

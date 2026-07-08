@@ -132,11 +132,11 @@ class CRUDBase:
             setattr(created_entity, attr, value)
 
         session.add(created_entity)
+        await session.commit()
         bookingseats_logger.debug(
             f'create {self.model.__name__} id={created_entity.id}: '
             f'data={create_payload}, relations={list(relations.keys())}',
         )
-        await session.commit()
         await session.refresh(created_entity)
 
         return created_entity

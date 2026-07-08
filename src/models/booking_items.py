@@ -25,26 +25,25 @@ class BookingItem(Base):
     booking_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey(
             'bookings.id',
-            ondelete='CASCADE',
+            ondelete='RESTRICT',
         ),
     )
     table_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey(
             'tables.id',
-            ondelete='CASCADE',
+            ondelete='RESTRICT',
         ),
     )
     slot_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey(
             'slots.id',
-            ondelete='CASCADE',
+            ondelete='RESTRICT',
         ),
     )
 
     booking: Mapped['Booking'] = relationship(
         back_populates='booking_items',
         lazy='raise',
-        passive_deletes=True,
     )
     table: Mapped['Table'] = relationship(
         back_populates='booking_items',

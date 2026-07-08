@@ -28,11 +28,11 @@ class BookingDish(Base):
     )
 
     booking_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey('bookings.id', ondelete='CASCADE'),
+        ForeignKey('bookings.id', ondelete='RESTRICT'),
         primary_key=True,
     )
     dish_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey('dishes.id', ondelete='CASCADE'),
+        ForeignKey('dishes.id', ondelete='RESTRICT'),
         primary_key=True,
     )
     quantity: Mapped[int] = mapped_column(default=ct.MIN_DISH_QUANTITY)

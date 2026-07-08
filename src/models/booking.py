@@ -28,11 +28,11 @@ class Booking(Base):
     __table_args__ = (CheckConstraint('booking_date >= current_date', name='check_booking_date'),)
 
     user_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey('users.id', ondelete='CASCADE'),
+        ForeignKey('users.id', ondelete='RESTRICT'),
         index=True,
     )
     cafe_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey('cafes.id', ondelete='CASCADE'),
+        ForeignKey('cafes.id', ondelete='RESTRICT'),
         index=True,
     )
     booking_date: Mapped[date] = mapped_column(
@@ -59,13 +59,11 @@ class Booking(Base):
         back_populates='booking',
         cascade='all, delete-orphan',
         lazy='raise',
-        passive_deletes=True,
     )
     booking_dishes: Mapped[list['BookingDish']] = relationship(
         back_populates='booking',
         cascade='all, delete-orphan',
         lazy='raise',
-        passive_deletes=True,
     )
     dishes: Mapped[list['Dish']] = relationship(
         secondary='booking_dishes',

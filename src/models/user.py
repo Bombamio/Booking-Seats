@@ -49,7 +49,7 @@ class User(Base):
         default=UserRole.USER,
     )
     cafe_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        ForeignKey('cafes.id'),
+        ForeignKey('cafes.id', ondelete='RESTRICT'),
         nullable=True,
     )
 

@@ -23,7 +23,7 @@ class Slot(Base):
     )
 
     cafe_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey('cafes.id', ondelete='CASCADE'),
+        ForeignKey('cafes.id', ondelete='RESTRICT'),
         index=True,
     )
     start_time: Mapped[time] = mapped_column(Time)

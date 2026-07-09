@@ -2,51 +2,49 @@ FROM python:3.12-slim
 
 SHELL ["/bin/sh", "-exc"]
 
-RUN apt-get update && apt-get upgrade -y && apt-get install --quiet --no-install-recommends --assume-yes netcat-traditional curl
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        curl \
+        netcat-traditional && \
+    rm -rf /var/lib/apt/lists/*
 
-COPY --link --from=ghcr.io/astral-sh/uv:0.4 /uv /usr/local/bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.4 /uv /usr/local/bin/uv
 
 ARG USER_ID=1000
 ARG GROUP_ID=1000
 
-RUN groupadd -g ${GROUP_ID} devuser \
-    && useradd -u ${USER_ID} -g devuser -m -s /bin/bash devuser
-
-USER devuser
-
-# Задаём переменные окружения.
-# UV_PYTHON — фиксирует версию Python.
-# UV_PYTHON_DOWNLOADS — отключает автоматическую загрузку отсутствующих версий Python.
-# UV_LINK_MODE — меняет способ установки пакетов из глобального кэша.
-#   Вместо создания жёстких ссылок, файлы пакета копируются в директорию  виртуального окружения `site-packages`.
-# UV_COMPILE_BYTECODE — включает компиляцию файлов Python в байт-код после установки.
-# PYTHONOPTIMIZE — убирает инструкции `assert` и код, зависящий от значения  константы `__debug__`,
-#   при компиляции файлов Python в байт-код.
-
-ENV UV_PYTHON="python3.12" \
-  UV_PYTHON_DOWNLOADS=never \
-  UV_LINK_MODE=copy \
-  UV_COMPILE_BYTECODE=1 \
-  PYTHONOPTIMIZE=1
+RUN groupadd -g ${GROUP_ID} devuser && \
+    useradd -u ${USER_ID} -g devuser -m -s /bin/bash devuser
 
 WORKDIR /app
 
-COPY --chown=$USER_ID:$GROUP_ID ./src /app/src
+# Копируем файлы зависимостей
+COPY pyproject.toml uv.lock ./
 
-RUN uv sync --no-dev --no-install-project --frozen
+RUN chown -R devuser:devuser /app
 
-# PYTHONOPTIMIZE — указывает интерпретатору Python, что нужно использовать ранее скомпилированные файлы из  директории `__pycache__` с  суффиксом `opt-1` в имени.
-# PYTHONFAULTHANDLER — устанавливает обработчики ошибок для дополнительных сигналов.
-# PYTHONUNBUFFERED — отключает буферизацию для потоков stdout и stderr.
+USER devuser
 
-ENV PATH=/app/.venv/bin:$PATH \
-  PYTHONOPTIMIZE=1 \
-  PYTHONFAULTHANDLER=1 \
-  PYTHONUNBUFFERED=1
+ENV UV_PYTHON=python3.12 \
+    UV_PYTHON_DOWNLOADS=never \
+    UV_LINK_MODE=copy \
+    UV_COMPILE_BYTECODE=1
 
-COPY --chown=$USER_ID:$GROUP_ID ./src /app
+RUN uv sync --no-dev --frozen
 
-EXPOSE 8000/tcp
+ENV PATH="/app/.venv/bin:${PATH}" \
+    PYTHONUNBUFFERED=1 \
+    PYTHONFAULTHANDLER=1 \
+    PYTHONPATH=/app
 
-# ENTRYPOINT ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
-ENTRYPOINT [ "/bin/sh", "entrypoint.sh" ]
+# Копируем проект
+COPY --chown=devuser:devuser src ./src
+COPY --chown=devuser:devuser alembic ./alembic
+COPY --chown=devuser:devuser alembic.ini .
+COPY --chown=devuser:devuser entrypoint.sh .
+
+RUN chmod +x entrypoint.sh
+
+EXPOSE 8000
+
+ENTRYPOINT ["./entrypoint.sh"]

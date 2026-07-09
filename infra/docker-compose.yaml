@@ -2,11 +2,16 @@ name: Project
 
 services:
   app:
-    build: ../
+    image: bombamio/booking_seats_team_4:latest
     env_file:
-      - ./.env
-    ports:
-      - "8000:8000"
+      .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health/"]
       interval: 30s
@@ -23,13 +28,13 @@ services:
       timeout: 10s
       retries: 5
     restart: unless-stopped
-    ports:
-      - "6379:6379"
+    expose:
+    - "6379"
 
   rabbitmq:
     image: rabbitmq:3.13-management
     env_file:
-      - ./.env
+      - .env
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
@@ -39,16 +44,16 @@ services:
       timeout: 10s
       retries: 5
     restart: unless-stopped
-    ports:
-      - "5672:5672"
-      - "15672:15672"
+    expose:
+      - "5672"
+      - "15672"
     volumes:
       - "rabbitmq_data:/var/lib/rabbitmq"
 
   flower:
     image: mher/flower
     env_file:
-      - ./.env
+      - .env
     environment:
       CELERY_BROKER_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@${RABBITMQ_HOST}:${RABBITMQ_PORT}//
       # CELERY_RESULT_BACKEND: redis://redis
@@ -61,13 +66,14 @@ services:
       - "5555:5555"
     restart: unless-stopped
     depends_on:
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
       # - redis
 
   celery_worker:
-    build: ../
+    image: bombamio/booking_seats_team_4:latest
     env_file:
-      - ./.env
+      - .env
     command: celery -A src.core.celery_app worker --loglevel=INFO
     depends_on:
       rabbitmq:
@@ -77,7 +83,7 @@ services:
   db:
     image: postgres:17-alpine
     env_file:
-      - ./.env
+      - .env
     environment:
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
@@ -91,11 +97,22 @@ services:
                -c wal_buffers=16MB
                -c default_statistics_target=100
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB" ]
+      test: [ "CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB" ]
       interval: 30s
       timeout: 10s
       retries: 5
     restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
 
 volumes:
   pgdata:

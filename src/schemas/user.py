@@ -50,8 +50,18 @@ class UserBaseMixin:
     """
 
     username: str = Field(min_length=ct.MIN_USERNAME_LEN, max_length=ct.MAX_USERNAME_LEN)
-    email: str | None = Field(None, max_length=ct.MAX_EMAIL_LEN, pattern=ct.USER_EMAIL_PATTERN)
-    phone: str | None = Field(None, max_length=ct.MAX_PHONE_LEN, pattern=ct.USER_PHONE_PATTERN)
+    email: str | None = Field(
+        None,
+        max_length=ct.MAX_EMAIL_LEN,
+        pattern=ct.USER_EMAIL_PATTERN,
+        example='user@example.com',
+    )
+    phone: str | None = Field(
+        None,
+        max_length=ct.MAX_PHONE_LEN,
+        pattern=ct.USER_PHONE_PATTERN,
+        example='+79912223344',
+    )
     tg_id: str | None = Field(None, max_length=ct.MAX_TG_ID_LEN)
 
 

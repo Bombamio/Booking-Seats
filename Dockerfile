@@ -29,7 +29,7 @@ ENV UV_PYTHON="python3.12" \
   UV_COMPILE_BYTECODE=1 \
   PYTHONOPTIMIZE=1
 
-WORKDIR /app
+WORKDIR /src
 
 COPY --chown=$USER_ID:$GROUP_ID pyproject.toml uv.lock entrypoint.sh /app/
 

@@ -18,7 +18,6 @@ ph = PasswordHasher(
     time_cost=ct.HASH_TIME_COST,
     memory_cost=ct.HASH_MEMORY_COST,
     parallelism=ct.HASH_PARALLELISM,
-    hash_len=ct.MAX_PASS_HASH_LEN,
     salt_len=ct.HASH_SALT_LEN,
 )
 

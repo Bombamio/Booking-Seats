@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
+from src.core.logger import bookingseats_logger
 from src.core.settings import settings
 
 async_engine = create_async_engine(
@@ -27,8 +28,9 @@ async def get_session() -> AsyncIterator[AsyncSession]:
         try:
             yield session  # noqa: ASYNC119
             await session.commit()
-        except SQLAlchemyError:
+        except SQLAlchemyError as exc:
             await session.rollback()
+            bookingseats_logger.error(exc)
             raise HTTPException(
                 status_code=500,
                 detail='Ошибка при работе с БД',

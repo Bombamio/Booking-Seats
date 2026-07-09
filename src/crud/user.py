@@ -29,11 +29,6 @@ class CRUDUser(CRUDBase):
         **relations: Any,
     ) -> User:
         """Создание пользователя."""
-        if await self.duplicate_login(
-            session,
-            login=user_create.email or user_create.phone,
-        ):
-            raise ValueError('Пользователь с таким email/phone уже существует')
         password_hash = hash_password(user_create.password)
 
         user_payload = user_create.model_dump(exclude={'password'})
@@ -41,12 +36,7 @@ class CRUDUser(CRUDBase):
 
         user_entity = self.model(**user_payload)
 
-        for attr, value in relations.items():
-            if attr not in self.relationships:
-                raise ValueError(
-                    f'{attr} is not a relationships of {self.model.__name__}',
-                )
-            setattr(user_entity, attr, value)
+        self._set_relation(user_entity, relations)
 
         session.add(user_entity)
         bookingseats_logger.debug(
@@ -75,12 +65,7 @@ class CRUDUser(CRUDBase):
             if field in self.model_fields:
                 setattr(user_entity, field, value)
 
-        for attr, value in relations.items():
-            if attr not in self.relationships:
-                raise ValueError(
-                    f'{attr} is not a relationships of {self.model.__name__}',
-                )
-            setattr(user_entity, attr, value)
+        self._set_relation(user_entity, relations)
 
         session.add(user_entity)
         bookingseats_logger.debug(

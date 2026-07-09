@@ -18,6 +18,8 @@ class UserService(CRUDUser, BaseService):
         user_in: schema.UserCreate,
     ) -> User:
         """Создание нового пользователя."""
+        if await user_crud.duplicate_login(session, login=user_in.email or user_in.phone):
+            raise ValueError('Пользователь с таким email/phone уже существует')
         return await self.create(user_in, session)
 
     async def get_user(
@@ -77,7 +79,7 @@ class UserService(CRUDUser, BaseService):
         current_user: User,
     ) -> User:
         """Получение информации о текущем пользователе."""
-        return await self.get(session, User.id == current_user.id)
+        return current_user
 
     async def update_me(
         self,

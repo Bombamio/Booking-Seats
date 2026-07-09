@@ -42,6 +42,15 @@ class CRUDBase:
                         f'Invalid filter: {filter_}',
                     )
 
+    def _set_relation(self, entity: Any, relations: dict[str, Any]) -> None:
+        for attr, value in relations.items():
+            if attr not in self.relationships:
+                # Защита от опечаток.
+                raise ValueError(
+                    f'{attr} is not a relationships of {self.model.__name__}',
+                )
+            setattr(entity, attr, value)
+
     async def get(
         self,
         session: AsyncSession,
@@ -122,13 +131,7 @@ class CRUDBase:
         }
         created_entity = self.model(**create_payload)
 
-        for attr, value in relations.items():
-            if attr not in self.relationships:
-                # Защита от опечаток.
-                raise ValueError(
-                    f'{attr} is not a relationships of {self.model.__name__}',
-                )
-            setattr(created_entity, attr, value)
+        self._set_relation(created_entity, relations)
 
         session.add(created_entity)
         await session.commit()
@@ -177,13 +180,7 @@ class CRUDBase:
             if field in self.model_fields:
                 setattr(db_entity, field, value)
 
-        for attr, value in relations.items():
-            if attr not in self.relationships:
-                # Защита от опечаток.
-                raise ValueError(
-                    f'{attr} is not a relationships of {self.model.__name__}',
-                )
-            setattr(db_entity, attr, value)
+        self._set_relation(db_entity, relations)
 
         session.add(db_entity)
         bookingseats_logger.debug(

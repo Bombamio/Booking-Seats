@@ -1,9 +1,9 @@
 import enum
 import uuid
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 
-from sqlalchemy import CheckConstraint, Enum, ForeignKey, String
-from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
+from sqlalchemy import CheckConstraint, Enum, ForeignKey, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core import constants as ct
 from src.core.base_model import Base
@@ -27,35 +27,39 @@ class User(Base):
         String(ct.MAX_USERNAME_LEN),
         unique=True,
     )
-    email: Mapped[str] = mapped_column(
+
+    email: Mapped[Optional[str]] = mapped_column(
         String(ct.MAX_EMAIL_LEN),
         unique=True,
-        nullable=True,
     )
-    phone: Mapped[str] = mapped_column(
+
+    phone: Mapped[Optional[str]] = mapped_column(
         String(ct.MAX_PHONE_LEN),
         unique=True,
-        nullable=True,
     )
+
     tg_id: Mapped[Optional[str]] = mapped_column(
         String(ct.MAX_TG_ID_LEN),
         unique=True,
     )
+
     password_hash: Mapped[str] = mapped_column(
-        String(ct.MAX_PASS_HASH_LEN),
+        Text,
     )
+
     role: Mapped[UserRole] = mapped_column(
         Enum(UserRole),
         default=UserRole.USER,
     )
+
     cafe_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         ForeignKey('cafes.id', ondelete='RESTRICT'),
-        nullable=True,
     )
 
     cafe: Mapped['Cafe | None'] = relationship(
         back_populates='managers',
     )
+
     bookings: Mapped[List['Booking']] = relationship(
         back_populates='user',
     )
@@ -71,31 +75,26 @@ class User(Base):
         ),
     )
 
-    @validates('email', 'phone')
-    def validate_contact_info(
-        self,
-        key: str,
-        value: str | None,
-    ) -> str | None:
-        """Валидация: хотя бы одно из полей email/phone заполнено."""
-        if key == 'email':
-            email = value.strip() if isinstance(value, str) else None
-        elif key == 'phone':
-            phone = value.strip() if isinstance(value, str) else None
+    def __init__(self, **kwargs: Any) -> None:
+        """Проверка после создания объекта,
+        когда все поля уже существуют.
+        """  # noqa: D205
+        super().__init__(**kwargs)
 
-        if email is None and phone is None:
-            raise ValueError('Хотя бы одно из полей email/phone должно быть заполнено.')
+        if self.email:
+            self.email = self.email.strip()
 
-        return value
+        if self.phone:
+            self.phone = self.phone.strip()
 
-    @validates('cafe_id')
-    def validate_cafe_id(
-        self,
-        key: str,
-        cafe_id: uuid.UUID | None,
-    ) -> uuid.UUID | None:
-        """Валидация кафе для роли пользователя: менеджер."""
-        if self.role == UserRole.MANAGER or cafe_id is None:
-            return cafe_id
+        if self.email is None and self.phone is None:
+            raise ValueError(
+                'Хотя бы одно из полей email/phone должно быть заполнено.',
+            )
 
-        raise ValueError('Кафе может быть назначено только менеджерам (cafe_id должно быть None).')
+    def validate_cafe_id(self) -> None:
+        """Проверка связи кафе и роли."""
+        if self.role != UserRole.MANAGER and self.cafe_id is not None:
+            raise ValueError(
+                'Кафе может быть назначено только менеджерам.',
+            )

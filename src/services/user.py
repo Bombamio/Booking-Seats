@@ -24,7 +24,11 @@ class UserService(CRUDUser, BaseService):
             UserRole.MANAGER,
         ):
             self.raise_forbidden('Доступ запрещен')
-        if await user_crud.duplicate_login(session, login=user_in.email or user_in.phone):
+        if await user_crud.duplicate_contact(
+            session,
+            email=user_in.email,
+            phone=user_in.phone,
+        ):
             self.raise_unprocessable_entity('Пользователь с таким email/phone уже существует')
         return await self.create(user_in, session)
 
@@ -75,11 +79,17 @@ class UserService(CRUDUser, BaseService):
             self.raise_not_found()
 
         update_data = user_in.model_dump(exclude_unset=True)
-        login = update_data.get('email') or update_data.get('phone')
-        if login and login != user.email and login != user.phone:
-            if await user_crud.duplicate_login(
+        check_email = (
+            update_data['email'] if 'email' in update_data and update_data['email'] != user.email else None
+        )
+        check_phone = (
+            update_data['phone'] if 'phone' in update_data and update_data['phone'] != user.phone else None
+        )
+        if check_email or check_phone:
+            if await user_crud.duplicate_contact(
                 session,
-                login,
+                email=check_email,
+                phone=check_phone,
                 exclude_id=user_id,
             ):
                 self.raise_unprocessable_entity('Пользователь с таким email/phone уже существует')

@@ -46,6 +46,10 @@ class Booking(Base):
         String(ct.MAX_DESCRIPTION_LEN),
     )
     guest_number: Mapped[int] = mapped_column(default=ct.DEFAULT_GUEST_NUMBER)
+    reminder_task_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        nullable=True,
+    )
 
     user: Mapped['User'] = relationship(
         back_populates='bookings',

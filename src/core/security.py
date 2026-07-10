@@ -22,6 +22,7 @@ ph = PasswordHasher(
 )
 
 security = HTTPBearer()
+security_optional = HTTPBearer(auto_error=False)
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
@@ -85,3 +86,16 @@ async def get_current_user(
     # Запишем текущего пользователя в контекст для логгера
     current_user_var.set(f'{user.username}({user.id})')
     return user
+
+
+async def get_optional_current_user(
+    credentials: Annotated[
+        HTTPAuthorizationCredentials | None,
+        Depends(security_optional),
+    ],
+    session: SessionDep,
+) -> User | None:
+    """Возвращает текущего пользователя или None для неавторизованных запросов."""
+    if credentials is None:
+        return None
+    return await get_current_user(credentials, session)

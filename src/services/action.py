@@ -145,7 +145,7 @@ class ActionService(CRUDAction, BaseService):
                 cafes_id=action_update.cafes_id,
             )
 
-            if user.role.MANAGER:
+            if user.role == UserRole.MANAGER:
                 await self.ensure_manajer_cafe_list_access(
                     user=user,
                     cafes_id=action_update.cafes_id,

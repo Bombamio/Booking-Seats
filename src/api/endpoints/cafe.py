@@ -42,7 +42,7 @@ async def get_cafes(
     status_code=status.HTTP_201_CREATED,
     summary='Создание нового кафе',
     responses=er.ERRORS_POST_CAFE,
-    dependencies=[Depends(vt.current_admin_or_manager)],
+    dependencies=[Depends(vt.current_admin)],
 )
 async def create_cafe(
     cafe: CafeCreate,
@@ -85,9 +85,10 @@ async def update_cafe(
     cafe_id: uuid.UUID,
     cafe: CafeUpdate,
     service: CafeServiceDep,
+    user: Annotated[User, Depends(vt.current_admin_or_manager)],
 ) -> Cafe:
     """Обновление информации о кафе по его ID.
 
     Только для администраторов и менеджеров.
     """
-    return await service.update_cafe(cafe_id, cafe)
+    return await service.update_cafe(cafe_id, cafe, user)

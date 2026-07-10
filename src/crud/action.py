@@ -67,13 +67,13 @@ class CRUDAction(CRUDBase):
 
     async def update(
         self,
-        action_entity: Action,
-        action_update: ActionUpdate,
+        db_entity: Action,
+        update_data: ActionUpdate,
         session: AsyncSession,
         **relations: Any,
     ) -> Action:
         """Обновление акции, включая связи с кафе."""
-        action = await super().update(action_entity, action_update, session, **relations)
+        action = await super().update(db_entity, update_data, session, **relations)
         return await self._reload_with_cafes(session, action.id)
 
 

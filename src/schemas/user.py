@@ -5,12 +5,12 @@
 Локальные миксины:
    - `UserBaseMixin` — имя, контакты и Telegram ID; форматы email и телефона
      проверяются через `pattern` из констант.
-   - `UserContactValidationMixin` — при создании и обновлении требуется хотя бы одно
-     из полей `email` / `phone`.
 
 Схемы API:
-   - `UserCreate` — регистрация пользователя с обязательным паролем.
-   - `UserUpdate` — частичное обновление; `cafe_id` допустимо только для роли `MANAGER`.
+   - `UserCreate` — регистрация пользователя с обязательным паролем;
+     требуется хотя бы одно из полей `email` / `phone`.
+   - `UserUpdate` — частичное обновление; `cafe_id` допустимо только для роли `MANAGER`;
+     контакты валидируются только при явной передаче `email` / `phone`.
    - `UserShortInfo` — краткая информация для вложенных ответов.
    - `UserInfo` — полный ответ API с ролью и привязкой к кафе.
 
@@ -55,8 +55,18 @@ class UserBaseMixin:
     tg_id: str | None = Field(None, max_length=ct.MAX_TG_ID_LEN)
 
 
-class UserContactValidationMixin:
-    """Миксин с валидацией контактных данных пользователя."""
+class UserCreate(UserBaseMixin, BaseCreate):
+    """Схема создания пользователя.
+
+    Поля (включая унаследованные):
+        username (str): имя пользователя; обязательное.
+        email (str | None): адрес электронной почты; необязательное.
+        phone (str | None): номер телефона; необязательное.
+        tg_id (str | None): идентификатор Telegram; необязательное.
+        password (str): пароль; обязательное.
+    """
+
+    password: str = Field(min_length=ct.MIN_PASSWORD_LEN, max_length=ct.MAX_PASSWORD_LEN)
 
     @model_validator(mode='after')
     def validate_contact_info(self) -> 'UserCreate':
@@ -70,21 +80,7 @@ class UserContactValidationMixin:
         return self
 
 
-class UserCreate(UserContactValidationMixin, UserBaseMixin, BaseCreate):
-    """Схема создания пользователя.
-
-    Поля (включая унаследованные):
-        username (str): имя пользователя; обязательное.
-        email (str | None): адрес электронной почты; необязательное.
-        phone (str | None): номер телефона; необязательное.
-        tg_id (str | None): идентификатор Telegram; необязательное.
-        password (str): пароль; обязательное.
-    """
-
-    password: str = Field(min_length=ct.MIN_PASSWORD_LEN, max_length=ct.MAX_PASSWORD_LEN)
-
-
-class UserUpdate(UserContactValidationMixin, UserBaseMixin, BaseUpdate):
+class UserUpdate(UserBaseMixin, BaseUpdate):
     """Схема обновления информации о пользователе.
 
     Поля (включая унаследованные):
@@ -110,6 +106,21 @@ class UserUpdate(UserContactValidationMixin, UserBaseMixin, BaseUpdate):
         'cafe_id',
         'is_active',
     }
+
+    @model_validator(mode='after')
+    def validate_contact_info(self) -> 'UserUpdate':
+        """Валидация контактов только при явной передаче email/phone."""
+        contact_fields = {'email', 'phone'}
+        if not contact_fields & self.model_fields_set:
+            return self
+
+        email = self.email.strip() if isinstance(self.email, str) else None
+        phone = self.phone.strip() if isinstance(self.phone, str) else None
+
+        if not email and not phone:
+            raise ValueError('Хотя бы одно из полей email/phone должно быть заполнено.')
+
+        return self
 
     @model_validator(mode='after')
     def validate_cafe_id(self) -> 'UserUpdate':

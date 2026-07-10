@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api import error_responses as er
 from src.core.db import get_session
-from src.core.security import get_current_user
+from src.core.security import get_current_user, get_optional_current_user
 from src.models import User
 from src.schemas import user as schema
 from src.services import user_service
@@ -87,11 +87,13 @@ async def get_user(
 async def create_user(
     user_in: schema.UserCreate,
     session: SessionDep,
+    current_user: Annotated[User | None, Depends(get_optional_current_user)],
 ) -> User:
     """Создание нового пользователя."""
     return await user_service.create_user(
         session=session,
         user_in=user_in,
+        current_user=current_user,
     )
 
 

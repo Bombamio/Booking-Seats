@@ -10,7 +10,7 @@
 и `FromAttributesMixin` напрямую.
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from src.schemas.base import FromAttributesMixin
 
@@ -34,6 +34,8 @@ class AuthData(FromAttributesMixin, BaseModel):
         login (str): логин пользователя (email или телефон); обязательное.
         password (str): пароль пользователя; обязательное.
     """
+
+    model_config = ConfigDict(extra='forbid')
 
     login: str = Field(description='Логин пользователя (email или телефон)')
     password: str = Field(description='Пароль пользователя')

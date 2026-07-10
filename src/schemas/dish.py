@@ -19,9 +19,9 @@
 """
 
 import uuid
-from typing import ClassVar
+from typing import Annotated, ClassVar
 
-from pydantic import Field, PositiveInt
+from pydantic import Field, PositiveInt, Strict
 
 from src.core import constants as ct
 from src.schemas.base import (
@@ -32,12 +32,14 @@ from src.schemas.base import (
 )
 from src.schemas.cafe import CafeShortInfo
 
+DishPrice = Annotated[PositiveInt, Strict()]
+
 
 class DishBaseMixin:
     """Миксин с атрибутами блюда."""
 
     name: str = Field(max_length=ct.MAX_NAME_LEN)
-    price: PositiveInt
+    price: DishPrice
 
 
 class DishCreate(DishBaseMixin, PhotoIdMixin, BaseDescriptionCreate):
@@ -51,7 +53,7 @@ class DishCreate(DishBaseMixin, PhotoIdMixin, BaseDescriptionCreate):
         cafes_id (list[UUID]): идентификаторы кафе; обязательное.
     """
 
-    cafes_id: list[uuid.UUID]
+    cafes_id: list[uuid.UUID] = Field(min_length=ct.MIN_CAFE_LINK_COUNT)
 
 
 class DishUpdate(PhotoIdMixin, BaseDescriptionUpdate):
@@ -67,8 +69,8 @@ class DishUpdate(PhotoIdMixin, BaseDescriptionUpdate):
     """
 
     name: str | None = Field(None, max_length=ct.MAX_NAME_LEN)
-    price: PositiveInt | None = Field(None)
-    cafes_id: list[uuid.UUID] | None = None
+    price: DishPrice | None = Field(None)
+    cafes_id: list[uuid.UUID] | None = Field(None, min_length=ct.MIN_CAFE_LINK_COUNT)
 
     _not_null_fields: ClassVar[set[str]] = {'name', 'price', 'cafes_id', 'is_active'}
 

@@ -23,7 +23,7 @@
 from datetime import time
 from typing import ClassVar, Self
 
-from pydantic import model_validator
+from pydantic import field_validator, model_validator
 
 from src.schemas.base import (
     BaseDescriptionCreate,
@@ -39,6 +39,14 @@ class TimeSlotBaseMixin:
 
     start_time: time
     end_time: time
+
+    @field_validator('start_time', 'end_time', mode='before')
+    @classmethod
+    def time_must_be_string(cls, value: object) -> object:
+        """Запрещает передавать число или bool вместо строки времени."""
+        if isinstance(value, (int, float, bool)):
+            raise ValueError('Время должно быть строкой в формате HH:MM:SS.')
+        return value
 
 
 class TimeSlotValidationMixin:

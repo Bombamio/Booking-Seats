@@ -28,8 +28,8 @@ services:
       timeout: 10s
       retries: 5
     restart: unless-stopped
-    expose:
-    - "6379"
+    ports:
+    - "6379:6379"
 
   rabbitmq:
     image: rabbitmq:3.13-management
@@ -44,9 +44,9 @@ services:
       timeout: 10s
       retries: 5
     restart: unless-stopped
-    expose:
-      - "5672"
-      - "15672"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
     volumes:
       - "rabbitmq_data:/var/lib/rabbitmq"
 
@@ -74,7 +74,9 @@ services:
     image: bombamio/booking_seats_team_4:latest
     env_file:
       - .env
-    command: celery -A src.core.celery_app worker --loglevel=INFO
+    entrypoint: [""]
+    working_dir: /app
+    command: ["/app/.venv/bin/celery", "-A", "src.core.celery_app", "worker", "--loglevel=INFO"]
     depends_on:
       rabbitmq:
         condition: service_healthy

@@ -119,3 +119,19 @@ LOG_FORMAT = (
     '<cyan>{extra[user]}</cyan> | '
     '<level>{message}</level>'
 )
+
+###############################################################################
+# Дефолтные пользователи.                                                     #
+###############################################################################
+
+FIRST_SUPERUSER_USERNAME = 'admin_1'
+FIRST_SUPERUSER_EMAIL = 'admin@example.com'
+FIRST_SUPERUSER_PASSWORD = 'admin1234'
+
+FIRST_MANAGER_USERNAME = 'manager_1'
+FIRST_MANAGER_EMAIL = 'manager@example.com'
+FIRST_MANAGER_PASSWORD = 'manager1234'
+
+FIRST_USER_USERNAME = 'user_1'
+FIRST_USER_EMAIL = 'user@example.com'
+FIRST_USER_PASSWORD = 'user1234'

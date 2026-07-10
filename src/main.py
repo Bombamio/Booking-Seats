@@ -8,6 +8,7 @@ from src.api.routers import main_router
 from src.core.cache import cache
 from src.core.constants import OPENAPI_TAGS
 from src.core.error_handlers import register_error_handlers
+from src.core.initial_data import create_first_users
 from src.core.logger import bookingseats_logger
 from src.core.logging_middleware import LoggingMiddleware
 from src.core.settings import settings
@@ -16,11 +17,10 @@ from src.core.settings import settings
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator:
     """Жизненный цикл приложения FastAPI."""
-    # TODO: Добавить код, выполняемый при старте приложения
     bookingseats_logger.info('Запуск приложения BookingSeats...')
     await cache.connect()
+    await create_first_users()
     yield
-    # TODO: Добавить код, выполняемый при остановке приложения
     if cache.redis:
         await cache.redis.aclose()
     bookingseats_logger.info('Приложение BookingSeats остановлено.')

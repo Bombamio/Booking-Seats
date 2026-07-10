@@ -2,6 +2,7 @@ import contextlib
 
 from sqlalchemy import select
 
+from src.core import constants as ct
 from src.core.db import get_session
 from src.core.logger import bookingseats_logger
 from src.core.security import hash_password
@@ -19,21 +20,21 @@ async def create_first_users() -> None:
 
     default_users = [
         {
-            'username': settings.first_superuser_name,
-            'email': settings.first_superuser_email,
-            'password': settings.first_superuser_password,
+            'username': ct.FIRST_SUPERUSER_USERNAME,
+            'email': ct.FIRST_SUPERUSER_EMAIL,
+            'password_hash': ct.FIRST_SUPERUSER_PASSWORD,
             'role': UserRole.ADMIN,
         },
         {
-            'username': settings.first_manager_username,
-            'email': settings.first_manager_email,
-            'password': settings.first_manager_password,
+            'username': ct.FIRST_MANAGER_USERNAME,
+            'email': ct.FIRST_MANAGER_EMAIL,
+            'password_hash': ct.FIRST_MANAGER_PASSWORD,
             'role': UserRole.MANAGER,
         },
         {
-            'username': settings.first_user_username,
-            'email': settings.first_user_email,
-            'password': settings.first_user_password,
+            'username': ct.FIRST_USER_USERNAME,
+            'email': ct.FIRST_USER_EMAIL,
+            'password_hash': ct.FIRST_USER_PASSWORD,
             'role': UserRole.USER,
         },
     ]
@@ -51,7 +52,7 @@ async def create_first_users() -> None:
             user = User(
                 username=user_data['username'],
                 email=user_data['email'],
-                password=hash_password(user_data['password']),
+                password_hash=hash_password(user_data['password_hash']),
                 role=user_data['role'],
             )
             session.add(user)

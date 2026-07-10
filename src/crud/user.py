@@ -1,4 +1,5 @@
 from typing import Any, Optional
+from uuid import UUID
 
 from sqlalchemy import or_
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,9 +19,33 @@ class CRUDUser(CRUDBase):
         session: AsyncSession,
         login: Optional[str],
     ) -> Optional[bool]:
-        """Проверка, есть ли такой логин в БД."""
+        """Проверка, есть ли такой логин (email или phone) в БД."""
+        if not login:
+            return False
         filters = [or_(User.email == login, User.phone == login)]
         return await self.exists(session, *filters)
+
+    async def duplicate_contact(
+        self,
+        session: AsyncSession,
+        *,
+        email: str | None = None,
+        phone: str | None = None,
+        exclude_id: UUID | None = None,
+    ) -> bool:
+        """Проверка занятости email и/или phone (каждое поле отдельно)."""
+        clauses = []
+        if email:
+            clauses.append(User.email == email)
+        if phone:
+            clauses.append(User.phone == phone)
+        if not clauses:
+            return False
+
+        filters: list[Any] = [or_(*clauses)]
+        if exclude_id is not None:
+            filters.append(User.id != exclude_id)
+        return bool(await self.exists(session, *filters))
 
     async def create(
         self,

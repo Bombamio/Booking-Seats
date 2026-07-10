@@ -1,8 +1,8 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Базовый набор FastAPI+SQLAlchemy+Postgres",
-    "description": "Основа для приложения",
+    "title": "Приложение BookingSeats команды № 4 потока 68-69",
+    "description": "Приложение для управления бронированием мест в кафе. Предоставляет REST API для управления данными о кафе, блюдах, столах и бронированиях.",
     "version": "0.0.1"
   },
   "paths": {
@@ -54,415 +54,83 @@
         }
       }
     },
-    "/api/v1/dishes/": {
-      "get": {
+    "/api/v1/auth/login": {
+      "post": {
         "tags": [
-          "Dishes"
+          "Аутентификация"
         ],
-        "summary": "Get Multi",
-        "description": "GET `/dishes` - Получение списка блюд.",
-        "operationId": "get_multi_api_v1_dishes__get",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "cafe_id",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "uuid"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Cafe Id"
+        "summary": "Получение токена авторизации",
+        "description": "Возвращает токен для последующей авторизации пользователя.",
+        "operationId": "login_api_v1_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthData"
+              }
             }
           },
-          {
-            "name": "show_active",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "boolean"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Show Active"
-            }
-          }
-        ],
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
+                  "$ref": "#/components/schemas/AuthToken"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Неверные имя пользователя или пароль",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/": {
+      "get": {
+        "tags": [
+          "Пользователи"
+        ],
+        "summary": "Получение списка пользователей",
+        "description": "Возвращает информацию о всех пользователях.Только для администраторов или менеджеров",
+        "operationId": "get_users_list_api_v1_users__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/DishInfo"
+                    "$ref": "#/components/schemas/UserInfo"
                   },
-                  "title": "Response Get Multi Api V1 Dishes  Get"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Неавторизированный пользователь",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Ошибка валидации данных",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Данные не найдены",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Dishes"
-        ],
-        "summary": "Create",
-        "description": "POST `/dishes` - Создает новое блюда.",
-        "operationId": "create_api_v1_dishes__post",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DishCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DishInfo"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Ошибка в параметрах запроса",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Неавторизированный пользователь",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Ошибка валидации данных",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Доступ запрещен",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/dishes/{dish_id}": {
-      "get": {
-        "tags": [
-          "Dishes"
-        ],
-        "summary": "Get By Id",
-        "description": "GET `/dishes/{dish_id}` - Получение информации о блюде по его ID.",
-        "operationId": "get_by_id_api_v1_dishes__dish_id__get",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "dish_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Dish Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DishInfo"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Ошибка в параметрах запроса",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Неавторизированный пользователь",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Ошибка валидации данных",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Доступ запрещен",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Данные не найдены",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "Dishes"
-        ],
-        "summary": "Update",
-        "description": "PATCH `/dishes/{dish_id}` - обновление информации о блюде по его ID.",
-        "operationId": "update_api_v1_dishes__dish_id__patch",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "dish_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Dish Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DishUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DishInfo"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Ошибка в параметрах запроса",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Неавторизированный пользователь",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Ошибка валидации данных",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Доступ запрещен",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Данные не найдены",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/cafes/{cafe_id}/time_slots/": {
-      "get": {
-        "tags": [
-          "TimeSlots"
-        ],
-        "summary": "Get Time Slots List",
-        "description": "Получение списка доступных для бронирования временных слотов в кафе.",
-        "operationId": "get_time_slots_list_api_v1_cafes__cafe_id__time_slots__get",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "cafe_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Cafe Id"
-            }
-          },
-          {
-            "name": "show_active",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "default": true,
-              "title": "Show Active"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
                   "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TimeSlotInfo"
-                  },
-                  "title": "Response Get Time Slots List Api V1 Cafes  Cafe Id  Time Slots  Get"
+                  "title": "Response Get Users List Api V1 Users  Get"
                 }
               }
             }
           },
           "401": {
             "description": "Неавторизированный пользователь",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен",
             "content": {
               "application/json": {
                 "schema": {
@@ -480,722 +148,26 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Данные не найдены",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       },
       "post": {
         "tags": [
-          "TimeSlots"
+          "Пользователи"
         ],
-        "summary": "Create Time Slot",
-        "description": "Создает новый временной слот в кафе.",
-        "operationId": "create_time_slot_api_v1_cafes__cafe_id__time_slots__post",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "cafe_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Cafe Id"
-            }
-          }
-        ],
+        "summary": "Create User",
+        "description": "Создание нового пользователя.",
+        "operationId": "create_user_api_v1_users__post",
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/TimeSlotCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TimeSlotInfo"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Ошибка в параметрах запроса",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Неавторизированный пользователь",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Ошибка валидации данных",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Доступ запрещен",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Данные не найдены",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/cafes/{cafe_id}/time_slots/{slot_id}": {
-      "get": {
-        "tags": [
-          "TimeSlots"
-        ],
-        "summary": "Get Time Slot By Id",
-        "description": "Получение информации о временном слоте в кафе по его ID.",
-        "operationId": "get_time_slot_by_id_api_v1_cafes__cafe_id__time_slots__slot_id__get",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "cafe_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Cafe Id"
-            }
-          },
-          {
-            "name": "slot_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Slot Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TimeSlotInfo"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Ошибка в параметрах запроса",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Неавторизированный пользователь",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Ошибка валидации данных",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Доступ запрещен",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Данные не найдены",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "TimeSlots"
-        ],
-        "summary": "Update Time Slot",
-        "description": "Обновление информации о временном слоте в кафе по его ID.",
-        "operationId": "update_time_slot_api_v1_cafes__cafe_id__time_slots__slot_id__patch",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "cafe_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Cafe Id"
-            }
-          },
-          {
-            "name": "slot_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Slot Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TimeSlotUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TimeSlotInfo"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Ошибка в параметрах запроса",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Неавторизированный пользователь",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Ошибка валидации данных",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Доступ запрещен",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Данные не найдены",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/cafes/{cafe_id}/tables": {
-      "get": {
-        "tags": [
-          "Столы"
-        ],
-        "summary": "Получение списка столов в кафе",
-        "description": "Получение списка доступных для бронирования столов в кафе.Для администраторов и менеджеров - все столы (с возможностью выбора),для пользователей - только активные.",
-        "operationId": "get_tables_list_api_v1_cafes__cafe_id__tables_get",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "cafe_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Cafe Id"
-            }
-          },
-          {
-            "name": "show_active",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "default": true,
-              "title": "Show Active"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TableInfo"
-                  },
-                  "title": "Response Get Tables List Api V1 Cafes  Cafe Id  Tables Get"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Неавторизированный пользователь",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Ошибка валидации данных",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Данные не найдены",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Столы"
-        ],
-        "summary": "Новый стол в кафе",
-        "description": "Создает новый стол кафе.Только для администраторов и менеджеров.",
-        "operationId": "create_table_api_v1_cafes__cafe_id__tables_post",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "cafe_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Cafe Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TableCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TableInfo"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Ошибка в параметрах запроса",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Неавторизированный пользователь",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Ошибка валидации данных",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Доступ запрещен",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Данные не найдены",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/cafes/{cafe_id}/tables/{table_id}": {
-      "get": {
-        "tags": [
-          "Столы"
-        ],
-        "summary": "Информация о столе в кафе по его ID",
-        "description": "Получение информации о столе в кафе по его ID.Для администраторов и менеджеров - все столы,для пользователей - только активные.",
-        "operationId": "get_table_api_v1_cafes__cafe_id__tables__table_id__get",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "cafe_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Cafe Id"
-            }
-          },
-          {
-            "name": "table_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Table Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TableInfo"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Ошибка в параметрах запроса",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Неавторизированный пользователь",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Ошибка валидации данных",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Доступ запрещен",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Данные не найдены",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "Столы"
-        ],
-        "summary": "Обновление информации о столе в кафе по его ID",
-        "description": "Обновление информации о столе в кафе по его ID.Только для администраторов и менеджеров.",
-        "operationId": "update_table_api_v1_cafes__cafe_id__tables__table_id__patch",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "cafe_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Cafe Id"
-            }
-          },
-          {
-            "name": "table_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Table Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TableUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TableInfo"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Ошибка в параметрах запроса",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Неавторизированный пользователь",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Ошибка валидации данных",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Доступ запрещен",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Данные не найдены",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/media/": {
-      "post": {
-        "tags": [
-          "Media"
-        ],
-        "summary": "Загрузка изображения",
-        "description": "Загрузка изображения на сервер. Поддерживаются форматы jpg, png. Размер файла не более 5 Мб. Только для администраторов и менеджеров.",
-        "operationId": "upload_media_api_v1_media__post",
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_upload_media_api_v1_media__post"
+                "$ref": "#/components/schemas/UserCreate"
               }
             }
           },
@@ -1207,7 +179,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MediaInfo"
+                  "$ref": "#/components/schemas/UserInfo"
                 }
               }
             }
@@ -1222,28 +194,8 @@
               }
             }
           },
-          "401": {
-            "description": "Неавторизированный пользователь",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Доступ запрещен",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
           "422": {
-            "description": "Ошибка сохранения файла",
+            "description": "Ошибка валидации данных",
             "content": {
               "application/json": {
                 "schema": {
@@ -1255,124 +207,26 @@
         },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ]
       }
     },
-    "/api/v1/media/{media_id}": {
+    "/api/v1/users/me": {
       "get": {
         "tags": [
-          "Media"
+          "Пользователи"
         ],
-        "summary": "Получение изображения",
-        "description": "Вернет изображение в бинарном формате по его ID.",
-        "operationId": "get_media_api_v1_media__media_id__get",
-        "parameters": [
-          {
-            "name": "media_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Media Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Возвращает изображение в бинарном формате",
-            "content": {
-              "application/json": {
-                "schema": {}
-              },
-              "image/jpeg": {}
-            }
-          },
-          "404": {
-            "description": "Данные не найдены",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Ошибка валидации данных",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/actions/actions/": {
-      "get": {
-        "tags": [
-          "Actions",
-          "Акции"
-        ],
-        "summary": "Get Actions",
-        "description": "Вернет список акций с фильтрацией.",
-        "operationId": "get_actions_api_v1_actions_actions__get",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "show_active",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "boolean"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Show Active"
-            }
-          },
-          {
-            "name": "cafe_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "uuid"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Cafe Id"
-            }
-          }
-        ],
+        "summary": "Get Me",
+        "description": "Получение информации о текущем пользователе.",
+        "operationId": "get_me_api_v1_users_me_get",
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ActionInfo"
-                  },
-                  "title": "Response Get Actions Api V1 Actions Actions  Get"
+                  "$ref": "#/components/schemas/UserInfo"
                 }
               }
             }
@@ -1384,51 +238,40 @@
                 "schema": {
                   "$ref": "#/components/schemas/CustomError"
                 }
-              }
-            }
-          },
-          "422": {
-            "description": "Ошибка валидации данных",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Actions",
-          "Акции"
-        ],
-        "summary": "Create Action",
-        "description": "Создаст новую акцию.",
-        "operationId": "create_action_api_v1_actions_actions__post",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ActionCreate"
               }
             }
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "Пользователи"
+        ],
+        "summary": "Update Me",
+        "description": "Обновление информации о текущем пользователе.",
+        "operationId": "update_me_api_v1_users_me_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserUpdate"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
-          "201": {
+          "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ActionInfo"
+                  "$ref": "#/components/schemas/UserInfo"
                 }
               }
             }
@@ -1462,43 +305,37 @@
                 }
               }
             }
-          },
-          "403": {
-            "description": "Доступ запрещен",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
           }
-        }
-      }
-    },
-    "/api/v1/actions/actions/{action_id}": {
-      "get": {
-        "tags": [
-          "Actions",
-          "Акции"
-        ],
-        "summary": "Get Action",
-        "description": "Вернет акцию по идентификатору.",
-        "operationId": "get_action_api_v1_actions_actions__action_id__get",
+        },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/users/{user_id}": {
+      "get": {
+        "tags": [
+          "Пользователи"
+        ],
+        "summary": "Get User",
+        "description": "Получение информации о пользователе по его ID.\n\nТолько для администраторов или менеджеров.",
+        "operationId": "get_user_api_v1_users__user_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
           }
         ],
         "parameters": [
           {
-            "name": "action_id",
+            "name": "user_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
               "format": "uuid",
-              "title": "Action Id"
+              "title": "User Id"
             }
           }
         ],
@@ -1508,33 +345,13 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ActionInfo"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Ошибка в параметрах запроса",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
+                  "$ref": "#/components/schemas/UserInfo"
                 }
               }
             }
           },
           "401": {
             "description": "Неавторизированный пользователь",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Ошибка валидации данных",
             "content": {
               "application/json": {
                 "schema": {
@@ -1555,6 +372,16 @@
           },
           "404": {
             "description": "Данные не найдены",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Ошибка валидации данных",
             "content": {
               "application/json": {
                 "schema": {
@@ -1567,26 +394,25 @@
       },
       "patch": {
         "tags": [
-          "Actions",
-          "Акции"
+          "Пользователи"
         ],
-        "summary": "Update Action",
-        "description": "Обновит данные существующей акции.",
-        "operationId": "update_action_api_v1_actions_actions__action_id__patch",
+        "summary": "Update User",
+        "description": "Обновление информации о пользователе по его ID.\n\nТолько для администраторов или менеджеров",
+        "operationId": "update_user_api_v1_users__user_id__patch",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
           {
-            "name": "action_id",
+            "name": "user_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
               "format": "uuid",
-              "title": "Action Id"
+              "title": "User Id"
             }
           }
         ],
@@ -1595,7 +421,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ActionUpdate"
+                "$ref": "#/components/schemas/UserUpdate"
               }
             }
           }
@@ -1606,7 +432,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ActionInfo"
+                  "$ref": "#/components/schemas/UserInfo"
                 }
               }
             }
@@ -1667,14 +493,14 @@
     "/api/v1/cafes/": {
       "get": {
         "tags": [
-          "Cafes"
+          "Кафе"
         ],
         "summary": "Получение списка кафе",
         "description": "Получение списка кафе.\n\nДля администраторов и менеджеров - все кафе (с возможностью выбора),\nдля пользователей - только активные.",
         "operationId": "get_cafes_api_v1_cafes__get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -1728,14 +554,14 @@
       },
       "post": {
         "tags": [
-          "Cafes"
+          "Кафе"
         ],
         "summary": "Создание нового кафе",
         "description": "Создает новое кафе.\n\nТолько для администраторов и менеджеров.",
         "operationId": "create_cafe_api_v1_cafes__post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "requestBody": {
@@ -1749,7 +575,7 @@
           }
         },
         "responses": {
-          "200": {
+          "201": {
             "description": "Successful Response",
             "content": {
               "application/json": {
@@ -1825,14 +651,14 @@
     "/api/v1/cafes/{cafe_id}": {
       "get": {
         "tags": [
-          "Cafes"
+          "Кафе"
         ],
         "summary": "Получение информации о кафе по его ID",
         "description": "Получение информации о кафе по его ID.\n\nДля администраторов и менеджеров - все кафе, для пользователей\nтолько активные.",
         "operationId": "get_cafe_api_v1_cafes__cafe_id__get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -1912,14 +738,14 @@
       },
       "patch": {
         "tags": [
-          "Cafes"
+          "Кафе"
         ],
         "summary": "Обновление информации о кафе по его ID",
         "description": "Обновление информации о кафе по его ID.\n\nТолько для администраторов и менеджеров.",
         "operationId": "update_cafe_api_v1_cafes__cafe_id__patch",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -2018,31 +844,155 @@
         }
       }
     },
-    "/api/v1/users/": {
+    "/api/v1/cafes/{cafe_id}/tables": {
       "get": {
         "tags": [
-          "Users"
+          "Столы"
         ],
-        "summary": "Получение списка пользователей",
-        "description": "Возвращает информацию о всех пользователях.Только для администраторов или менеджеров",
-        "operationId": "get_users_list_api_v1_users__get",
+        "summary": "Получение списка столов в кафе",
+        "description": "Получение списка доступных для бронирования столов в кафе.Для администраторов и менеджеров - все столы (с возможностью выбора),для пользователей - только активные.",
+        "operationId": "get_tables_list_api_v1_cafes__cafe_id__tables_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cafe_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Cafe Id"
+            }
+          },
+          {
+            "name": "show_active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "Show Active"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/UserInfo"
-                  },
                   "type": "array",
-                  "title": "Response Get Users List Api V1 Users  Get"
+                  "items": {
+                    "$ref": "#/components/schemas/TableInfo"
+                  },
+                  "title": "Response Get Tables List Api V1 Cafes  Cafe Id  Tables Get"
                 }
               }
             }
           },
           "401": {
             "description": "Неавторизированный пользователь",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Ошибка валидации данных",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Данные не найдены",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Столы"
+        ],
+        "summary": "Новый стол в кафе",
+        "description": "Создает новый стол кафе.Только для администраторов и менеджеров.",
+        "operationId": "create_table_api_v1_cafes__cafe_id__tables_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cafe_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Cafe Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TableCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TableInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Ошибка в параметрах запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Неавторизированный пользователь",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Ошибка валидации данных",
             "content": {
               "application/json": {
                 "schema": {
@@ -2061,6 +1011,1035 @@
               }
             }
           },
+          "404": {
+            "description": "Данные не найдены",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cafes/{cafe_id}/tables/{table_id}": {
+      "get": {
+        "tags": [
+          "Столы"
+        ],
+        "summary": "Информация о столе в кафе по его ID",
+        "description": "Получение информации о столе в кафе по его ID.Для администраторов и менеджеров - все столы,для пользователей - только активные.",
+        "operationId": "get_table_api_v1_cafes__cafe_id__tables__table_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cafe_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Cafe Id"
+            }
+          },
+          {
+            "name": "table_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Table Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TableInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Ошибка в параметрах запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Неавторизированный пользователь",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Ошибка валидации данных",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Данные не найдены",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Столы"
+        ],
+        "summary": "Обновление информации о столе в кафе по его ID",
+        "description": "Обновление информации о столе в кафе по его ID.Только для администраторов и менеджеров.",
+        "operationId": "update_table_api_v1_cafes__cafe_id__tables__table_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cafe_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Cafe Id"
+            }
+          },
+          {
+            "name": "table_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Table Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TableUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TableInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Ошибка в параметрах запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Неавторизированный пользователь",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Ошибка валидации данных",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Данные не найдены",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cafes/{cafe_id}/time_slots/": {
+      "get": {
+        "tags": [
+          "Временные слоты"
+        ],
+        "summary": "Получение списка временных слотов кафе",
+        "description": "Получение списка доступных для бронирования временных слотов в кафе.",
+        "operationId": "get_time_slots_list_api_v1_cafes__cafe_id__time_slots__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cafe_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Cafe Id"
+            }
+          },
+          {
+            "name": "show_active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "Show Active"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TimeSlotInfo"
+                  },
+                  "title": "Response Get Time Slots List Api V1 Cafes  Cafe Id  Time Slots  Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Неавторизированный пользователь",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Ошибка валидации данных",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Данные не найдены",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Временные слоты"
+        ],
+        "summary": "Создание нового временного слота в кафе",
+        "description": "Создает новый временной слот в кафе.",
+        "operationId": "create_time_slot_api_v1_cafes__cafe_id__time_slots__post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cafe_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Cafe Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TimeSlotCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimeSlotInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Ошибка в параметрах запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Неавторизированный пользователь",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Ошибка валидации данных",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Данные не найдены",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cafes/{cafe_id}/time_slots/{slot_id}": {
+      "get": {
+        "tags": [
+          "Временные слоты"
+        ],
+        "summary": "Получение информации о временном слоте по его ID",
+        "description": "Получение информации о временном слоте в кафе по его ID.",
+        "operationId": "get_time_slot_by_id_api_v1_cafes__cafe_id__time_slots__slot_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cafe_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Cafe Id"
+            }
+          },
+          {
+            "name": "slot_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Slot Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimeSlotInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Ошибка в параметрах запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Неавторизированный пользователь",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Ошибка валидации данных",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Данные не найдены",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Временные слоты"
+        ],
+        "summary": "Обновление информации о временном слоте по его ID",
+        "description": "Обновление информации о временном слоте в кафе по его ID.",
+        "operationId": "update_time_slot_api_v1_cafes__cafe_id__time_slots__slot_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cafe_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Cafe Id"
+            }
+          },
+          {
+            "name": "slot_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Slot Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TimeSlotUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimeSlotInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Ошибка в параметрах запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Неавторизированный пользователь",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Ошибка валидации данных",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Данные не найдены",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dishes/": {
+      "get": {
+        "tags": [
+          "Блюда"
+        ],
+        "summary": "Get Multi",
+        "description": "GET `/dishes` - Получение списка блюд.",
+        "operationId": "get_multi_api_v1_dishes__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cafe_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cafe Id"
+            }
+          },
+          {
+            "name": "show_active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "Show Active"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DishInfo"
+                  },
+                  "title": "Response Get Multi Api V1 Dishes  Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Неавторизированный пользователь",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Ошибка валидации данных",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Данные не найдены",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Блюда"
+        ],
+        "summary": "Create",
+        "description": "POST `/dishes` - Создает новое блюда.",
+        "operationId": "create_api_v1_dishes__post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DishCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DishInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Ошибка в параметрах запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Неавторизированный пользователь",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Ошибка валидации данных",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dishes/{dish_id}": {
+      "get": {
+        "tags": [
+          "Блюда"
+        ],
+        "summary": "Get By Id",
+        "description": "GET `/dishes/{dish_id}` - Получение информации о блюде по его ID.",
+        "operationId": "get_by_id_api_v1_dishes__dish_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "dish_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Dish Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DishInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Ошибка в параметрах запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Неавторизированный пользователь",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Ошибка валидации данных",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Данные не найдены",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Блюда"
+        ],
+        "summary": "Update",
+        "description": "PATCH `/dishes/{dish_id}` - обновление информации о блюде по его ID.",
+        "operationId": "update_api_v1_dishes__dish_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "dish_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Dish Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DishUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DishInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Ошибка в параметрах запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Неавторизированный пользователь",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Ошибка валидации данных",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Данные не найдены",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/actions/": {
+      "get": {
+        "tags": [
+          "Акции"
+        ],
+        "summary": "Get Actions",
+        "description": "Вернет список акций с фильтрацией.",
+        "operationId": "get_actions_api_v1_actions__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "show_active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Show Active"
+            }
+          },
+          {
+            "name": "cafe_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cafe Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActionInfo"
+                  },
+                  "title": "Response Get Actions Api V1 Actions  Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Неавторизированный пользователь",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Ошибка валидации данных",
             "content": {
@@ -2071,37 +2050,295 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
+        }
       },
       "post": {
         "tags": [
-          "Users"
+          "Акции"
         ],
-        "summary": "Create User",
-        "description": "Создание нового пользователя.",
-        "operationId": "create_user_api_v1_users__post",
+        "summary": "Create Action",
+        "description": "Создаст новую акцию.",
+        "operationId": "create_action_api_v1_actions__post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UserCreate"
+                "$ref": "#/components/schemas/ActionCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Ошибка в параметрах запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Неавторизированный пользователь",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Ошибка валидации данных",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/actions/{action_id}": {
+      "get": {
+        "tags": [
+          "Акции"
+        ],
+        "summary": "Get Action",
+        "description": "Вернет акцию по идентификатору.",
+        "operationId": "get_action_api_v1_actions__action_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "action_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Action Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Ошибка в параметрах запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Неавторизированный пользователь",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Ошибка валидации данных",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Данные не найдены",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Акции"
+        ],
+        "summary": "Update Action",
+        "description": "Обновит данные существующей акции.",
+        "operationId": "update_action_api_v1_actions__action_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "action_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Action Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActionUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Ошибка в параметрах запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Неавторизированный пользователь",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Ошибка валидации данных",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Данные не найдены",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/media/": {
+      "post": {
+        "tags": [
+          "Медиа"
+        ],
+        "summary": "Загрузка изображения",
+        "description": "Загрузка изображения на сервер. Поддерживаются форматы jpg, png. Размер файла не более 5 Мб. Только для администраторов и менеджеров.",
+        "operationId": "upload_media_api_v1_media__post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_media_api_v1_media__post"
               }
             }
           },
           "required": true
         },
         "responses": {
-          "200": {
+          "201": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserInfo"
+                  "$ref": "#/components/schemas/MediaInfo"
                 }
               }
             }
@@ -2112,54 +2349,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Ошибка валидации данных",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/users/{user_id}": {
-      "get": {
-        "tags": [
-          "Users"
-        ],
-        "summary": "Get User",
-        "description": "Получение информации о пользователе по его ID.\n\nТолько для администраторов или менеджеров.",
-        "operationId": "get_user_api_v1_users__user_id__get",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "User Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserInfo"
                 }
               }
             }
@@ -2184,18 +2373,8 @@
               }
             }
           },
-          "404": {
-            "description": "Данные не найдены",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
           "422": {
-            "description": "Ошибка валидации данных",
+            "description": "Ошибка сохранения файла",
             "content": {
               "application/json": {
                 "schema": {
@@ -2204,80 +2383,42 @@
               }
             }
           }
-        }
-      },
-      "put": {
-        "tags": [
-          "Users"
-        ],
-        "summary": "Update User",
-        "description": "Обновление информации о пользователе по его ID.\n\nТолько для администраторов или менеджеров",
-        "operationId": "update_user_api_v1_users__user_id__put",
+        },
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
+        ]
+      }
+    },
+    "/api/v1/media/{media_id}": {
+      "get": {
+        "tags": [
+          "Медиа"
         ],
+        "summary": "Получение изображения",
+        "description": "Вернет изображение в бинарном формате по его ID.",
+        "operationId": "get_media_api_v1_media__media_id__get",
         "parameters": [
           {
-            "name": "user_id",
+            "name": "media_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "title": "User Id"
+              "format": "uuid",
+              "title": "Media Id"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "Возвращает изображение в бинарном формате",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserInfo"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Ошибка в параметрах запроса",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Неавторизированный пользователь",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Ошибка валидации данных",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Доступ запрещен",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
+                "schema": {}
+              },
+              "image/jpeg": {}
             }
           },
           "404": {
@@ -2289,83 +2430,6 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "/api/v1/users/me": {
-      "get": {
-        "tags": [
-          "Users"
-        ],
-        "summary": "Get Me",
-        "description": "Получение информации о текущем пользователе.",
-        "operationId": "get_me_api_v1_users_me_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserInfo"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Неавторизированный пользователь",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
-      },
-      "put": {
-        "tags": [
-          "Users"
-        ],
-        "summary": "Update Me",
-        "description": "Обновление информации о текущем пользователе.",
-        "operationId": "update_me_api_v1_users_me_put",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserInfo"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Ошибка в параметрах запроса",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Неавторизированный пользователь",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
           },
           "422": {
             "description": "Ошибка валидации данных",
@@ -2377,12 +2441,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
+        }
       }
     },
     "/api/v1/booking": {
@@ -2395,7 +2454,7 @@
         "operationId": "get_booking_list_api_v1_booking_get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -2490,7 +2549,7 @@
         "operationId": "create_booking_api_v1_booking_post",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "requestBody": {
@@ -2557,7 +2616,7 @@
         "operationId": "get_booking_api_v1_booking__booking_id__get",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -2644,7 +2703,7 @@
         "operationId": "update_booking_api_v1_booking__booking_id__patch",
         "security": [
           {
-            "OAuth2PasswordBearer": []
+            "HTTPBearer": []
           }
         ],
         "parameters": [
@@ -2733,48 +2792,6 @@
         }
       }
     },
-    "/api/v1/auth/login": {
-      "post": {
-        "tags": [
-          "Authenticaton"
-        ],
-        "summary": "Получение токена авторизации",
-        "description": "Возвращает токен для последующей авторизации пользователя.",
-        "operationId": "login_api_v1_auth_login_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AuthData"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthToken"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Неверные имя пользователя или пароль",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/": {
       "get": {
         "summary": "Index",
@@ -2824,7 +2841,9 @@
               "format": "uuid"
             },
             "type": "array",
-            "title": "Cafes Id"
+            "minItems": 1,
+            "title": "Cafes Id",
+            "description": "Список идентификаторов кафе, участвующих в акции"
           }
         },
         "additionalProperties": false,
@@ -2835,10 +2854,37 @@
           "cafes_id"
         ],
         "title": "ActionCreate",
-        "description": "Схема для создания новой акции."
+        "description": "Схема для создания новой акции.\n\nПоля (включая унаследованные):\n    description (str): описание акции; обязательное.\n    photo_id (UUID | None): идентификатор изображения; обязательное.\n    cafes_id (list[UUID]): идентификаторы кафе-участников; обязательное."
       },
       "ActionInfo": {
         "properties": {
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active",
+            "description": "Признак активности (доступности) объекта"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
           "description": {
             "anyOf": [
               {
@@ -2850,53 +2896,6 @@
               }
             ],
             "title": "Description"
-          },
-          "is_active": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Active"
-          },
-          "id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Id"
-          },
-          "created_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Created At"
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Updated At"
           },
           "photo_id": {
             "anyOf": [
@@ -2915,15 +2914,34 @@
               "$ref": "#/components/schemas/CafeShortInfo"
             },
             "type": "array",
-            "title": "Cafes"
+            "title": "Cafes",
+            "description": "Список кафе, участвующих в акции"
           }
         },
         "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "cafes"
+        ],
         "title": "ActionInfo",
-        "description": "Схема с полной информацией об акции."
+        "description": "Схема с полной информацией об акции.\n\nПоля (включая унаследованные):\n    description (str | None): описание акции.\n    is_active (bool | None): признак активности.\n    id (UUID): идентификатор акции.\n    created_at (datetime): дата создания.\n    updated_at (datetime): дата обновления.\n    photo_id (UUID | None): идентификатор изображения.\n    cafes (list[CafeShortInfo]): связанные кафе."
       },
       "ActionUpdate": {
         "properties": {
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active",
+            "description": "Признак активности (доступности) объекта"
+          },
           "description": {
             "anyOf": [
               {
@@ -2935,17 +2953,6 @@
               }
             ],
             "title": "Description"
-          },
-          "is_active": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Active"
           },
           "photo_id": {
             "anyOf": [
@@ -2966,7 +2973,8 @@
                   "type": "string",
                   "format": "uuid"
                 },
-                "type": "array"
+                "type": "array",
+                "minItems": 1
               },
               {
                 "type": "null"
@@ -2978,7 +2986,7 @@
         "additionalProperties": false,
         "type": "object",
         "title": "ActionUpdate",
-        "description": "Схема для обновления акции."
+        "description": "Схема для обновления акции.\n\nПоля (включая унаследованные):\n    description (str | None): описание акции; необязательное; явный null запрещён.\n    photo_id (UUID | None): идентификатор изображения; необязательное.\n    is_active (bool | None): признак активности; необязательное; явный null запрещён.\n    cafes_id (list[UUID] | None): идентификаторы кафе-участников; необязательное; явный null запрещён."
       },
       "AuthData": {
         "properties": {
@@ -2993,13 +3001,14 @@
             "description": "Пароль пользователя"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "login",
           "password"
         ],
         "title": "AuthData",
-        "description": "Схема данных для аутентификации."
+        "description": "Схема данных для аутентификации.\n\nПоля:\n    login (str): логин пользователя (email или телефон); обязательное.\n    password (str): пароль пользователя; обязательное."
       },
       "AuthToken": {
         "properties": {
@@ -3018,7 +3027,7 @@
           "access_token"
         ],
         "title": "AuthToken",
-        "description": "Схема токена авторизации."
+        "description": "Схема токена авторизации.\n\nПоля:\n    access_token (str): JWT-токен доступа; обязательное.\n    token_type (str): тип токена; обязательное; по умолчанию `Bearer`."
       },
       "Body_upload_media_api_v1_media__post": {
         "properties": {
@@ -3036,41 +3045,17 @@
       },
       "BookingCreate": {
         "properties": {
-          "description": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 256
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "preordered_dishes": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/BookingDishCreate"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Preordered Dishes"
+          "booking_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Booking Date",
+            "description": "Дата бронирования"
           },
           "guest_number": {
             "type": "integer",
             "exclusiveMinimum": 0.0,
-            "title": "Guest Number"
-          },
-          "booking_date": {
-            "type": "string",
-            "format": "date",
-            "title": "Booking Date"
+            "title": "Guest Number",
+            "description": "Количество гостей"
           },
           "note": {
             "anyOf": [
@@ -3085,45 +3070,48 @@
             "title": "Note",
             "description": "Примечание к бронированию"
           },
-          "cafe_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Cafe Id"
-          },
           "tables_slots": {
             "items": {
-              "$ref": "#/components/schemas/BookingTableSlot"
+              "$ref": "#/components/schemas/BookingTableSlotCreate"
             },
             "type": "array",
             "minItems": 1,
             "title": "Tables Slots"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "guest_number",
-          "booking_date",
-          "cafe_id",
-          "tables_slots"
-        ],
-        "title": "BookingCreate",
-        "description": "Схема для создания нового бронирования."
-      },
-      "BookingDishCreate": {
-        "properties": {
-          "description": {
+          },
+          "pre_ordered_dishes": {
             "anyOf": [
               {
-                "type": "string",
-                "maxLength": 256
+                "items": {
+                  "$ref": "#/components/schemas/BookingDishCreate"
+                },
+                "type": "array"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Description"
+            "title": "Pre Ordered Dishes",
+            "description": "Список блюд, предварительно заказанных клиентом"
           },
+          "cafe_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Cafe Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "booking_date",
+          "guest_number",
+          "tables_slots",
+          "cafe_id"
+        ],
+        "title": "BookingCreate",
+        "description": "Схема для создания нового бронирования.\n\nПоля (включая унаследованные):\n    booking_date (date): дата бронирования; обязательное.\n    guest_number (PositiveInt): количество гостей; обязательное.\n    note (str | None): примечание; необязательное.\n    tables_slots (list[BookingTableSlotCreate]): столики и слоты; обязательное.\n    pre_ordered_dishes (list[BookingDishCreate] | None): предзаказ блюд; необязательное.\n    cafe_id (UUID): идентификатор кафе; обязательное."
+      },
+      "BookingDishCreate": {
+        "properties": {
           "dish_id": {
             "type": "string",
             "format": "uuid",
@@ -3142,7 +3130,7 @@
           "quantity"
         ],
         "title": "BookingDishCreate",
-        "description": "Схема блюда в предзаказе бронирования."
+        "description": "Схема блюда в предзаказе бронирования.\n\nПоля (включая унаследованные):\n    dish_id (UUID): идентификатор блюда; обязательное.\n    quantity (PositiveInt): количество порций; обязательное."
       },
       "BookingDishInfo": {
         "properties": {
@@ -3161,22 +3149,10 @@
           "quantity"
         ],
         "title": "BookingDishInfo",
-        "description": "Информация о блюде в предзаказе бронирования."
+        "description": "Информация о блюде в предзаказе бронирования.\n\nПоля:\n    dish (DishInfo): информация о блюде.\n    quantity (PositiveInt): количество порций."
       },
       "BookingInfo": {
         "properties": {
-          "description": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 256
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
           "is_active": {
             "anyOf": [
               {
@@ -3186,74 +3162,35 @@
                 "type": "null"
               }
             ],
-            "title": "Is Active"
+            "title": "Is Active",
+            "description": "Признак активности (доступности) объекта"
           },
           "id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "format": "uuid",
             "title": "Id"
           },
           "created_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "format": "date-time",
             "title": "Created At"
           },
           "updated_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "format": "date-time",
             "title": "Updated At"
           },
-          "preordered_dishes": {
-            "items": {
-              "$ref": "#/components/schemas/BookingDishInfo"
-            },
-            "type": "array",
-            "title": "Preordered Dishes"
+          "booking_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Booking Date",
+            "description": "Дата бронирования"
           },
           "guest_number": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "exclusiveMinimum": 0.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Guest Number"
-          },
-          "booking_date": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Booking Date"
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Guest Number",
+            "description": "Количество гостей"
           },
           "note": {
             "anyOf": [
@@ -3268,18 +3205,41 @@
             "title": "Note",
             "description": "Примечание к бронированию"
           },
+          "tables_slots": {
+            "items": {
+              "$ref": "#/components/schemas/BookingTableSlotShortInfo"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Tables Slots"
+          },
+          "pre_ordered_dishes": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/BookingDishCreate"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pre Ordered Dishes",
+            "description": "Список блюд, предварительно заказанных клиентом"
+          },
           "user": {
             "$ref": "#/components/schemas/UserShortInfo"
           },
           "cafe": {
             "$ref": "#/components/schemas/CafeShortInfo"
           },
-          "tables_slots": {
+          "preordered_dishes": {
             "items": {
-              "$ref": "#/components/schemas/BookingTableSlotShortInfo"
+              "$ref": "#/components/schemas/BookingDishInfo"
             },
             "type": "array",
-            "title": "Tables Slots"
+            "title": "Preordered Dishes"
           },
           "status": {
             "$ref": "#/components/schemas/BookingStatus"
@@ -3287,13 +3247,18 @@
         },
         "type": "object",
         "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "booking_date",
+          "guest_number",
+          "tables_slots",
           "user",
           "cafe",
-          "tables_slots",
           "status"
         ],
         "title": "BookingInfo",
-        "description": "Полная информация о бронировании для ответа API."
+        "description": "Полная информация о бронировании для ответа API.\n\nПоля (включая унаследованные):\n    booking_date (date): дата бронирования.\n    guest_number (PositiveInt): количество гостей.\n    note (str | None): примечание.\n    id (UUID): идентификатор бронирования.\n    is_active (bool | None): признак активности.\n    created_at (datetime): дата создания.\n    updated_at (datetime): дата обновления.\n    user (UserShortInfo): пользователь.\n    cafe (CafeShortInfo): кафе.\n    tables_slots (list[BookingTableSlotShortInfo]): столики и слоты.\n    preordered_dishes (list[BookingDishInfo]): предзаказ блюд.\n    status (BookingStatus): статус бронирования."
       },
       "BookingStatus": {
         "type": "string",
@@ -3306,20 +3271,8 @@
         "title": "BookingStatus",
         "description": "Статусы бронирования."
       },
-      "BookingTableSlot": {
+      "BookingTableSlotCreate": {
         "properties": {
-          "description": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 256
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
           "table_id": {
             "type": "string",
             "format": "uuid",
@@ -3337,7 +3290,7 @@
           "table_id",
           "slot_id"
         ],
-        "title": "BookingTableSlot",
+        "title": "BookingTableSlotCreate",
         "description": "Базовая схема для бронирования."
       },
       "BookingTableSlotShortInfo": {
@@ -3355,47 +3308,21 @@
           "slot"
         ],
         "title": "BookingTableSlotShortInfo",
-        "description": "Краткая информация о бронировании."
+        "description": "Краткая информация о паре столик-слот в бронировании.\n\nПоля:\n    table (TableShortInfo): столик.\n    slot (TimeSlotShortInfo): временной слот."
       },
       "BookingUpdate": {
         "properties": {
-          "description": {
+          "is_active": {
             "anyOf": [
               {
-                "type": "string",
-                "maxLength": 256
+                "type": "boolean"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Description"
-          },
-          "preordered_dishes": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/BookingDishCreate"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Preordered Dishes"
-          },
-          "guest_number": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "exclusiveMinimum": 0.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Guest Number"
+            "title": "Is Active",
+            "description": "Признак активности (доступности) объекта"
           },
           "booking_date": {
             "anyOf": [
@@ -3407,7 +3334,21 @@
                 "type": "null"
               }
             ],
-            "title": "Booking Date"
+            "title": "Booking Date",
+            "description": "Дата бронирования"
+          },
+          "guest_number": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guest Number",
+            "description": "Количество гостей"
           },
           "note": {
             "anyOf": [
@@ -3426,7 +3367,7 @@
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/BookingTableSlot"
+                  "$ref": "#/components/schemas/BookingTableSlotCreate"
                 },
                 "type": "array"
               },
@@ -3435,6 +3376,21 @@
               }
             ],
             "title": "Tables Slots"
+          },
+          "pre_ordered_dishes": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/BookingDishCreate"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pre Ordered Dishes",
+            "description": "Список блюд, предварительно заказанных клиентом"
           },
           "status": {
             "anyOf": [
@@ -3446,23 +3402,12 @@
               }
             ],
             "description": "Статус бронирования"
-          },
-          "is_active": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Active"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "title": "BookingUpdate",
-        "description": "Схема для обновления существующего бронирования."
+        "description": "Схема для обновления существующего бронирования.\n\nПоля (включая унаследованные):\n    booking_date (date | None): дата бронирования; необязательное; явный null запрещён.\n    guest_number (PositiveInt | None): количество гостей; необязательное; явный null запрещён.\n    note (str | None): примечание; необязательное.\n    tables_slots (list[BookingTableSlotCreate] | None): столики и слоты; необязательное;\n    явный null запрещён.\n    pre_ordered_dishes (list[BookingDishCreate] | None): предзаказ блюд; необязательное.\n    status (BookingStatus | None): статус бронирования; необязательное; явный null запрещён.\n    is_active (bool | None): признак активности; необязательное; явный null запрещён."
       },
       "CafeCreate": {
         "properties": {
@@ -3478,10 +3423,21 @@
             ],
             "title": "Description"
           },
+          "photo_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Id"
+          },
           "name": {
             "type": "string",
             "maxLength": 128,
-            "minLength": 1,
             "title": "Название кафе",
             "description": "Можно вводить в любом регистре"
           },
@@ -3495,18 +3451,6 @@
             "maxLength": 16,
             "pattern": "^\\+?[0-9]{7,15}$",
             "title": "Телефон кафе"
-          },
-          "photo_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Photo Id"
           },
           "managers_id": {
             "items": {
@@ -3522,13 +3466,41 @@
         "required": [
           "name",
           "address",
-          "phone"
+          "phone",
+          "managers_id"
         ],
         "title": "CafeCreate",
-        "description": "Схема создания нового кафе.\n\n* name: str (обязательное)\n* description: str (не обязательное)\n* address: str (обязательное)\n* phone: str (обязательное)\n* photo_id: uuid.UUID (не обязательное)\n* managers_id: list[uuid.UUID] (не обязательное)"
+        "description": "Схема создания нового кафе.\n\nПоля (включая унаследованные):\n    description (str | None): описание кафе; необязательное.\n    name (str): название кафе; обязательное.\n    address (str): адрес кафе; обязательное.\n    phone (str): телефон кафе; обязательное.\n    photo_id (UUID | None): идентификатор изображения; необязательное.\n    managers_id (list[UUID]): идентификаторы менеджеров; обязательное."
       },
       "CafeInfo": {
         "properties": {
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active",
+            "description": "Признак активности (доступности) объекта"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
           "description": {
             "anyOf": [
               {
@@ -3541,18 +3513,7 @@
             ],
             "title": "Description"
           },
-          "is_active": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Active"
-          },
-          "id": {
+          "photo_id": {
             "anyOf": [
               {
                 "type": "string",
@@ -3562,36 +3523,11 @@
                 "type": "null"
               }
             ],
-            "title": "Id"
-          },
-          "created_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Created At"
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Updated At"
+            "title": "Photo Id"
           },
           "name": {
             "type": "string",
             "maxLength": 128,
-            "minLength": 1,
             "title": "Название кафе",
             "description": "Можно вводить в любом регистре"
           },
@@ -3605,18 +3541,6 @@
             "maxLength": 16,
             "pattern": "^\\+?[0-9]{7,15}$",
             "title": "Телефон кафе"
-          },
-          "photo_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Photo Id"
           },
           "managers": {
             "items": {
@@ -3626,18 +3550,37 @@
             "title": "Managers"
           }
         },
-        "additionalProperties": false,
         "type": "object",
         "required": [
+          "id",
+          "created_at",
+          "updated_at",
           "name",
           "address",
           "phone"
         ],
         "title": "CafeInfo",
-        "description": "Схема с полной информацией о кафе.\n\n* id: uuid.UUID (обязательное)\n* description: str (не обязательное)\n* name: str  (обязательное)\n* address: str (обязательное)\n* phone: str (обязательное)\n* photo_id: uuid.UUID (не обязательное)\n* is_active: bool (обязательное)\n* created_at: datetime (обязательное)\n* updated_at: datetime (не обязательное)"
+        "description": "Схема с полной информацией о кафе.\n\nПоля (включая унаследованные):\n    description (str | None): описание кафе.\n    is_active (bool | None): признак активности.\n    id (UUID): идентификатор кафе.\n    created_at (datetime): дата создания.\n    updated_at (datetime): дата обновления.\n    name (str): название кафе.\n    address (str): адрес кафе.\n    phone (str): телефон кафе.\n    photo_id (UUID | None): идентификатор изображения.\n    managers (list[UserShortInfo]): менеджеры кафе."
       },
       "CafeShortInfo": {
         "properties": {
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active",
+            "description": "Признак активности (доступности) объекта"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
           "description": {
             "anyOf": [
               {
@@ -3650,18 +3593,7 @@
             ],
             "title": "Description"
           },
-          "is_active": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Active"
-          },
-          "id": {
+          "photo_id": {
             "anyOf": [
               {
                 "type": "string",
@@ -3671,12 +3603,11 @@
                 "type": "null"
               }
             ],
-            "title": "Id"
+            "title": "Photo Id"
           },
           "name": {
             "type": "string",
             "maxLength": 128,
-            "minLength": 1,
             "title": "Название кафе",
             "description": "Можно вводить в любом регистре"
           },
@@ -3690,6 +3621,43 @@
             "maxLength": 16,
             "pattern": "^\\+?[0-9]{7,15}$",
             "title": "Телефон кафе"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "address",
+          "phone"
+        ],
+        "title": "CafeShortInfo",
+        "description": "Схема с краткой информацией о кафе.\n\nПоля (включая унаследованные):\n    description (str | None): описание кафе.\n    is_active (bool | None): признак активности.\n    id (UUID): идентификатор кафе.\n    name (str): название кафе.\n    address (str): адрес кафе.\n    phone (str): телефон кафе.\n    photo_id (UUID | None): идентификатор изображения."
+      },
+      "CafeUpdate": {
+        "properties": {
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active",
+            "description": "Признак активности (доступности) объекта"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
           },
           "photo_id": {
             "anyOf": [
@@ -3702,26 +3670,12 @@
               }
             ],
             "title": "Photo Id"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "name",
-          "address",
-          "phone"
-        ],
-        "title": "CafeShortInfo",
-        "description": "Схема с краткой информацией о кафе.\n\n* id: uuid.UUID (обязательное)\n* description: str (не обязательное)\n* name: str (обязательное)\n* address: str (обязательное)\n* phone: str (обязательное)\n* photo_id: uuid.UUID (не обязательное)"
-      },
-      "CafeUpdate": {
-        "properties": {
+          },
           "name": {
             "anyOf": [
               {
                 "type": "string",
-                "maxLength": 128,
-                "minLength": 1
+                "maxLength": 128
               },
               {
                 "type": "null"
@@ -3755,18 +3709,6 @@
             ],
             "title": "Телефон кафе"
           },
-          "photo_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Photo Id"
-          },
           "managers_id": {
             "anyOf": [
               {
@@ -3781,23 +3723,12 @@
               }
             ],
             "title": "Managers Id"
-          },
-          "is_active": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Active"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "title": "CafeUpdate",
-        "description": "Схема для обновления информации о кафе.\n\n* name: str (не обязательное)\n* description: str (не обязательное)\n* address: str (не обязательное)\n* phone: str (не обязательное)\n* photo_id: uuid.UUID (не обязательное)\n* managers_id: list[uuid.UUID] (не обязательное)\n* is_active: bool (не обязательное)"
+        "description": "Схема для обновления информации о кафе.\n\nПоля (включая унаследованные):\n    description (str | None): описание кафе; необязательное.\n    name (str | None): название кафе; необязательное; явный null запрещён.\n    address (str | None): адрес кафе; необязательное; явный null запрещён.\n    phone (str | None): телефон кафе; необязательное; явный null запрещён.\n    photo_id (UUID | None): идентификатор изображения; необязательное.\n    is_active (bool | None): признак активности; необязательное; явный null запрещён.\n    managers_id (list[UUID] | None): идентификаторы менеджеров; необязательное; явный null запрещён."
       },
       "CustomError": {
         "properties": {
@@ -3832,12 +3763,6 @@
             ],
             "title": "Description"
           },
-          "name": {
-            "type": "string",
-            "maxLength": 128,
-            "minLength": 1,
-            "title": "Name"
-          },
           "photo_id": {
             "anyOf": [
               {
@@ -3850,9 +3775,14 @@
             ],
             "title": "Photo Id"
           },
+          "name": {
+            "type": "string",
+            "maxLength": 128,
+            "title": "Name"
+          },
           "price": {
             "type": "integer",
-            "minimum": 0.0,
+            "exclusiveMinimum": 0.0,
             "title": "Price"
           },
           "cafes_id": {
@@ -3861,6 +3791,7 @@
               "format": "uuid"
             },
             "type": "array",
+            "minItems": 1,
             "title": "Cafes Id"
           }
         },
@@ -3872,10 +3803,37 @@
           "cafes_id"
         ],
         "title": "DishCreate",
-        "description": "Схема для создание нового блюда.\n\n* `name` - string;\n* `description` - string;\n* `photo_id` - uuid;\n* `price` - int;\n* `cafes_id` - list uuid."
+        "description": "Схема для создание нового блюда.\n\nПоля (включая унаследованные):\n    description (str | None): описание блюда; необязательное.\n    name (str): название блюда; обязательное.\n    price (PositiveInt): цена блюда; обязательное.\n    photo_id (UUID | None): идентификатор изображения; необязательное.\n    cafes_id (list[UUID]): идентификаторы кафе; обязательное."
       },
       "DishInfo": {
         "properties": {
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active",
+            "description": "Признак активности (доступности) объекта"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
           "description": {
             "anyOf": [
               {
@@ -3888,59 +3846,6 @@
             ],
             "title": "Description"
           },
-          "is_active": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Active"
-          },
-          "id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Id"
-          },
-          "created_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Created At"
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Updated At"
-          },
-          "name": {
-            "type": "string",
-            "maxLength": 128,
-            "minLength": 1,
-            "title": "Name"
-          },
           "photo_id": {
             "anyOf": [
               {
@@ -3953,9 +3858,14 @@
             ],
             "title": "Photo Id"
           },
+          "name": {
+            "type": "string",
+            "maxLength": 128,
+            "title": "Name"
+          },
           "price": {
             "type": "integer",
-            "minimum": 0.0,
+            "exclusiveMinimum": 0.0,
             "title": "Price"
           },
           "cafes": {
@@ -3968,15 +3878,30 @@
         },
         "type": "object",
         "required": [
+          "id",
+          "created_at",
+          "updated_at",
           "name",
           "price",
           "cafes"
         ],
         "title": "DishInfo",
-        "description": "Схема с полной информацией о блюде.\n\n* `id` - int;\n* `name` - string;\n* `description` - string;\n* `photo_id` - uuid;\n* `price` - int;\n* `cafes` - list;\n* `is_active` - boolean;\n* `created_at` - date-time;\n* `updated_at` - date-time."
+        "description": "Схема с полной информацией о блюде.\n\nПоля (включая унаследованные):\n    description (str | None): описание блюда.\n    is_active (bool | None): признак активности.\n    id (UUID): идентификатор блюда.\n    created_at (datetime): дата создания.\n    updated_at (datetime): дата обновления.\n    name (str): название блюда.\n    price (PositiveInt): цена блюда.\n    photo_id (UUID | None): идентификатор изображения.\n    cafes (list[CafeShortInfo]): связанные кафе."
       },
       "DishUpdate": {
         "properties": {
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active",
+            "description": "Признак активности (доступности) объекта"
+          },
           "description": {
             "anyOf": [
               {
@@ -3988,19 +3913,6 @@
               }
             ],
             "title": "Description"
-          },
-          "name": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 128,
-                "minLength": 1
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
           },
           "photo_id": {
             "anyOf": [
@@ -4014,11 +3926,23 @@
             ],
             "title": "Photo Id"
           },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
           "price": {
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "exclusiveMinimum": 0.0
               },
               {
                 "type": "null"
@@ -4033,30 +3957,20 @@
                   "type": "string",
                   "format": "uuid"
                 },
-                "type": "array"
+                "type": "array",
+                "minItems": 1
               },
               {
                 "type": "null"
               }
             ],
             "title": "Cafes Id"
-          },
-          "is_active": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Active"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "title": "DishUpdate",
-        "description": "Схема для обновления существующего блюда.\n\n* `name` - string;\n* `description` - string;\n* `photo_id` - uuid;\n* `price` - int;\n* `cafes_id` - list uuid.\n* `is_active` - boolean."
+        "description": "Схема для обновления существующего блюда.\n\nПоля (включая унаследованные):\n    description (str | None): описание блюда; необязательное.\n    name (str | None): название блюда; необязательное; явный null запрещён.\n    price (PositiveInt | None): цена блюда; необязательное; явный null запрещён.\n    photo_id (UUID | None): идентификатор изображения; необязательное.\n    is_active (bool | None): признак активности; необязательное; явный null запрещён.\n    cafes_id (list[UUID] | None): идентификаторы кафе; необязательное; явный null запрещён."
       },
       "MediaInfo": {
         "properties": {
@@ -4091,10 +4005,7 @@
             "type": "integer",
             "exclusiveMinimum": 0.0,
             "title": "Seat Number",
-            "description": "Количество мест столика (не менее 1).",
-            "examples": [
-              1
-            ]
+            "description": "Количество мест столика (не менее 1)."
           }
         },
         "additionalProperties": false,
@@ -4103,22 +4014,10 @@
           "seat_number"
         ],
         "title": "TableCreate",
-        "description": "Схема данных для создания столика в кафе."
+        "description": "Схема данных для создания столика в кафе.\n\nПоля (включая унаследованные):\n    description (str | None): описание столика; необязательное.\n    seat_number (PositiveInt): количество мест; обязательное."
       },
       "TableInfo": {
         "properties": {
-          "description": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 256
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
           "is_active": {
             "anyOf": [
               {
@@ -4128,77 +4027,76 @@
                 "type": "null"
               }
             ],
-            "title": "Is Active"
+            "title": "Is Active",
+            "description": "Признак активности (доступности) объекта"
           },
           "id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "format": "uuid",
             "title": "Id"
           },
           "created_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "format": "date-time",
             "title": "Created At"
           },
           "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "description": {
             "anyOf": [
               {
                 "type": "string",
-                "format": "date-time"
+                "maxLength": 256
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Updated At"
+            "title": "Description"
           },
           "seat_number": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "exclusiveMinimum": 0.0
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
             "title": "Seat Number",
-            "description": "Количество мест столика (не менее 1).",
-            "examples": [
-              1
-            ]
+            "description": "Количество мест столика (не менее 1)."
           },
           "cafe": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/CafeShortInfo"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/CafeShortInfo"
           }
         },
         "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "seat_number",
+          "cafe"
+        ],
         "title": "TableInfo",
-        "description": "Схема данных для предоставления информации о столике."
+        "description": "Схема данных для предоставления информации о столике.\n\nПоля (включая унаследованные):\n    description (str | None): описание столика.\n    is_active (bool | None): признак активности.\n    id (UUID): идентификатор столика.\n    created_at (datetime): дата создания.\n    updated_at (datetime): дата обновления.\n    seat_number (PositiveInt): количество мест.\n    cafe (CafeShortInfo): кафе столика."
       },
       "TableShortInfo": {
         "properties": {
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active",
+            "description": "Признак активности (доступности) объекта"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
           "description": {
             "anyOf": [
               {
@@ -4211,52 +4109,35 @@
             ],
             "title": "Description"
           },
-          "is_active": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Active"
-          },
-          "id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Id"
-          },
           "seat_number": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "exclusiveMinimum": 0.0
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
             "title": "Seat Number",
-            "description": "Количество мест столика (не менее 1).",
-            "examples": [
-              1
-            ]
+            "description": "Количество мест столика (не менее 1)."
           }
         },
         "type": "object",
+        "required": [
+          "id",
+          "seat_number"
+        ],
         "title": "TableShortInfo",
-        "description": "Схема данных для предоставления краткого инфо о столике."
+        "description": "Схема данных для предоставления краткого инфо о столике.\n\nПоля (включая унаследованные):\n    description (str | None): описание столика.\n    is_active (bool | None): признак активности.\n    id (UUID): идентификатор столика.\n    seat_number (PositiveInt): количество мест."
       },
       "TableUpdate": {
         "properties": {
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active",
+            "description": "Признак активности (доступности) объекта"
+          },
           "description": {
             "anyOf": [
               {
@@ -4280,27 +4161,13 @@
               }
             ],
             "title": "Seat Number",
-            "description": "Количество мест столика (не менее 1).",
-            "examples": [
-              1
-            ]
-          },
-          "is_active": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Active"
+            "description": "Количество мест столика (не менее {MIN_SEATS})."
           }
         },
         "additionalProperties": false,
         "type": "object",
         "title": "TableUpdate",
-        "description": "Схема данных для создания столика в кафе."
+        "description": "Схема данных для обновления столика в кафе.\n\nПоля (включая унаследованные):\n    description (str | None): описание столика; необязательное.\n    seat_number (PositiveInt | None): количество мест; необязательное; явный null запрещён.\n    is_active (bool | None): признак активности; необязательное; явный null запрещён."
       },
       "TimeSlotCreate": {
         "properties": {
@@ -4318,12 +4185,12 @@
           },
           "start_time": {
             "type": "string",
-            "format": "date-time",
+            "format": "time",
             "title": "Start Time"
           },
           "end_time": {
             "type": "string",
-            "format": "date-time",
+            "format": "time",
             "title": "End Time"
           }
         },
@@ -4334,52 +4201,26 @@
           "end_time"
         ],
         "title": "TimeSlotCreate",
-        "description": "Схема для создания нового временного слота."
+        "description": "Схема для создания нового временного слота.\n\nПоля (включая унаследованные):\n    description (str | None): описание слота; необязательное.\n    start_time (time): время начала слота; обязательное.\n    end_time (time): время окончания слота; обязательное."
       },
       "TimeSlotInfo": {
         "properties": {
-          "description": {
+          "is_active": {
             "anyOf": [
               {
-                "type": "string",
-                "maxLength": 256
+                "type": "boolean"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Description"
-          },
-          "is_active": {
-            "type": "boolean",
-            "title": "Is Active"
+            "title": "Is Active",
+            "description": "Признак активности (доступности) объекта"
           },
           "id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Id"
-          },
-          "start_time": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Start Time"
-          },
-          "end_time": {
-            "type": "string",
-            "format": "date-time",
-            "title": "End Time"
-          },
-          "cafe_id": {
             "type": "string",
             "format": "uuid",
-            "title": "Cafe Id"
+            "title": "Id"
           },
           "created_at": {
             "type": "string",
@@ -4390,106 +4231,47 @@
             "type": "string",
             "format": "date-time",
             "title": "Updated At"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "start_time": {
+            "type": "string",
+            "format": "time",
+            "title": "Start Time"
+          },
+          "end_time": {
+            "type": "string",
+            "format": "time",
+            "title": "End Time"
+          },
+          "cafe": {
+            "$ref": "#/components/schemas/CafeShortInfo"
           }
         },
         "type": "object",
         "required": [
+          "id",
+          "created_at",
+          "updated_at",
           "start_time",
           "end_time",
-          "cafe_id",
-          "created_at",
-          "updated_at"
+          "cafe"
         ],
         "title": "TimeSlotInfo",
-        "description": "Полная информация о временном слоте."
+        "description": "Полная информация о временном слоте.\n\nПоля (включая унаследованные):\n    description (str | None): описание слота.\n    is_active (bool | None): признак активности.\n    id (UUID): идентификатор слота.\n    created_at (datetime): дата создания.\n    updated_at (datetime): дата обновления.\n    start_time (time): время начала слота.\n    end_time (time): время окончания слота.\n    cafe (CafeShortInfo): кафе слота."
       },
       "TimeSlotShortInfo": {
         "properties": {
-          "description": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 256
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "is_active": {
-            "type": "boolean",
-            "title": "Is Active"
-          },
-          "id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Id"
-          },
-          "start_time": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Start Time"
-          },
-          "end_time": {
-            "type": "string",
-            "format": "date-time",
-            "title": "End Time"
-          }
-        },
-        "type": "object",
-        "required": [
-          "start_time",
-          "end_time"
-        ],
-        "title": "TimeSlotShortInfo",
-        "description": "Краткая информация о временном слоте."
-      },
-      "TimeSlotUpdate": {
-        "properties": {
-          "description": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 256
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "start_time": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Start Time"
-          },
-          "end_time": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "End Time"
-          },
           "is_active": {
             "anyOf": [
               {
@@ -4499,13 +4281,101 @@
                 "type": "null"
               }
             ],
-            "title": "Is Active"
+            "title": "Is Active",
+            "description": "Признак активности (доступности) объекта"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "start_time": {
+            "type": "string",
+            "format": "time",
+            "title": "Start Time"
+          },
+          "end_time": {
+            "type": "string",
+            "format": "time",
+            "title": "End Time"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "start_time",
+          "end_time"
+        ],
+        "title": "TimeSlotShortInfo",
+        "description": "Краткая информация о временном слоте.\n\nПоля (включая унаследованные):\n    description (str | None): описание слота.\n    is_active (bool | None): признак активности.\n    id (UUID): идентификатор слота.\n    start_time (time): время начала слота.\n    end_time (time): время окончания слота."
+      },
+      "TimeSlotUpdate": {
+        "properties": {
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active",
+            "description": "Признак активности (доступности) объекта"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "start_time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Time"
+          },
+          "end_time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Time"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "title": "TimeSlotUpdate",
-        "description": "Схема для обновления существующего временного слота."
+        "description": "Схема для обновления существующего временного слота.\n\nПоля (включая унаследованные):\n    description (str | None): описание слота; необязательное.\n    start_time (time | None): время начала слота; необязательное; явный null запрещён.\n    end_time (time | None): время окончания слота; необязательное; явный null запрещён.\n    is_active (bool | None): признак активности; необязательное; явный null запрещён."
       },
       "UserCreate": {
         "properties": {
@@ -4519,25 +4389,29 @@
             "anyOf": [
               {
                 "type": "string",
-                "maxLength": 256
+                "maxLength": 320,
+                "pattern": "^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Email"
+            "title": "Email",
+            "example": "user@example.com"
           },
           "phone": {
             "anyOf": [
               {
                 "type": "string",
-                "maxLength": 16
+                "maxLength": 16,
+                "pattern": "^\\+\\d{1,15}$"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Phone"
+            "title": "Phone",
+            "example": "+79912223344"
           },
           "tg_id": {
             "anyOf": [
@@ -4558,17 +4432,44 @@
             "title": "Password"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "username",
-          "tg_id",
           "password"
         ],
         "title": "UserCreate",
-        "description": "Схема создания пользователя."
+        "description": "Схема создания пользователя.\n\nПоля (включая унаследованные):\n    username (str): имя пользователя; обязательное.\n    email (str | None): адрес электронной почты; необязательное.\n    phone (str | None): номер телефона; необязательное.\n    tg_id (str | None): идентификатор Telegram; необязательное.\n    password (str): пароль; обязательное."
       },
       "UserInfo": {
         "properties": {
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active",
+            "description": "Признак активности (доступности) объекта"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
           "username": {
             "type": "string",
             "maxLength": 32,
@@ -4579,25 +4480,29 @@
             "anyOf": [
               {
                 "type": "string",
-                "maxLength": 256
+                "maxLength": 320,
+                "pattern": "^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Email"
+            "title": "Email",
+            "example": "user@example.com"
           },
           "phone": {
             "anyOf": [
               {
                 "type": "string",
-                "maxLength": 16
+                "maxLength": 16,
+                "pattern": "^\\+\\d{1,15}$"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Phone"
+            "title": "Phone",
+            "example": "+79912223344"
           },
           "tg_id": {
             "anyOf": [
@@ -4611,45 +4516,32 @@
             ],
             "title": "Tg Id"
           },
-          "id": {
-            "type": "integer",
-            "title": "Id"
-          },
           "role": {
             "$ref": "#/components/schemas/UserRole"
           },
           "cafe_id": {
-            "type": "string",
-            "format": "uuid",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Cafe Id"
-          },
-          "is_active": {
-            "type": "boolean",
-            "title": "Is Active"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Updated At"
           }
         },
         "type": "object",
         "required": [
-          "username",
-          "tg_id",
           "id",
-          "role",
-          "is_active",
           "created_at",
-          "updated_at"
+          "updated_at",
+          "username",
+          "role"
         ],
         "title": "UserInfo",
-        "description": "Схема информации о пользователе."
+        "description": "Схема краткой информации о пользователе.\n\nПоля (включая унаследованные):\n    username (str): имя пользователя.\n    email (str | None): адрес электронной почты.\n    phone (str | None): номер телефона.\n    tg_id (str | None): идентификатор Telegram.\n    id (UUID): идентификатор пользователя.\n    is_active (bool | None): признак активности.\n    created_at (datetime): дата создания.\n    updated_at (datetime): дата обновления.\n    role (UserRole): роль пользователя.\n    cafe_id (UUID | None): идентификатор кафе."
       },
       "UserRole": {
         "type": "string",
@@ -4663,6 +4555,23 @@
       },
       "UserShortInfo": {
         "properties": {
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active",
+            "description": "Признак активности (доступности) объекта"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
           "username": {
             "type": "string",
             "maxLength": 32,
@@ -4673,25 +4582,105 @@
             "anyOf": [
               {
                 "type": "string",
-                "maxLength": 256
+                "maxLength": 320,
+                "pattern": "^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Email"
+            "title": "Email",
+            "example": "user@example.com"
           },
           "phone": {
             "anyOf": [
               {
                 "type": "string",
-                "maxLength": 16
+                "maxLength": 16,
+                "pattern": "^\\+\\d{1,15}$"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Phone"
+            "title": "Phone",
+            "example": "+79912223344"
+          },
+          "tg_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tg Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "username"
+        ],
+        "title": "UserShortInfo",
+        "description": "Схема краткой информации о пользователе.\n\nПоля (включая унаследованные):\n    username (str): имя пользователя.\n    email (str | None): адрес электронной почты.\n    phone (str | None): номер телефона.\n    tg_id (str | None): идентификатор Telegram.\n    id (UUID): идентификатор пользователя.\n    is_active (bool | None): признак активности."
+      },
+      "UserUpdate": {
+        "properties": {
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active",
+            "description": "Признак активности (доступности) объекта"
+          },
+          "username": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32,
+                "minLength": 3
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Username"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 320,
+                "pattern": "^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email",
+            "example": "user@example.com"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 16,
+                "pattern": "^\\+\\d{1,15}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone",
+            "example": "+79912223344"
           },
           "tg_id": {
             "anyOf": [
@@ -4705,35 +4694,82 @@
             ],
             "title": "Tg Id"
           },
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Id"
+          "password": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64,
+                "minLength": 8
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password"
+          },
+          "role": {
+            "$ref": "#/components/schemas/UserRole",
+            "default": "USER"
+          },
+          "cafe_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cafe Id"
           }
         },
+        "additionalProperties": false,
         "type": "object",
-        "required": [
-          "username",
-          "tg_id",
-          "id"
-        ],
-        "title": "UserShortInfo",
-        "description": "Схема краткой информации о пользователе."
+        "title": "UserUpdate",
+        "description": "Схема обновления информации о пользователе.\n\nПоля (включая унаследованные):\n    username (str | None): имя пользователя; необязательное; явный null запрещён.\n    email (str | None): адрес электронной почты; необязательное.\n    phone (str | None): номер телефона; необязательное.\n    tg_id (str | None): идентификатор Telegram; необязательное.\n    password (str | None): пароль; необязательное; явный null запрещён.\n    role (UserRole): роль пользователя; необязательное; явный null запрещён.\n    cafe_id (UUID | None): идентификатор кафе; необязательное; явный null запрещён.\n    is_active (bool | None): признак активности; необязательное; явный null запрещён."
       }
     },
     "securitySchemes": {
-      "OAuth2PasswordBearer": {
-        "type": "oauth2",
-        "flows": {
-          "password": {
-            "scopes": {},
-            "tokenUrl": "auth/login"
-          }
-        }
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
       }
     }
   },
   "tags": [
+    {
+      "name": "Аутентификация",
+      "description": "Получение данных для последующей авторизации"
+    },
+    {
+      "name": "Пользователи",
+      "description": "Управление пользователями"
+    },
+    {
+      "name": "Кафе",
+      "description": "Управление кафе"
+    },
+    {
+      "name": "Столы",
+      "description": "Управление столами в кафе"
+    },
+    {
+      "name": "Временные слоты",
+      "description": "Управление временными слотами"
+    },
+    {
+      "name": "Блюда",
+      "description": "Управление блюдами"
+    },
+    {
+      "name": "Акции",
+      "description": "Управление акциями"
+    },
+    {
+      "name": "Медиа",
+      "description": "Управление изображениями"
+    },
     {
       "name": "Бронирования",
       "description": "Управление бронированиями"

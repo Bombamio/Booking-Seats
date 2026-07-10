@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from src.crud.base import CRUDBase
-from src.models import Cafe, Slot
+from src.models import Slot
 from src.schemas import TimeSlotCreate, TimeSlotUpdate
 
 
@@ -38,15 +38,15 @@ class CRUDSlot(CRUDBase):
         exclude_id: Optional[uuid.UUID] = None,
     ) -> Optional[bool]:
         """Ищет временной слот этого кафе, пересекающийся по времени."""
-        query = select(
-            exists().where(
-                Slot.cafe.any(Cafe.id == cafe_id),
-                Slot.start_time < end_time,
-                Slot.end_time > start_time,
-            ),
-        )
+        overlap_filters = [
+            Slot.cafe_id == cafe_id,
+            Slot.start_time < end_time,
+            Slot.end_time > start_time,
+        ]
         if exclude_id is not None:
-            query = query.where(self.model.id != exclude_id)
+            overlap_filters.append(Slot.id != exclude_id)
+
+        query = select(exists().where(*overlap_filters))
 
         return await session.scalar(query)
 

@@ -77,6 +77,15 @@ class TimeSlotUpdate(TimeSlotValidationMixin, BaseDescriptionUpdate):
 
     _not_null_fields: ClassVar[set[str]] = {'start_time', 'end_time', 'is_active'}
 
+    @model_validator(mode='after')
+    def check_time_order(self) -> Self:
+        """Проверяет порядок времени только если оба поля переданы."""
+        if self.start_time is None or self.end_time is None:
+            return self
+        if self.end_time <= self.start_time:
+            raise ValueError('end_time должно быть позже start_time.')
+        return self
+
 
 class TimeSlotShortInfo(TimeSlotBaseMixin, BaseDescriptionShortInfo):
     """Краткая информация о временном слоте.

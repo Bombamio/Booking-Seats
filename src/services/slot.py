@@ -19,6 +19,7 @@ class SlotService(CRUDSlot, BaseService):
 
     def __init__(self, session: AsyncSession) -> None:
         """Сохранит сессию БД для операций сервиса."""
+        super().__init__(Slot)
         self.session = session
 
     async def _check_slot_overlap(
@@ -49,21 +50,21 @@ class SlotService(CRUDSlot, BaseService):
         filters = []
 
         if cafe_id is not None:
-            filters.append(Slot.cafe.any(Cafe.id == cafe_id))
+            filters.append(Slot.cafe_id == cafe_id)
 
         if user.role == UserRole.USER or show_active or user.role == UserRole.MANAGER and show_active is None:
             filters.append(Slot.is_active.is_(True))
 
         elif show_active is False and user.role == UserRole.MANAGER and cafe_id is not None:
             filters.append(
-                Slot.cafe.any(Cafe.managers.any(User.id == user.id)),
+                Slot.cafe.has(Cafe.managers.any(User.id == user.id)),
             )
 
         elif user.role != UserRole.USER and show_active is not None:
             filters.append(Slot.is_active.is_(show_active))
 
         slots = await self.get_multi(
-            session=self.session,
+            self.session,
             *filters,
         )
         self.log_info(
@@ -85,7 +86,7 @@ class SlotService(CRUDSlot, BaseService):
             self.session,
             Cafe.id == cafe_id,
         )
-        filters.append(Slot.cafe.any(Cafe.id == cafe_id))
+        filters.append(Slot.cafe_id == cafe_id)
 
         if user.role == UserRole.USER:
             filters.append(Slot.is_active.is_(True))
@@ -155,7 +156,7 @@ class SlotService(CRUDSlot, BaseService):
         slot = await self.get_or_raise(
             slot_crud,
             self.session,
-            Slot.cafe.any(Cafe.id == cafe_id),
+            Slot.cafe_id == cafe_id,
             Slot.id == slot_id,
         )
 

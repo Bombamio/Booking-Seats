@@ -6,6 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 import src.schemas as schema
+from src.core.celery_dispatch import dispatch_celery_task
+from src.core.exceptions import BookingSeatsCeleryError
 from src.core.settings import settings
 from src.crud import CRUDBooking, booking_crud, cafe_crud, slot_crud, table_crud
 from src.models import (
@@ -328,30 +330,42 @@ class BookingService(CRUDBooking, BaseService):
         self.log_info(
             f'Пользователь {user.id} создал бронирование {booking.id}.',
         )
-        # ставим задачи на отправку уведомления менеджерам кафе
-        for manager in created_booking.cafe.managers:
-            notify_admin.delay(
-                cafe_name=created_booking.cafe.name,
-                booking_date=str(created_booking.booking_date),
-                admin_email=manager.email,
-                username=created_booking.user.username,
-                user_email=created_booking.user.email,
-                user_phone=created_booking.user.phone,
+        try:
+            self._enqueue_booking_tasks(created_booking)
+        except BookingSeatsCeleryError as exc:
+            self.log_warning(
+                f'Бронирование {booking.id} создано, но фоновые задачи не поставлены: {exc.message}',
             )
-        # ставим задачи на отправку напоминаний о брони клиентам
+        return self._to_booking_info(created_booking)
+
+    def _enqueue_booking_tasks(self, created_booking: Booking) -> None:
+        """Поставит уведомления и напоминания о бронировании в очередь Celery."""
+        for manager in created_booking.cafe.managers:
+            dispatch_celery_task(
+                lambda manager=manager: notify_admin.delay(
+                    cafe_name=created_booking.cafe.name,
+                    booking_date=str(created_booking.booking_date),
+                    admin_email=manager.email,
+                    username=created_booking.user.username,
+                    user_email=created_booking.user.email,
+                    user_phone=created_booking.user.phone,
+                ),
+            )
+
         slot_start = created_booking.booking_items[0].slot.start_time
         booking_start = datetime.combine(created_booking.booking_date, slot_start)
         time_reminder = booking_start - timedelta(minutes=settings.reminder_minutes_before)
-        send_reminder.apply_async(
-            kwargs={
-                'cafe_name': created_booking.cafe.name,
-                'booking_date': str(created_booking.booking_date),
-                'username': created_booking.user.username,
-                'user_email': created_booking.user.email,
-            },
-            eta=time_reminder,
+        dispatch_celery_task(
+            lambda: send_reminder.apply_async(
+                kwargs={
+                    'cafe_name': created_booking.cafe.name,
+                    'booking_date': str(created_booking.booking_date),
+                    'username': created_booking.user.username,
+                    'user_email': created_booking.user.email,
+                },
+                eta=time_reminder,
+            ),
         )
-        return self._to_booking_info(created_booking)
 
     async def get_booking_by_id(
         self,

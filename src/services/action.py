@@ -24,10 +24,7 @@ class ActionService(CRUDAction, BaseService):
         if exclude_id is not None:
             filters.append(Action.id != exclude_id)
 
-        if await self.exists(
-            session=session,
-            *filters,
-        ):
+        if await self.exists(session, *filters):
             self.log_warning(f'Акция с описанием "{description[: cs.MAX_DSC_LOG_LEN]}..." - уже существует.')
             self.raise_unprocessable_entity()
 

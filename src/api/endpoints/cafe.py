@@ -42,7 +42,7 @@ async def get_cafes(
     status_code=status.HTTP_201_CREATED,
     summary='Создание нового кафе',
     responses=er.ERRORS_POST_CAFE,
-    dependencies=[Depends(vt.current_admin)],
+    dependencies=[Depends(vt.current_admin_or_manager)],
 )
 async def create_cafe(
     cafe: CafeCreate,

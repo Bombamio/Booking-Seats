@@ -69,10 +69,10 @@ class CafeCreate(CafeBaseMixin, PhotoIdMixin, BaseDescriptionCreate):
         address (str): адрес кафе; обязательное.
         phone (str): телефон кафе; обязательное.
         photo_id (UUID | None): идентификатор изображения; необязательное.
-        managers_id (list[UUID]): идентификаторы менеджеров; необязательное.
+        managers_id (list[UUID]): идентификаторы менеджеров; обязательное.
     """
 
-    managers_id: list[uuid.UUID] = Field(default_factory=list)
+    managers_id: list[uuid.UUID]
 
 
 class CafeUpdate(PhotoIdMixin, BaseDescriptionUpdate):

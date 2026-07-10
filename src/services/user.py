@@ -19,7 +19,10 @@ class UserService(CRUDUser, BaseService):
         current_user: User | None = None,
     ) -> User:
         """Создание нового пользователя."""
-        if current_user is not None and current_user.role != UserRole.ADMIN:
+        if current_user is not None and current_user.role not in (
+            UserRole.ADMIN,
+            UserRole.MANAGER,
+        ):
             self.raise_forbidden('Доступ запрещен')
         if await user_crud.duplicate_login(session, login=user_in.email or user_in.phone):
             self.raise_unprocessable_entity('Пользователь с таким email/phone уже существует')

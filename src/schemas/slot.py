@@ -11,7 +11,7 @@
    - `TimeSlotUpdate` — частичное обновление; `start_time`, `end_time` и `is_active`
      не принимают `null`.
    - `TimeSlotShortInfo` — краткая информация для вложенных ответов.
-   - `TimeSlotInfo` — полный ответ API с `cafe_id` и метаданными.
+   - `TimeSlotInfo` — полный ответ API с кафе и метаданными.
 
 Наследование:
    - входные схемы — `BaseDescriptionCreate` / `BaseDescriptionUpdate`;
@@ -20,7 +20,6 @@
 Общие правила наследования и базовые миксины — в `src/schemas/base.py`.
 """
 
-import uuid
 from datetime import time
 from typing import ClassVar, Self
 
@@ -32,6 +31,7 @@ from src.schemas.base import (
     BaseDescriptionShortInfo,
     BaseDescriptionUpdate,
 )
+from src.schemas.cafe import CafeShortInfo
 
 
 class TimeSlotBaseMixin:
@@ -110,7 +110,7 @@ class TimeSlotInfo(TimeSlotBaseMixin, BaseDescriptionInfo):
         updated_at (datetime): дата обновления.
         start_time (time): время начала слота.
         end_time (time): время окончания слота.
-        cafe_id (UUID): идентификатор кафе.
+        cafe (CafeShortInfo): кафе слота.
     """
 
-    cafe_id: uuid.UUID
+    cafe: CafeShortInfo

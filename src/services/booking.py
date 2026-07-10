@@ -312,7 +312,7 @@ class BookingService(CRUDBooking, BaseService):
         """Создаст новое бронирование."""
         if booking_create.booking_date < date.today():
             self.raise_unprocessable_entity(
-                'Нельзя забронировать на прошедшую дату.'
+                'Нельзя забронировать на прошедшую дату.',
             )
 
         await self._validate_cafe(
@@ -456,7 +456,7 @@ class BookingService(CRUDBooking, BaseService):
         )
         return self._to_booking_info(booking)
 
-    async def update_booking(
+    async def update_booking(  # noqa: C901
         self,
         booking_id: uuid.UUID,
         booking_update: schema.BookingUpdate,
@@ -469,7 +469,7 @@ class BookingService(CRUDBooking, BaseService):
 
         if booking.booking_date < date.today():
             self.raise_unprocessable_entity(
-                'Нельзя изменить бронирование на прошедшую дату.'
+                'Нельзя изменить бронирование на прошедшую дату.',
             )
 
         updated_fields = booking_update.model_fields_set

@@ -12,6 +12,19 @@ from src.services.base import BaseService
 class UserService(CRUDUser, BaseService):
     """Обработка операций с пользователями."""
 
+    def _check_role_change(
+        self,
+        user_in: schema.UserUpdate,
+        *,
+        current_user: User,
+        target_user_id: UUID,
+    ) -> None:
+        """Только ADMIN может менять чужую роль; свою — никто."""
+        if 'role' not in user_in.model_fields_set:
+            return
+        if current_user.role != UserRole.ADMIN or target_user_id == current_user.id:
+            self.raise_forbidden('Доступ запрещен')
+
     async def create_user(
         self,
         session: AsyncSession,
@@ -78,6 +91,8 @@ class UserService(CRUDUser, BaseService):
         if not user:
             self.raise_not_found()
 
+        self._check_role_change(user_in, current_user=current_user, target_user_id=user_id)
+
         update_data = user_in.model_dump(exclude_unset=True)
         check_email = (
             update_data['email'] if 'email' in update_data and update_data['email'] != user.email else None
@@ -117,6 +132,11 @@ class UserService(CRUDUser, BaseService):
             and user_in.is_active is False
         ):
             self.raise_forbidden('Доступ запрещен')
+        self._check_role_change(
+            user_in,
+            current_user=current_user,
+            target_user_id=current_user.id,
+        )
         return await self.update(current_user, user_in, session)
 
 

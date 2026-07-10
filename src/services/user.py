@@ -16,10 +16,16 @@ class UserService(CRUDUser, BaseService):
         self,
         session: AsyncSession,
         user_in: schema.UserCreate,
+        current_user: User | None = None,
     ) -> User:
         """Создание нового пользователя."""
+        if current_user is not None and current_user.role not in (
+            UserRole.ADMIN,
+            UserRole.MANAGER,
+        ):
+            self.raise_forbidden('Доступ запрещен')
         if await user_crud.duplicate_login(session, login=user_in.email or user_in.phone):
-            raise ValueError('Пользователь с таким email/phone уже существует')
+            self.raise_unprocessable_entity('Пользователь с таким email/phone уже существует')
         return await self.create(user_in, session)
 
     async def get_user(
@@ -57,6 +63,13 @@ class UserService(CRUDUser, BaseService):
         if current_user.role not in [UserRole.ADMIN, UserRole.MANAGER]:
             self.raise_forbidden('Доступ запрещен')
 
+        if (
+            current_user.role == UserRole.MANAGER
+            and user_in.is_active is not None
+            and user_in.is_active is False
+        ):
+            self.raise_forbidden('Доступ запрещен')
+
         user = await self.get(session, User.id == user_id)
         if not user:
             self.raise_not_found()
@@ -88,6 +101,12 @@ class UserService(CRUDUser, BaseService):
         current_user: User,
     ) -> User:
         """Обновление информации о текущем пользователе."""
+        if (
+            current_user.role == UserRole.USER
+            and user_in.is_active is not None
+            and user_in.is_active is False
+        ):
+            self.raise_forbidden('Доступ запрещен')
         return await self.update(current_user, user_in, session)
 
 

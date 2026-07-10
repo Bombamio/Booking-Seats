@@ -6,6 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 import src.schemas as schema
+from src.core.celery_dispatch import dispatch_celery_task, revoke_celery_task
+from src.core.exceptions import BookingSeatsCeleryError
 from src.core.settings import settings
 from src.crud import CRUDBooking, booking_crud, cafe_crud, slot_crud, table_crud
 from src.models import (
@@ -356,22 +358,89 @@ class BookingService(CRUDBooking, BaseService):
         self.log_info(
             f'Пользователь {user.id} создал бронирование {booking.id}.',
         )
-        await self._send_admin_notifications(created_booking, action='создано')
-
-        # ставим задачи на отправку напоминаний о брони клиентам
-        slot_start = created_booking.booking_items[0].slot.start_time
-        booking_start = datetime.combine(created_booking.booking_date, slot_start)
-        time_reminder = booking_start - timedelta(minutes=settings.reminder_minutes_before)
-        send_reminder.apply_async(
-            kwargs={
-                'cafe_name': created_booking.cafe.name,
-                'booking_date': str(created_booking.booking_date),
-                'username': created_booking.user.username,
-                'user_email': created_booking.user.email,
-            },
-            eta=time_reminder,
-        )
+        try:
+            reminder_task_id = self._enqueue_booking_tasks(created_booking)
+            if reminder_task_id:
+                created_booking.reminder_task_id = reminder_task_id
+                session.add(created_booking)
+                await session.commit()
+        except BookingSeatsCeleryError as exc:
+            self.log_warning(
+                f'Бронирование {booking.id} создано, но фоновые задачи не поставлены: {exc.message}',
+            )
         return self._to_booking_info(created_booking)
+
+    @staticmethod
+    def _format_booking_slot_times(booking: Booking) -> str:
+        """Вернёт человекочитаемое время слотов бронирования."""
+        slot_labels = [
+            f'{item.slot.start_time.strftime("%H:%M")}-{item.slot.end_time.strftime("%H:%M")}'
+            for item in booking.booking_items
+        ]
+        return ', '.join(slot_labels) if slot_labels else 'не указано'
+
+    def _enqueue_booking_notifications(self, booking: Booking, event_type: str) -> None:
+        """Поставит уведомления менеджерам кафе о событии бронирования."""
+        slot_times = self._format_booking_slot_times(booking)
+        for manager in booking.cafe.managers:
+            if not manager.email:
+                self.log_warning(
+                    f'Менеджер {manager.id} кафе {booking.cafe_id} без email — уведомление пропущено.',
+                )
+                continue
+            dispatch_celery_task(
+                lambda manager=manager: notify_admin.delay(
+                    event_type=event_type,
+                    cafe_name=booking.cafe.name,
+                    booking_id=str(booking.id),
+                    booking_date=str(booking.booking_date),
+                    slot_times=slot_times,
+                    admin_email=manager.email,
+                    username=booking.user.username,
+                    user_email=booking.user.email,
+                    user_phone=booking.user.phone,
+                ),
+            )
+
+    def _enqueue_booking_reminder(self, booking: Booking) -> str | None:
+        """Поставит напоминание пользователю о бронировании."""
+        if not booking.booking_items:
+            return None
+
+        slot_start = booking.booking_items[0].slot.start_time
+        booking_start = datetime.combine(booking.booking_date, slot_start)
+        time_reminder = booking_start - timedelta(minutes=settings.reminder_minutes_before)
+        reminder_result = dispatch_celery_task(
+            lambda: send_reminder.apply_async(
+                kwargs={
+                    'cafe_name': booking.cafe.name,
+                    'booking_date': str(booking.booking_date),
+                    'slot_times': self._format_booking_slot_times(booking),
+                    'username': booking.user.username,
+                    'user_email': booking.user.email,
+                },
+                eta=time_reminder,
+            ),
+        )
+        return reminder_result.id
+
+    def _enqueue_booking_tasks(self, created_booking: Booking) -> str | None:
+        """Поставит уведомления и напоминания о бронировании в очередь Celery."""
+        self._enqueue_booking_notifications(created_booking, 'created')
+        return self._enqueue_booking_reminder(created_booking)
+
+    def _cancel_booking_reminder(self, booking: Booking) -> None:
+        """Отзовёт отложенное напоминание о бронировании."""
+        if not booking.reminder_task_id:
+            return
+        try:
+            revoke_celery_task(booking.reminder_task_id)
+        except BookingSeatsCeleryError as exc:
+            self.log_warning(
+                f'Напоминание {booking.reminder_task_id} для бронирования {booking.id} '
+                f'не отозвано: {exc.message}',
+            )
+        booking.reminder_task_id = None
 
     async def get_booking_by_id(
         self,
@@ -463,6 +532,7 @@ class BookingService(CRUDBooking, BaseService):
             setattr(booking, field, value)
 
         if deactivate:
+            self._cancel_booking_reminder(booking)
             booking.status = BookingStatus.CANCELED
             await self.soft_delete(booking, session)
 
@@ -473,9 +543,13 @@ class BookingService(CRUDBooking, BaseService):
         self.log_info(
             f'Пользователь {user.id} обновил бронирование {booking_id}.',
         )
-        action = 'отменено' if deactivate else 'изменено'
-        await self._send_admin_notifications(updated_booking, action=action)
-
+        try:
+            event_type = 'canceled' if deactivate else 'updated'
+            self._enqueue_booking_notifications(updated_booking, event_type)
+        except BookingSeatsCeleryError as exc:
+            self.log_warning(
+                f'Бронирование {booking_id} обновлено, но уведомления не поставлены: {exc.message}',
+            )
         return self._to_booking_info(updated_booking)
 
 

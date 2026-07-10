@@ -34,7 +34,10 @@ class ActionCreate(BaseDescriptionCreate):
     """
 
     photo_id: uuid.UUID | None
-    cafes_id: list[uuid.UUID] = Field(description='Список идентификаторов кафе, участвующих в акции')
+    cafes_id: list[uuid.UUID] = Field(
+        min_length=ct.MIN_CAFE_LINK_COUNT,
+        description='Список идентификаторов кафе, участвующих в акции',
+    )
     description: str = Field(max_length=ct.MAX_DESCRIPTION_LEN)
 
 
@@ -48,7 +51,7 @@ class ActionUpdate(PhotoIdMixin, BaseDescriptionUpdate):
         cafes_id (list[UUID] | None): идентификаторы кафе-участников; необязательное; явный null запрещён.
     """
 
-    cafes_id: list[uuid.UUID] | None = None
+    cafes_id: list[uuid.UUID] | None = Field(None, min_length=ct.MIN_CAFE_LINK_COUNT)
     _not_null_fields: ClassVar[set[str]] = {'cafes_id', 'description', 'is_active'}
 
 

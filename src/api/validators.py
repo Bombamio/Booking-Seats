@@ -18,6 +18,18 @@ async def current_user_is_active(
     return user
 
 
+async def current_admin(
+    user: User = Depends(current_user_is_active),
+) -> User:
+    """Валидатор проверки прав **администратора**."""
+    if user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN,
+            detail='Доступ запрещен',
+        )
+    return user
+
+
 async def current_admin_or_manager(
     user: User = Depends(current_user_is_active),
 ) -> User:

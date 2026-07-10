@@ -184,12 +184,12 @@ class BookingInfo(BookingBaseMixin, BaseInfo):
         user (UserShortInfo): пользователь.
         cafe (CafeShortInfo): кафе.
         tables_slots (list[BookingTableSlotShortInfo]): столики и слоты.
-        pre_ordered_dishes (list[BookingDishInfo]): предзаказ блюд.
+        preordered_dishes (list[BookingDishInfo]): предзаказ блюд.
         status (BookingStatus): статус бронирования.
     """
 
     user: UserShortInfo
     cafe: CafeShortInfo
     tables_slots: list[BookingTableSlotShortInfo]
-    pre_ordered_dishes: list[BookingDishInfo] | None = Field(default=None, exclude=True)
+    preordered_dishes: list[BookingDishInfo] = Field(default_factory=list)
     status: BookingStatus

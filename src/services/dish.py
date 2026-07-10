@@ -23,10 +23,7 @@ class DishService(CRUDDish, BaseService):
         if exclude_id is not None:
             filters.append(Dish.id != exclude_id)
 
-        if await self.exists(
-            session=session,
-            *filters,
-        ):
+        if await self.exists(session, *filters):
             self.log_warning(f'Блюдо с назанием {name} - уже существует.')
             self.raise_unprocessable_entity()
 

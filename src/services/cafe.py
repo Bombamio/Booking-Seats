@@ -5,6 +5,7 @@ from fastapi import Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.db import get_session
+from src.core.exceptions import BookingSeatsAppError
 from src.crud import cafe_crud, user_crud
 from src.models import Cafe, User, UserRole
 from src.schemas import CafeCreate, CafeUpdate
@@ -99,8 +100,19 @@ class CafeService:
         self,
         cafe_id: uuid.UUID,
         cafe_in: CafeUpdate,
+        current_user: User,
     ) -> Cafe:
         """Обновление информации о кафе по его ID."""
+        if (
+            current_user.role == UserRole.MANAGER
+            and cafe_in.is_active is not None
+            and cafe_in.is_active is False
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail='Доступ запрещен',
+            )
+
         cafe_old_db = await cafe_crud.get_with_managers(
             self.session,
             Cafe.id == cafe_id,
@@ -209,9 +221,9 @@ class CafeService:
             self.session,
             *filters,
         ):
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=('На данном адресе уже существует кафе с таким названием.'),
+            raise BookingSeatsAppError(
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                'На данном адресе уже существует кафе с таким названием.',
             )
 
 

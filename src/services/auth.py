@@ -26,7 +26,7 @@ class AuthService(BaseService):
         user = await user_crud.get(session, *filters)
 
         if not user or not verify_password(password, user.password_hash):
-            raise self.raise_unprocessable_entity(
+            self.raise_unprocessable_entity(
                 message='Неверные имя пользователя или пароль',
             )
 

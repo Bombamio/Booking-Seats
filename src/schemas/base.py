@@ -89,6 +89,8 @@ class BaseCreate(BaseModel):
     @classmethod
     def reject_empty_strings(cls, values: Any) -> Any:
         """Проверит, что значения не являются пустыми строками."""
+        if not isinstance(values, dict):
+            return values
         for field_name in cls.model_fields:
             if field_name in values and isinstance(values[field_name], str) and values[field_name] == '':
                 raise ValueError(f'Поле "{field_name}" не может быть пустой строкой.')

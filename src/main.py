@@ -1,4 +1,3 @@
-import warnings
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
@@ -26,12 +25,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
         await cache.redis.aclose()
     bookingseats_logger.info('Приложение BookingSeats остановлено.')
 
-
-warnings.filterwarnings(
-    'ignore',
-    message='Field name .* shadows an attribute in parent',
-    category=UserWarning,
-)
 
 app = FastAPI(
     title=settings.title,

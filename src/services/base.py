@@ -5,6 +5,7 @@ from typing import Any, NoReturn
 
 from fastapi import status
 from sqlalchemy import inspect as sa_inspect
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import RelationshipDirection, load_only
 from sqlalchemy.sql import select
@@ -181,6 +182,55 @@ class BaseService:
             self.log_warning(f'Задано {len(cafes_id)} кафе, вернулось - {len(cafes)}.')
             self.raise_unprocessable_entity()
 
+    def _child_filters_for_relationship(
+        self,
+        current: Any,
+        relationship: Any,
+    ) -> list[Any]:
+        """Соберёт фильтры для дочерних записей связи ONE-TO-MANY."""
+        child_filters = []
+        for local_column, remote_column in relationship.local_remote_pairs:
+            child_filters.append(
+                remote_column == getattr(current, local_column.key),
+            )
+        return child_filters
+
+    async def _deactivate_relationship_children(
+        self,
+        current: Any,
+        relationship: Any,
+        session: AsyncSession,
+        deactivate_recursive: Any,
+    ) -> None:
+        """Деактивирует дочерние сущности связи и при необходимости обходит вложенные."""
+        if relationship.direction is not RelationshipDirection.ONETOMANY:
+            return
+
+        child_model = relationship.mapper.class_
+        child_mapper = sa_inspect(child_model)
+        child_filters = self._child_filters_for_relationship(current, relationship)
+        if not child_filters:
+            return
+
+        if 'is_active' in child_mapper.columns:
+            await session.execute(
+                update(child_model).where(*child_filters).values(is_active=False),
+            )
+
+        has_nested_deactivatable = any(
+            nested.direction is RelationshipDirection.ONETOMANY
+            and 'is_active' in sa_inspect(nested.mapper.class_).columns
+            for nested in child_mapper.relationships
+        )
+        if not has_nested_deactivatable:
+            return
+
+        pk_columns = [getattr(child_model, column.key) for column in child_mapper.primary_key]
+        child_query = select(child_model).options(load_only(*pk_columns)).where(*child_filters)
+        child_entities = (await session.execute(child_query)).scalars().all()
+        for child in child_entities:
+            await deactivate_recursive(child)
+
     async def soft_delete(
         self,
         entity: Any,
@@ -203,31 +253,18 @@ class BaseService:
                 return
             visited.add(current_key)
 
-            if hasattr(current, 'is_active'):
+            current_mapper = sa_inspect(type(current))
+            if 'is_active' in current_mapper.columns:
                 setattr(current, 'is_active', False)
                 session.add(current)
 
-            mapper = sa_inspect(type(current))
-            for relationship in mapper.relationships:
-                if relationship.direction is not RelationshipDirection.ONETOMANY:
-                    continue
-
-                child_model = relationship.mapper.class_
-                child_mapper = sa_inspect(child_model)
-                child_filters = []
-                for local_column, remote_column in relationship.local_remote_pairs:
-                    child_filters.append(
-                        remote_column == getattr(current, local_column.key),
-                    )
-
-                if not child_filters:
-                    continue
-
-                pk_columns = [getattr(child_model, column.key) for column in child_mapper.primary_key]
-                child_query = select(child_model).options(load_only(*pk_columns)).where(*child_filters)
-                child_entities = (await session.execute(child_query)).scalars().all()
-                for child in child_entities:
-                    await deactivate_recursive(child)
+            for relationship in current_mapper.relationships:
+                await self._deactivate_relationship_children(
+                    current,
+                    relationship,
+                    session,
+                    deactivate_recursive,
+                )
 
         await deactivate_recursive(entity)
         return entity

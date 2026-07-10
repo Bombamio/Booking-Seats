@@ -1,5 +1,5 @@
 import uuid
-from typing import Annotated, Optional, Sequence
+from typing import Annotated, Sequence
 
 from fastapi import APIRouter, Depends, status
 
@@ -24,7 +24,7 @@ async def get_time_slots_list(
     cafe_id: uuid.UUID,
     service: SlotServiceDep,
     user: Annotated[User, Depends(vt.current_user_is_active)],
-    show_active: Optional[bool],
+    show_active: bool = True,
 ) -> Sequence[Slot]:
     """Получение списка доступных для бронирования временных слотов в кафе."""
     return await service.get_slots(cafe_id, user, show_active)

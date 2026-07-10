@@ -11,7 +11,7 @@
    - `TimeSlotUpdate` — частичное обновление; `start_time`, `end_time` и `is_active`
      не принимают `null`.
    - `TimeSlotShortInfo` — краткая информация для вложенных ответов.
-   - `TimeSlotInfo` — полный ответ API с `cafe_id` и метаданными.
+   - `TimeSlotInfo` — полный ответ API с кафе и метаданными.
 
 Наследование:
    - входные схемы — `BaseDescriptionCreate` / `BaseDescriptionUpdate`;
@@ -20,11 +20,10 @@
 Общие правила наследования и базовые миксины — в `src/schemas/base.py`.
 """
 
-import uuid
 from datetime import time
 from typing import ClassVar, Self
 
-from pydantic import model_validator
+from pydantic import field_validator, model_validator
 
 from src.schemas.base import (
     BaseDescriptionCreate,
@@ -32,6 +31,7 @@ from src.schemas.base import (
     BaseDescriptionShortInfo,
     BaseDescriptionUpdate,
 )
+from src.schemas.cafe import CafeShortInfo
 
 
 class TimeSlotBaseMixin:
@@ -39,6 +39,14 @@ class TimeSlotBaseMixin:
 
     start_time: time
     end_time: time
+
+    @field_validator('start_time', 'end_time', mode='before')
+    @classmethod
+    def time_must_be_string(cls, value: object) -> object:
+        """Запрещает передавать число или bool вместо строки времени."""
+        if isinstance(value, (int, float, bool)):
+            raise ValueError('Время должно быть строкой в формате HH:MM:SS.')
+        return value
 
 
 class TimeSlotValidationMixin:
@@ -77,6 +85,15 @@ class TimeSlotUpdate(TimeSlotValidationMixin, BaseDescriptionUpdate):
 
     _not_null_fields: ClassVar[set[str]] = {'start_time', 'end_time', 'is_active'}
 
+    @model_validator(mode='after')
+    def check_time_order(self) -> Self:
+        """Проверяет порядок времени только если оба поля переданы."""
+        if self.start_time is None or self.end_time is None:
+            return self
+        if self.end_time <= self.start_time:
+            raise ValueError('end_time должно быть позже start_time.')
+        return self
+
 
 class TimeSlotShortInfo(TimeSlotBaseMixin, BaseDescriptionShortInfo):
     """Краткая информация о временном слоте.
@@ -101,7 +118,7 @@ class TimeSlotInfo(TimeSlotBaseMixin, BaseDescriptionInfo):
         updated_at (datetime): дата обновления.
         start_time (time): время начала слота.
         end_time (time): время окончания слота.
-        cafe_id (UUID): идентификатор кафе.
+        cafe (CafeShortInfo): кафе слота.
     """
 
-    cafe_id: uuid.UUID
+    cafe: CafeShortInfo

@@ -41,8 +41,7 @@ class MediaService(BaseService):
         user: User,
     ) -> bytes:
         """Считает загружаемый файл и сначала проверит сигнатуру."""
-        #  закрывает файл после чтения даже при досрочном выходе из контекста
-        async with file:
+        try:
             content = bytearray()
 
             first_chunk = await file.read(ct.MEDIA_SIGNATURE_CHECK_SIZE)
@@ -69,6 +68,8 @@ class MediaService(BaseService):
                 content.extend(chunk)
 
             return bytes(content)
+        finally:
+            await file.close()
 
     def _detect_image_type(self, content: bytes) -> str:
         """Определит тип изображения по сигнатуре файла."""

@@ -35,6 +35,32 @@ async def get_users_list(
 
 
 @router.get(
+    '/me',
+    response_model=schema.UserInfo,
+    responses=er.ERRORS_GET_ME,
+)
+async def get_me(
+    session: SessionDep,
+    current_user: User = Depends(get_current_user),
+) -> User:
+    """Получение информации о текущем пользователе."""
+    return await user_service.get_me(session, current_user)
+
+
+@router.patch(
+    '/me',
+    response_model=schema.UserInfo,
+    responses=er.ERRORS_UPDATE_ME,
+)
+async def update_me(
+    session: SessionDep,
+    current_user: User = Depends(get_current_user),
+) -> User:
+    """Обновление информации о текущем пользователе."""
+    return await user_service.update_me(session, current_user)
+
+
+@router.get(
     '/{user_id}',
     response_model=schema.UserInfo,
     responses=er.ERRORS_GET_USERS,
@@ -68,7 +94,7 @@ async def create_user(
     )
 
 
-@router.put(
+@router.patch(
     '/{user_id}',
     response_model=schema.UserInfo,
     responses=er.ERRORS_4XX_FULL,
@@ -83,29 +109,3 @@ async def update_user(
     Только для администраторов или менеджеров
     """
     return await user_service.update_user(session, user_id, current_user)
-
-
-@router.get(
-    '/me',
-    response_model=schema.UserInfo,
-    responses=er.ERRORS_GET_ME,
-)
-async def get_me(
-    session: SessionDep,
-    current_user: User = Depends(get_current_user),
-) -> User:
-    """Получение информации о текущем пользователе."""
-    return await user_service.get_me(session, current_user)
-
-
-@router.put(
-    '/me',
-    response_model=schema.UserInfo,
-    responses=er.ERRORS_UPDATE_ME,
-)
-async def update_me(
-    session: SessionDep,
-    current_user: User = Depends(get_current_user),
-) -> User:
-    """Обновление информации о текущем пользователе."""
-    return await user_service.update_me(session, current_user)

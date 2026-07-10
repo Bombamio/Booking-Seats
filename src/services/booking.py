@@ -244,6 +244,29 @@ class BookingService(CRUDBooking, BaseService):
             for dish in dishes
         ]
 
+    async def _send_admin_notifications(
+        self,
+        booking: Booking,
+        action: str,
+    ) -> None:
+        """Отправит уведомления менеджерам кафе о бронировании."""
+        if not booking.cafe.managers:
+            return
+
+        for manager in booking.cafe.managers:
+            notify_admin.apply_async(
+                kwargs={
+                    'cafe_name': booking.cafe.name,
+                    'booking_date': str(booking.booking_date),
+                    'admin_email': manager.email,
+                    'username': booking.user.username,
+                    'user_email': booking.user.email,
+                    'user_phone': booking.user.phone,
+                    'action': action,
+                },
+                ignore_result=True,
+            )
+
     async def get_multi_booking(
         self,
         user: User,
@@ -287,6 +310,11 @@ class BookingService(CRUDBooking, BaseService):
         session: AsyncSession,
     ) -> schema.BookingInfo:
         """Создаст новое бронирование."""
+        if booking_create.booking_date < date.today():
+            self.raise_unprocessable_entity(
+                'Нельзя забронировать на прошедшую дату.'
+            )
+
         await self._validate_cafe(
             cafe_id=booking_create.cafe_id,
             user=user,
@@ -438,7 +466,11 @@ class BookingService(CRUDBooking, BaseService):
         """Обновит бронирование по ID."""
         booking = await self._get_booking_or_raise(booking_id, session)
         await self._ensure_booking_access(booking, user)
-        await self.ensure_manager_cafe_access(user, booking.cafe_id)
+
+        if booking.booking_date < date.today():
+            self.raise_unprocessable_entity(
+                'Нельзя изменить бронирование на прошедшую дату.'
+            )
 
         updated_fields = booking_update.model_fields_set
         update_data = booking_update.model_dump(exclude_unset=True)

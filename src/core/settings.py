@@ -9,9 +9,12 @@ class Settings(BaseSettings):
     """Настройки приложения."""
 
     # Общие настройки
-    title: str = 'Базовый набор FastAPI+SQLAlchemy+Postgres'
+    title: str = 'Приложение BookingSeats команды № 4 потока 68-69'
     version: str = '0.0.1'
-    description: str = 'Основа для приложения'
+    description: str = (
+        'Приложение для управления бронированием мест в кафе. '
+        'Предоставляет REST API для управления данными о кафе, блюдах, столах и бронированиях.'
+    )
 
     # Настройки подключения к БД
     postgres_user: str

@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -44,6 +45,20 @@ class Settings(BaseSettings):
     smtp_port: int = 587
     email_address: str = ''
     email_password: str = ''
+
+    # Дефолтные пользователи
+    first_superuser_name: Optional[str] = None
+    first_superuser_email: Optional[str] = None
+    first_superuser_password: Optional[str] = None
+    first_manager_username: Optional[str] = None
+    first_manager_email: Optional[str] = None
+    first_manager_password: Optional[str] = None
+    first_user_username: Optional[str] = None
+    first_user_email: Optional[str] = None
+    first_user_password: Optional[str] = None
+
+    # Флаг для отключения автосоздания пользователей
+    create_default_users: bool = True
 
     model_config = SettingsConfigDict(
         env_file=BASE_DIR / '../infra/.env',

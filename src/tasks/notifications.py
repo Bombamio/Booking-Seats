@@ -38,9 +38,3 @@ def notify_admin(
         send_email(text_message, admin_email)
     except Exception as exc:
         raise self.retry(exc=exc, countdown=60) from exc
-
-
-@celery_app.task()
-def test_notification() -> None:
-    """Тест уведомлений."""
-    print('получилось')

@@ -1,3 +1,8 @@
+"""Реэкспорт роутеров эндпоинтов API.
+
+Модуль собирает роутеры всех сущностей для подключения в `src/api/routers.py`.
+"""
+
 from src.api.endpoints.actions import router as action_router
 from src.api.endpoints.auth import router as auth_router
 from src.api.endpoints.booking import router as booking_router

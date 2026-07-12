@@ -1,5 +1,16 @@
+"""Эндпоинты кафе.
+
+Модуль описывает маршруты управления кафе.
+
+Маршруты:
+   - `GET /` — список кафе;
+   - `POST /` — создание кафе;
+   - `GET /{cafe_id}` — кафе по ID;
+   - `PATCH /{cafe_id}` — обновление кафе.
+"""
+
 import uuid
-from typing import Annotated, Optional, Sequence
+from typing import Annotated, Sequence
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,7 +37,7 @@ CafeServiceDep = Annotated[CafeService, Depends(get_cafe_service)]
 async def get_cafes(
     service: CafeServiceDep,
     user: Annotated[User, Depends(vt.current_user_is_active)],
-    show_active: Optional[bool] = Query(None),
+    show_active: bool | None = Query(None),
 ) -> Sequence[Cafe]:
     """Получение списка кафе.
 

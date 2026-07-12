@@ -1,5 +1,16 @@
+"""Эндпоинты блюд.
+
+Модуль описывает маршруты управления блюдами кафе.
+
+Маршруты:
+   - `GET /` — список блюд;
+   - `POST /` — создание блюда;
+   - `GET /{dish_id}` — блюдо по ID;
+   - `PATCH /{dish_id}` — обновление блюда.
+"""
+
 import uuid
-from typing import Annotated, Optional, Sequence
+from typing import Annotated, Sequence
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,8 +35,8 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 async def get_multi(
     user: Annotated[User, Depends(vt.current_user_is_active)],
     session: SessionDep,
-    cafe_id: Optional[uuid.UUID] = Query(None),
-    show_active: Optional[bool] = Query(None),
+    cafe_id: uuid.UUID | None = Query(None),
+    show_active: bool | None = Query(None),
 ) -> Sequence[Dish]:
     """GET `/dishes` - Получение списка блюд."""
     return await dish_service.get_multi_dishes(

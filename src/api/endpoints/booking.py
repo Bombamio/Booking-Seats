@@ -1,5 +1,16 @@
+"""Эндпоинты бронирований.
+
+Модуль описывает маршруты создания и управления бронированиями.
+
+Маршруты:
+   - `GET /` — список бронирований;
+   - `POST /` — создание бронирования;
+   - `GET /{booking_id}` — бронирование по ID;
+   - `PATCH /{booking_id}` — обновление бронирования.
+"""
+
 import uuid
-from typing import Annotated, Optional
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -31,7 +42,7 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 async def get_booking_list(
     user: Annotated[User, Depends(vt.current_user_is_active)],
     session: SessionDep,
-    show_active: Optional[bool] = Query(None),
+    show_active: bool | None = Query(None),
     cafe_id: uuid.UUID | None = None,
     user_id: uuid.UUID | None = None,
 ) -> list[schema.BookingInfo]:

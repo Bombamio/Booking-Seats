@@ -1,5 +1,16 @@
+"""Эндпоинты временных слотов.
+
+Модуль описывает маршруты управления слотами бронирования в кафе.
+
+Маршруты:
+   - `GET /` — список слотов кафе;
+   - `POST /` — создание слота;
+   - `GET /{slot_id}` — слот по ID;
+   - `PATCH /{slot_id}` — обновление слота.
+"""
+
 import uuid
-from typing import Annotated, Optional, Sequence
+from typing import Annotated, Sequence
 
 from fastapi import APIRouter, Depends, Query, status
 
@@ -24,7 +35,7 @@ async def get_time_slots_list(
     cafe_id: uuid.UUID,
     service: SlotServiceDep,
     user: Annotated[User, Depends(vt.current_user_is_active)],
-    show_active: Optional[bool] = Query(None),
+    show_active: bool | None = Query(None),
 ) -> Sequence[Slot]:
     """Получение списка доступных для бронирования временных слотов в кафе."""
     return await service.get_slots(cafe_id, user, show_active)

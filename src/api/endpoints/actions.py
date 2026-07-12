@@ -1,5 +1,16 @@
+"""Эндпоинты акций.
+
+Модуль описывает маршруты управления акциями кафе.
+
+Маршруты:
+   - `GET /` — список акций;
+   - `POST /` — создание акции;
+   - `GET /{action_id}` — акция по ID;
+   - `PATCH /{action_id}` — обновление акции.
+"""
+
 import uuid
-from typing import Annotated, Optional, Sequence
+from typing import Annotated, Sequence
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,9 +34,9 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 )
 async def get_actions(
     session: SessionDep,
-    show_active: Optional[bool] = Query(None),
-    cafe_id: Optional[uuid.UUID] = Query(None),
-    user: User = Depends(vt.current_user_is_active),
+    user: Annotated[User, Depends(vt.current_user_is_active)],
+    show_active: bool | None = Query(None),
+    cafe_id: uuid.UUID | None = Query(None),
 ) -> Sequence[Action]:
     """Вернет список акций с фильтрацией."""
     return await action_service.get_actions(
@@ -45,7 +56,7 @@ async def get_actions(
 async def create_action(
     action_in: ActionCreate,
     session: SessionDep,
-    user: User = Depends(vt.current_admin_or_manager),
+    user: Annotated[User, Depends(vt.current_admin_or_manager)],
 ) -> Action:
     """Создаст новую акцию."""
     return await action_service.create_action(
@@ -63,7 +74,7 @@ async def create_action(
 async def get_action(
     action_id: uuid.UUID,
     session: SessionDep,
-    user: User = Depends(vt.current_user_is_active),
+    user: Annotated[User, Depends(vt.current_user_is_active)],
 ) -> Action:
     """Вернет акцию по идентификатору."""
     return await action_service.get_action_by_id(
@@ -82,7 +93,7 @@ async def update_action(
     action_id: uuid.UUID,
     action_in: ActionUpdate,
     session: SessionDep,
-    user: User = Depends(vt.current_admin_or_manager),
+    user: Annotated[User, Depends(vt.current_admin_or_manager)],
 ) -> Action:
     """Обновит данные существующей акции."""
     return await action_service.update_action(

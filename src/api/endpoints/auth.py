@@ -1,4 +1,12 @@
-from typing import Annotated, Optional
+"""Эндпоинты аутентификации.
+
+Модуль описывает маршруты входа и выдачи JWT-токена.
+
+Маршруты:
+   - `POST /login` — получение токена авторизации.
+"""
+
+from typing import Annotated
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,7 +31,7 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 async def login(
     auth_data: schema.AuthData,
     session: SessionDep,
-) -> Optional[schema.AuthToken]:
+) -> schema.AuthToken:
     """Получение токена авторизации."""
     return await AuthService().authenticate_user(
         session,

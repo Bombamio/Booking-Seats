@@ -1,5 +1,16 @@
+"""Эндпоинты столиков.
+
+Модуль описывает маршруты управления столиками кафе.
+
+Маршруты:
+   - `GET /` — список столов кафе;
+   - `POST /` — создание стола;
+   - `GET /{table_id}` — стол по ID;
+   - `PATCH /{table_id}` — обновление стола.
+"""
+
 import uuid
-from typing import Annotated, Optional
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -32,7 +43,7 @@ async def get_tables_list(
     cafe_id: uuid.UUID,
     user: Annotated[User, Depends(vt.current_user_is_active)],
     session: SessionDep,
-    show_active: Optional[bool] = Query(None),
+    show_active: bool | None = Query(None),
 ) -> list[schema.TableInfo]:
     """Получение списка столиков в кафе."""
     return await table_service.get_multi_by_cafe(

@@ -2,7 +2,7 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.crud import CRUDTable, cafe_crud
+from src.crud import CRUDBase, cafe_crud
 from src.models import Cafe, Table, User, UserRole
 from src.schemas import TableCreate, TableUpdate
 from src.schemas.cafe import CafeShortInfo
@@ -15,7 +15,7 @@ from src.services.base import BaseService
 # - фиксация изменений в БД (commit) выполняется в методах сервиса;
 # - soft_delete из BaseService также не делает commit — только меняет
 # объекты в сессии.
-class TableService(CRUDTable, BaseService):
+class TableService(CRUDBase, BaseService):
     """Обработает операции со столиками кафе."""
 
     @staticmethod

@@ -41,16 +41,6 @@ class BaseService:
         """Запишет предупреждение в лог."""
         bookingseats_logger.warning(message)
 
-    def raise_unauthorized(
-        self,
-        message: str = 'Неавторизированный пользователь',
-    ) -> NoReturn:
-        """Сообщит об ошибке авторизации с кодом 401."""
-        raise BookingSeatsAppError(
-            status.HTTP_401_UNAUTHORIZED,
-            message,
-        )
-
     def raise_forbidden(
         self,
         message: str = 'Доступ запрещен',
@@ -90,16 +80,6 @@ class BaseService:
             status.HTTP_422_UNPROCESSABLE_ENTITY,
             message,
         )
-
-    async def ensure_exists(
-        self,
-        crud: CRUDBase,
-        session: AsyncSession,
-        *filters: Any,
-    ) -> None:
-        """Проверит существование объекта по фильтрам."""
-        if not await crud.exists(session, *filters):
-            self.raise_unprocessable_entity(f'Объект модели {crud}, с фильтрами {filters} - не найден.')
 
     async def get_or_raise(
         self,
@@ -249,16 +229,6 @@ class BaseService:
                 f'Пользователь {user.id} попытался получить доступ к кафе {cafes_id} без разрешения.',
             )
             self.raise_forbidden()
-
-    async def ensure_cafes_len(
-        self,
-        cafes: Any,
-        cafes_id: list[uuid.UUID],
-    ) -> None:
-        """Проверит, что все переданные ID кафе существуют."""
-        if len(cafes) != len(cafes_id):
-            self.log_warning(f'Задано {len(cafes_id)} кафе, вернулось - {len(cafes)}.')
-            self.raise_unprocessable_entity()
 
     def _child_filters_for_relationship(
         self,

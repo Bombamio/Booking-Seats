@@ -250,29 +250,6 @@ class BookingService(CRUDBooking, BaseService):
             for dish in dishes
         ]
 
-    async def _send_admin_notifications(
-        self,
-        booking: Booking,
-        action: str,
-    ) -> None:
-        """Отправит уведомления менеджерам кафе о бронировании."""
-        if not booking.cafe.managers:
-            return
-
-        for manager in booking.cafe.managers:
-            notify_admin.apply_async(
-                kwargs={
-                    'cafe_name': booking.cafe.name,
-                    'booking_date': str(booking.booking_date),
-                    'admin_email': manager.email,
-                    'username': booking.user.username,
-                    'user_email': booking.user.email,
-                    'user_phone': booking.user.phone,
-                    'action': action,
-                },
-                ignore_result=True,
-            )
-
     async def get_multi_booking(
         self,
         user: User,

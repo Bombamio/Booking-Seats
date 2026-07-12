@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import or_
@@ -13,17 +13,6 @@ from src.schemas import user as schema
 
 class CRUDUser(CRUDBase):
     """CRUD функции для модели User."""
-
-    async def duplicate_login(
-        self,
-        session: AsyncSession,
-        login: Optional[str],
-    ) -> Optional[bool]:
-        """Проверка, есть ли такой логин (email или phone) в БД."""
-        if not login:
-            return False
-        filters = [or_(User.email == login, User.phone == login)]
-        return await self.exists(session, *filters)
 
     async def duplicate_contact(
         self,

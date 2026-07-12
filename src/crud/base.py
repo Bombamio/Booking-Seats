@@ -1,3 +1,19 @@
+"""Базовый CRUD-слой проекта BookingSeats.
+
+Модуль описывает универсальные операции чтения и записи для ORM-моделей.
+
+Классы:
+   - `CRUDBase` — базовый CRUD для всех сущностей.
+
+Поведение:
+   - `get` / `get_multi` — выборка по SQLAlchemy-фильтрам с валидацией таблицы.
+   - `create` / `update` — запись в БД, поддержка связей many-to-many через `**relations`.
+   - `exists` — проверка наличия записи без загрузки объекта.
+
+Связанные слои:
+   - сервисы используют CRUD через `get_or_raise` и `ensure_ids_exist` в `src/services/base.py`.
+"""
+
 from typing import Any
 
 from sqlalchemy import exists, select
@@ -9,13 +25,13 @@ from src.core.logger import bookingseats_logger
 
 
 class CRUDBase:
-    """Базовый CRUD класс."""
+    """Базовый CRUD-класс для ORM-моделей."""
 
     def __init__(
         self,
         model: Any,
     ) -> None:
-        """Метаданные модели."""
+        """Сохранит метаданные модели для CRUD-операций."""
         self.model = model
         self.mapper = inspect(self.model)
         self.model_fields = set(self.mapper.columns.keys())
@@ -32,7 +48,7 @@ class CRUDBase:
         self,
         *filters: Any,
     ) -> None:
-        """Проверка простых бинарных выражений."""
+        """Проверит, что бинарные фильтры относятся к текущей модели."""
         table = self.model.__table__
 
         for filter_ in filters:
@@ -43,9 +59,12 @@ class CRUDBase:
                     )
 
     def _set_relation(self, entity: Any, relations: dict[str, Any]) -> None:
+        """Установит связи ORM-объекта по именам relationship-атрибутов.
+
+        Выбросит ``ValueError``, если передан неизвестный атрибут связи.
+        """
         for attr, value in relations.items():
             if attr not in self.relationships:
-                # Защита от опечаток.
                 raise ValueError(
                     f'{attr} is not a relationships of {self.model.__name__}',
                 )
@@ -114,7 +133,7 @@ class CRUDBase:
     ) -> Any:
         """POST-функция, добавляет объект в базу данных.
 
-        **Примечание!** Если у вас есть поле many-to-many - обязательно
+        **Примечание!** Если у вас есть поле many-to-many — обязательно
         впишите его в функцию.
 
         Пример:
@@ -152,7 +171,7 @@ class CRUDBase:
     ) -> Any:
         """PATCH-функция, обновляет информацю об объекте в базе данных.
 
-        **Примечание!** Если у вас есть поле many-to-many - обязательно
+        **Примечание!** Если у вас есть поле many-to-many — обязательно
         впишите его в функцию.
 
         Пример:

@@ -1,5 +1,17 @@
+"""Сервисный слой акций.
+
+Модуль описывает бизнес-логику управления акциями кафе.
+
+Классы:
+   - `ActionService` — список, создание, получение и обновление акций.
+
+Связанные слои:
+   - CRUD — в `src/crud/action.py`;
+   - схемы — в `src/schemas/action.py`.
+"""
+
 import uuid
-from typing import Optional, Sequence
+from typing import Sequence
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -32,8 +44,8 @@ class ActionService(CRUDAction, BaseService):
         self,
         session: AsyncSession,
         user: User,
-        show_active: Optional[bool],
-        cafe_id: Optional[uuid.UUID],
+        show_active: bool | None,
+        cafe_id: uuid.UUID | None,
     ) -> Sequence[Action]:
         """Получить список акций с фильтрацией."""
         filters = []
@@ -67,7 +79,7 @@ class ActionService(CRUDAction, BaseService):
             Cafe.id.in_(action_create.cafes_id),
         )
 
-        await self.ensure_manajer_cafe_list_access(
+        await self.ensure_manager_cafe_list_access(
             user=user,
             cafes_id=action_create.cafes_id,
             check_len=True,
@@ -104,7 +116,7 @@ class ActionService(CRUDAction, BaseService):
             *filters,
         )
 
-        await self.ensure_manajer_cafe_list_access(
+        await self.ensure_manager_cafe_list_access(
             user=user,
             cafes_id=[cafe.id for cafe in action.cafes],
         )
@@ -141,7 +153,7 @@ class ActionService(CRUDAction, BaseService):
             )
 
             if user.role == UserRole.MANAGER:
-                await self.ensure_manajer_cafe_list_access(
+                await self.ensure_manager_cafe_list_access(
                     user=user,
                     cafes_id=action_update.cafes_id,
                     check_len=True,

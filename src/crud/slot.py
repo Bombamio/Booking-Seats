@@ -1,6 +1,17 @@
+"""CRUD-слой временных слотов.
+
+Модуль описывает операции чтения и записи для модели `Slot`.
+
+Классы:
+   - `CRUDSlot` — выборка с кафе, проверка пересечений по времени.
+
+Связанные слои:
+   - бизнес-логика — в `src/services/slot.py`.
+"""
+
 import uuid
 from datetime import time
-from typing import Any, Optional, Sequence
+from typing import Any, Sequence
 
 from sqlalchemy import Select, exists, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -35,8 +46,8 @@ class CRUDSlot(CRUDBase):
         start_time: time,
         end_time: time,
         session: AsyncSession,
-        exclude_id: Optional[uuid.UUID] = None,
-    ) -> Optional[bool]:
+        exclude_id: uuid.UUID | None = None,
+    ) -> bool | None:
         """Ищет временной слот этого кафе, пересекающийся по времени."""
         overlap_filters = [
             Slot.cafe_id == cafe_id,
@@ -54,7 +65,7 @@ class CRUDSlot(CRUDBase):
         self,
         session: AsyncSession,
         *filters: Any,
-    ) -> Optional[Slot]:
+    ) -> Slot | None:
         """Вернёт временной слот с предзагруженными кафе."""
         stmt = self._stmt_with_cafe()
         if filters:

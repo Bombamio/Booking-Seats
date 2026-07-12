@@ -1,5 +1,17 @@
+"""Сервисный слой блюд.
+
+Модуль описывает бизнес-логику управления блюдами кафе.
+
+Классы:
+   - `DishService` — список, создание, получение и обновление блюд.
+
+Связанные слои:
+   - CRUD — в `src/crud/dish.py`;
+   - схемы — в `src/schemas/dish.py`.
+"""
+
 import uuid
-from typing import Optional, Sequence
+from typing import Sequence
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -29,10 +41,10 @@ class DishService(CRUDDish, BaseService):
 
     async def get_multi_dishes(
         self,
-        cafe_id: Optional[uuid.UUID],
+        cafe_id: uuid.UUID | None,
         user: User,
         session: AsyncSession,
-        show_active: Optional[bool],
+        show_active: bool | None,
     ) -> Sequence[Dish]:
         """Вернет список блюд с учётом роли пользователя.
 
@@ -77,7 +89,7 @@ class DishService(CRUDDish, BaseService):
             Cafe.id.in_(dish_create.cafes_id),
         )
 
-        await self.ensure_manajer_cafe_list_access(
+        await self.ensure_manager_cafe_list_access(
             user=user,
             cafes_id=dish_create.cafes_id,
             check_len=True,
@@ -118,7 +130,7 @@ class DishService(CRUDDish, BaseService):
             *filters,
         )
 
-        await self.ensure_manajer_cafe_list_access(
+        await self.ensure_manager_cafe_list_access(
             user=user,
             cafes_id=[cafe.id for cafe in dish.cafes],
         )
@@ -158,7 +170,7 @@ class DishService(CRUDDish, BaseService):
             )
 
             if user.role == UserRole.MANAGER:
-                await self.ensure_manajer_cafe_list_access(
+                await self.ensure_manager_cafe_list_access(
                     user=user,
                     cafes_id=dish_update.cafes_id,
                     check_len=True,

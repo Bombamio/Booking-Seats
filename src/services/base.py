@@ -1,4 +1,24 @@
-"""Базовый миксин сервисного слоя."""
+"""Базовый сервисный слой проекта BookingSeats.
+
+Модуль описывает общие операции бизнес-логики, доступа и деактивации сущностей.
+
+Функции:
+   - `is_active_filters` — фильтрация `is_active` по роли и `show_active`.
+
+Классы:
+   - `BaseService` — миксин для сервисов сущностей.
+
+Возможности `BaseService`:
+   - логирование (`log_info`, `log_warning`);
+   - единые HTTP-ошибки через `BookingSeatsAppError`;
+   - проверки доступа менеджера к кафе;
+   - валидация ID из запроса (`ensure_ids_exist`);
+   - каскадная деактивация (`soft_delete`).
+
+Связанные слои:
+   - CRUD-операции — в `src/crud/base.py`;
+   - входные и выходные схемы — в `src/schemas/`.
+"""
 
 import uuid
 from typing import Any, NoReturn
@@ -47,12 +67,8 @@ def is_active_filters(
 class BaseService:
     """Базовый миксин сервисного слоя.
 
-    Предложение одного из возможных вариантов реализации.
-    Должен быть скорректирован позднее.
-    Приведены методы, использование которых предполагается на примере сервиса
-    для Table
-    методы логирования и ошибки доступа реализованы как общие для почти всех сервисов
-
+    Содержит общие методы логирования, проверки доступа, валидации ID
+    и каскадной деактивации, используемые сервисами сущностей.
     """
 
     def log_info(
@@ -243,13 +259,13 @@ class BaseService:
             )
             self.raise_forbidden()
 
-    async def ensure_manajer_cafe_list_access(
+    async def ensure_manager_cafe_list_access(
         self,
         user: User,
         cafes_id: list[uuid.UUID],
         check_len: bool = False,
     ) -> None:
-        """Проверяет что менеджер имеет доступ к кафе из списка."""
+        """Проверит, что менеджер имеет доступ к кафе из списка."""
         if user.role != UserRole.MANAGER:
             return
         if (check_len and len(cafes_id) != 1) or (user.cafe_id not in cafes_id):

@@ -1,3 +1,19 @@
+"""Сервисный слой столиков.
+
+Модуль описывает бизнес-логику управления столиками кафе.
+
+Классы:
+   - `TableService` — список, создание, обновление и деактивация столов.
+
+Особенности:
+   - commit выполняется в методах сервиса;
+   - `soft_delete` из `BaseService` меняет объекты в сессии без commit.
+
+Связанные слои:
+   - CRUD — в `src/crud/base.py`;
+   - схемы — в `src/schemas/table.py`.
+"""
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,11 +26,6 @@ from src.schemas.table import TableInfo
 from src.services.base import BaseService, is_active_filters
 
 
-# Допущения до рефакторинга базовых слоёв:
-# - CRUDBase выполняет только чтение/подготовку данных без commit и refresh;
-# - фиксация изменений в БД (commit) выполняется в методах сервиса;
-# - soft_delete из BaseService также не делает commit — только меняет
-# объекты в сессии.
 class TableService(CRUDBase, BaseService):
     """Обработает операции со столиками кафе."""
 

@@ -1,3 +1,15 @@
+"""Сервисный слой бронирований.
+
+Модуль описывает бизнес-логику создания и управления бронированиями.
+
+Классы:
+   - `BookingService` — создание, список, получение, обновление и отмена броней.
+
+Связанные слои:
+   - CRUD — в `src/crud/booking.py`;
+   - схемы — в `src/schemas/booking.py`.
+"""
+
 import uuid
 from datetime import date, datetime, timedelta
 

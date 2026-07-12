@@ -1,6 +1,18 @@
+"""Сервисный слой временных слотов.
+
+Модуль описывает бизнес-логику управления слотами бронирования в кафе.
+
+Классы:
+   - `SlotService` — список, создание и обновление слотов с проверкой пересечений.
+
+Связанные слои:
+   - CRUD — в `src/crud/slot.py`;
+   - схемы — в `src/schemas/slot.py`.
+"""
+
 import uuid
 from datetime import time
-from typing import Annotated, Optional, Sequence
+from typing import Annotated, Sequence
 
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,7 +39,7 @@ class SlotService(CRUDSlot, BaseService):
         cafe_id: uuid.UUID,
         start_time: time,
         end_time: time,
-        exclude_id: Optional[uuid.UUID] = None,
+        exclude_id: uuid.UUID | None = None,
     ) -> None:
         """Проверяет пересечение временных слотов в кафе."""
         if await slot_crud.exists_overlapping(
@@ -44,7 +56,7 @@ class SlotService(CRUDSlot, BaseService):
         self,
         cafe_id: uuid.UUID,
         user: User,
-        show_active: Optional[bool],
+        show_active: bool | None,
     ) -> Sequence[Slot]:
         """Возвращает список временных слотов кафе."""
         await self.ensure_ids_exist(cafe_crud, self.session, cafe_id)

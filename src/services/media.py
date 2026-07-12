@@ -1,3 +1,14 @@
+"""Сервисный слой медиафайлов.
+
+Модуль описывает загрузку и выдачу изображений в формате JPG.
+
+Классы:
+   - `MediaService` — валидация, конвертация и сохранение изображений.
+
+Связанные слои:
+   - схемы — в `src/schemas/media.py`.
+"""
+
 import asyncio
 import uuid
 from io import BytesIO
@@ -21,9 +32,11 @@ class MediaService(BaseService):
         return ct.MEDIA_DIR / f'{media_id}{ct.MEDIA_FILE_EXTENSION}'
 
     def _convert_to_jpg(self, content: bytes) -> bytes:
-        """Конвертирует изображение в формат JPG."""
+        """Конвертирует изображение в формат JPG.
+
+        У PNG и LA-изображений прозрачность заменяется на белый фон.
+        """
         with Image.open(BytesIO(content)) as image:
-            #  у png есть прозрачность, у jpg нет. Меняем прозрачность на белый.
             if image.mode in ('RGBA', 'LA'):
                 rgb_image = Image.new('RGB', image.size, (255, 255, 255))
                 rgb_image.paste(image, mask=image.split()[-1])

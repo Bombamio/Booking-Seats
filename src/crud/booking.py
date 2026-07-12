@@ -1,6 +1,18 @@
+"""CRUD-слой бронирований.
+
+Модуль описывает операции чтения и записи для модели `Booking`.
+
+Классы:
+   - `CRUDBooking` — выборка с деталями, проверка конфликтов стол-слот,
+     замена позиций бронирования.
+
+Связанные слои:
+   - бизнес-логика — в `src/services/booking.py`.
+"""
+
 import uuid
 from datetime import date
-from typing import Any, Optional, Sequence
+from typing import Any, Sequence
 
 from sqlalchemy import delete, exists, select, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -28,7 +40,7 @@ class CRUDBooking(CRUDBase):
         self,
         session: AsyncSession,
         *filters: Any,
-    ) -> Optional[Booking]:
+    ) -> Booking | None:
         """Вернет бронирование со связями для ответа API."""
         result = await session.execute(
             select(self.model).options(*self._details_options()).where(*filters),
@@ -57,7 +69,7 @@ class CRUDBooking(CRUDBase):
         tables_slots: list[tuple[uuid.UUID, uuid.UUID]],
         booking_date: date,
         session: AsyncSession,
-        exclude_booking_id: Optional[uuid.UUID] = None,
+        exclude_booking_id: uuid.UUID | None = None,
     ) -> bool:
         """Проверит, есть ли активные брони на переданные пары стол-слот."""
         filters = [

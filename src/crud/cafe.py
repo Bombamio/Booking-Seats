@@ -1,8 +1,18 @@
-from typing import Any, Optional, Sequence
+"""CRUD-слой кафе.
+
+Модуль описывает операции чтения и записи для модели `Cafe`.
+
+Классы:
+   - `CRUDCafe` — создание и обновление без commit, выборка с менеджерами.
+
+Связанные слои:
+   - бизнес-логика и commit — в `src/services/cafe.py`.
+"""
+
+from typing import Any, Sequence
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import selectinload
 
 from src.crud.base import CRUDBase
@@ -40,15 +50,7 @@ class CRUDCafe(CRUDBase):
 
         cafe_entity = self.model(**cafe_payload)
 
-        mapper = inspect(self.model)
-
-        for attr, value in relations.items():
-            if attr not in mapper.relationships:
-                # Защита от опечаток.
-                raise ValueError(
-                    f'{attr} is not a relationships of {self.model.__name__}',
-                )
-            setattr(cafe_entity, attr, value)
+        self._set_relation(cafe_entity, relations)
 
         session.add(cafe_entity)
         await session.flush()
@@ -72,7 +74,7 @@ class CRUDCafe(CRUDBase):
         self,
         session: AsyncSession,
         *filters: Any,
-    ) -> Optional[Cafe]:
+    ) -> Cafe | None:
         """GET-функция, возвращает объект по заданным фильтрам.
 
         С подгрузкой менеджеров через relationships.

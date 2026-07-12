@@ -1,3 +1,15 @@
+"""Сервисный слой кафе.
+
+Модуль описывает бизнес-логику управления кафе и привязкой менеджеров.
+
+Классы:
+   - `CafeService` — создание, список, получение и обновление кафе.
+
+Связанные слои:
+   - CRUD — в `src/crud/cafe.py`;
+   - схемы — в `src/schemas/cafe.py`.
+"""
+
 import uuid
 from typing import Annotated, Sequence
 
@@ -155,8 +167,7 @@ class CafeService(BaseService):
             session=self.session,
         )
 
-        await self.session.commit()  # коммитим все изменения за один раз
-        # обновляем relationships, чтобы подтянуть актуальные данные
+        await self.session.commit()
         await self.session.refresh(update_cafe, attribute_names=['managers'])
 
         return update_cafe

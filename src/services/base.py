@@ -12,7 +12,36 @@ from sqlalchemy.sql import select
 
 from src.core.exceptions import BookingSeatsAppError
 from src.core.logger import bookingseats_logger
+from src.crud.base import CRUDBase
 from src.models import User, UserRole
+
+
+def is_active_filters(
+    user: User,
+    show_active: bool | None,
+    is_active_column: Any,
+) -> list[Any]:
+    """Соберёт фильтры ``is_active`` по роли и параметру ``show_active``.
+
+    * USER — всегда только активные (``show_active`` игнорируется).
+    * ADMIN — без параметра все записи; ``true`` только активные;
+      ``false`` только неактивные.
+    * MANAGER — без параметра и ``true`` только активные;
+      ``false`` только неактивные.
+    """
+    if user.role == UserRole.USER:
+        return [is_active_column.is_(True)]
+
+    if user.role == UserRole.ADMIN:
+        if show_active is True:
+            return [is_active_column.is_(True)]
+        if show_active is False:
+            return [is_active_column.is_(False)]
+        return []
+
+    if show_active is False:
+        return [is_active_column.is_(False)]
+    return [is_active_column.is_(True)]
 
 
 class BaseService:
@@ -40,16 +69,6 @@ class BaseService:
         """Запишет предупреждение в лог."""
         bookingseats_logger.warning(message)
 
-    def raise_unauthorized(
-        self,
-        message: str = 'Неавторизированный пользователь',
-    ) -> NoReturn:
-        """Сообщит об ошибке авторизации с кодом 401."""
-        raise BookingSeatsAppError(
-            status.HTTP_401_UNAUTHORIZED,
-            message,
-        )
-
     def raise_forbidden(
         self,
         message: str = 'Доступ запрещен',
@@ -70,6 +89,16 @@ class BaseService:
             message,
         )
 
+    def raise_bad_request(
+        self,
+        message: str = 'Идентификатор из параметров запроса не найден',
+    ) -> NoReturn:
+        """Сообщит об ошибке некорректного запроса с кодом 400."""
+        raise BookingSeatsAppError(
+            status.HTTP_400_BAD_REQUEST,
+            message,
+        )
+
     def raise_unprocessable_entity(
         self,
         message: str = 'Ошибка валидации данных',
@@ -80,25 +109,9 @@ class BaseService:
             message,
         )
 
-    async def ensure_exists(
-        self,
-        crud: Any,
-        session: AsyncSession,
-        *filters: Any,
-    ) -> None:
-        """Проверит существование объекта по фильтрам.
-
-        В противном случае сообщит об ошибке 404.
-        """
-        if not await crud.exists(session, *filters):
-            self.log_warning(
-                f'Объект модели {crud}, с фильтрами {filters} - не найден.',
-            )
-            self.raise_not_found()
-
     async def get_or_raise(
         self,
-        crud: Any,
+        crud: CRUDBase,
         session: AsyncSession,
         *filters: Any,
     ) -> Any:
@@ -113,6 +126,79 @@ class BaseService:
             )
             self.raise_not_found()
         return data
+
+    async def _find_missing_ids(
+        self,
+        crud: CRUDBase,
+        session: AsyncSession,
+        ids: set[uuid.UUID],
+    ) -> set[uuid.UUID]:
+        """Вернёт ID, отсутствующие в БД для указанной модели."""
+        if not ids:
+            return set()
+
+        id_column = crud.model.id
+        if len(ids) == 1:
+            object_id = next(iter(ids))
+            if await crud.exists(session, id_column == object_id):
+                return set()
+            return ids
+
+        entities = await crud.get_multi(session, id_column.in_(ids))
+        found_ids = {entity.id for entity in entities}
+        return ids - found_ids
+
+    async def ensure_ids_exist(
+        self,
+        crud: CRUDBase,
+        session: AsyncSession,
+        object_ids: uuid.UUID | list[uuid.UUID] | dict[uuid.UUID, uuid.UUID],
+        *,
+        related_crud: CRUDBase | None = None,
+        message: str | None = None,
+    ) -> bool:
+        """Проверит наличие ID из параметров запроса в БД.
+
+        Поддерживает:
+        * один ``UUID``;
+        * список ``UUID``;
+        * словарь ``ключ → значение`` (например, стол → слот).
+
+        Для словаря ``crud`` проверяет ключи, ``related_crud`` — значения.
+
+        Возвращает ``True``, если все ID найдены.
+        Иначе сообщит об ошибке 400.
+        """
+        primary_ids: set[uuid.UUID]
+        related_ids: set[uuid.UUID] | None = None
+
+        if isinstance(object_ids, uuid.UUID):
+            primary_ids = {object_ids}
+        elif isinstance(object_ids, list):
+            primary_ids = set(object_ids)
+        elif isinstance(object_ids, dict):
+            primary_ids = set(object_ids.keys())
+            related_ids = set(object_ids.values())
+            if related_crud is None:
+                raise ValueError(
+                    'Для проверки словаря ID необходимо передать related_crud.',
+                )
+
+        missing_ids = await self._find_missing_ids(crud, session, primary_ids)
+        if related_ids is not None and related_crud is not None:
+            related_missing = await self._find_missing_ids(
+                related_crud,
+                session,
+                related_ids,
+            )
+            missing_ids = missing_ids.union(related_missing)
+
+        if missing_ids:
+            self.raise_bad_request(
+                message or f'Идентификаторы из параметров запроса не найдены: {sorted(missing_ids)}',
+            )
+
+        return True
 
     async def ensure_is_active(self, data: Any) -> None:
         """Проверит активность объекта.
@@ -171,16 +257,6 @@ class BaseService:
                 f'Пользователь {user.id} попытался получить доступ к кафе {cafes_id} без разрешения.',
             )
             self.raise_forbidden()
-
-    async def ensure_cafes_len(
-        self,
-        cafes: Any,
-        cafes_id: list[uuid.UUID],
-    ) -> None:
-        """Проверит, что все переданные ID кафе существуют."""
-        if len(cafes) != len(cafes_id):
-            self.log_warning(f'Задано {len(cafes_id)} кафе, вернулось - {len(cafes)}.')
-            self.raise_unprocessable_entity()
 
     def _child_filters_for_relationship(
         self,

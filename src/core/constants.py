@@ -119,6 +119,21 @@ LOG_FORMAT = (
     '<cyan>{extra[user]}</cyan> | '
     '<level>{message}</level>'
 )
+STDLIB_LOGGER_NAMES = (
+    'uvicorn',
+    'uvicorn.access',
+    'uvicorn.error',
+    'fastapi',
+    'celery',
+    'celery.task',
+    'celery.worker',
+    'celery.worker.consumer',
+    'celery.worker.strategy',
+    'celery.app.trace',
+    'celery.redirected',
+    'kombu',
+    'amqp',
+)
 
 ###############################################################################
 # Дефолтные пользователи.                                                     #

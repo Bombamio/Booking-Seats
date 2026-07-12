@@ -36,7 +36,11 @@
 4. Слой CRUD (``crud/base.py``)
    ``CRUDBase`` логирует на уровне ``debug``.
 
-5. Эндпойнты и сервисы
+5. Celery worker (``core/celery_app.py``)
+   Сигнал ``setup_logging`` подключает stdlib-логгеры Celery к loguru.
+   Встроенные обработчики Celery не используются — один формат и ``app.log``.
+
+6. Эндпойнты и сервисы
    Сейчас логируют middleware и error handlers. Точечные записи::
 
        bookingseats_logger.debug('...')
@@ -56,6 +60,7 @@ from src.core.constants import (
     LOG_FILE_MAX_SIZE,
     LOG_FORMAT,
     LOG_LEVEL,
+    STDLIB_LOGGER_NAMES,
 )
 
 logger.remove()
@@ -79,20 +84,39 @@ class InterceptHandler(logging.Handler):
             level = logger.level(record.levelname).name
         except ValueError:
             level = 'INFO'
-        logger.log(level, record.getMessage())
+        frame = logging.currentframe()
+        depth = 2
+        while frame and frame.f_code.co_filename == logging.__file__:
+            frame = frame.f_back
+            depth += 1
+        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
+
+
+def configure_stdlib_logger(stdlib_logger: logging.Logger) -> None:
+    """Подключит stdlib-логгер к loguru без дублирования."""
+    stdlib_logger.handlers.clear()
+    stdlib_logger.addHandler(InterceptHandler())
+    stdlib_logger.propagate = False
 
 
 def setup_logging() -> None:
     """Настроит перехват логов из стандартного logging в loguru."""
     logging.captureWarnings(True)
-    logging.root.handlers = []
+    logging.root.handlers.clear()
     logging.root.addHandler(InterceptHandler())
-    logging.root.setLevel(logging.INFO)
-    for name in ['uvicorn', 'uvicorn.access', 'uvicorn.error', 'fastapi']:
-        lib_logger = logging.getLogger(name)
-        lib_logger.handlers = []
-        lib_logger.addHandler(InterceptHandler())
-        lib_logger.propagate = False
+    logging.root.setLevel(getattr(logging, LOG_LEVEL, logging.INFO))
+
+    for name in STDLIB_LOGGER_NAMES:
+        configure_stdlib_logger(logging.getLogger(name))
+
+    try:
+        from celery.utils.log import get_multiprocessing_logger
+
+        mp_logger = get_multiprocessing_logger()
+        if mp_logger is not None:
+            configure_stdlib_logger(mp_logger)
+    except ImportError:
+        pass
 
 
 def setup_logger() -> None:

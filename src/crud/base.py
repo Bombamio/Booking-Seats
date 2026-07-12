@@ -1,9 +1,9 @@
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy import exists, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.inspection import inspect
-from sqlalchemy.sql.elements import BinaryExpression
+from sqlalchemy.sql.elements import BinaryExpression, ColumnElement
 
 from src.core.logger import bookingseats_logger
 
@@ -195,26 +195,24 @@ class CRUDBase:
     async def exists(
         self,
         session: AsyncSession,
-        *filters: Any,
-    ) -> Optional[bool]:
-        """Запрос для проверки существования объекта.
+        *filters: ColumnElement[bool],
+    ) -> bool:
+        """Проверит существование объекта по фильтрам.
+
+        Возвращает ``True``, если найдена хотя бы одна запись, иначе ``False``.
 
         Пример:
         ```
-        await dish_crud.exists(
+        if await dish_crud.exists(
             session,
             Dish.name == name,
             Dish.is_active.is_(True),
-        )
+        ):
+            ...
         ```
         """
         bookingseats_logger.debug(
             f'exists {self.model.__name__}: filters=[{self._format_filters(*filters)}]',
         )
-
         self._check_filters(*filters)
-        result = select(
-            exists().where(*filters),
-        )
-
-        return await session.scalar(result)
+        return bool(await session.scalar(select(exists().where(*filters))))

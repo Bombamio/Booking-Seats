@@ -9,7 +9,7 @@ import src.schemas as schema
 from src.core.celery_dispatch import dispatch_celery_task, revoke_celery_task
 from src.core.exceptions import BookingSeatsCeleryError
 from src.core.settings import settings
-from src.crud import CRUDBooking, booking_crud, cafe_crud, slot_crud, table_crud
+from src.crud import CRUDBooking, booking_crud, cafe_crud, dish_crud, slot_crud, table_crud, user_crud
 from src.models import (
     Booking,
     BookingDish,
@@ -22,7 +22,7 @@ from src.models import (
     User,
     UserRole,
 )
-from src.services.base import BaseService
+from src.services.base import BaseService, is_active_filters
 from src.tasks.notifications import notify_admin
 from src.tasks.reminders import send_reminder
 
@@ -136,8 +136,8 @@ class BookingService(CRUDBooking, BaseService):
         session: AsyncSession,
     ) -> Cafe:
         """Проверит существование, активность кафе и доступ менеджера."""
-        cafe = await self.get_or_raise(
-            cafe_crud,
+        await self.ensure_ids_exist(cafe_crud, session, cafe_id)
+        cafe = await cafe_crud.get(
             session,
             Cafe.id == cafe_id,
         )
@@ -159,6 +159,13 @@ class BookingService(CRUDBooking, BaseService):
         table_ids = {table_id for table_id, _ in pairs}
         slot_ids = {slot_id for _, slot_id in pairs}
 
+        await self.ensure_ids_exist(
+            table_crud,
+            session,
+            dict(pairs),
+            related_crud=slot_crud,
+        )
+
         tables = await table_crud.get_multi(
             session,
             Table.id.in_(table_ids),
@@ -167,9 +174,6 @@ class BookingService(CRUDBooking, BaseService):
             session,
             Slot.id.in_(slot_ids),
         )
-
-        if len(tables) != len(table_ids) or len(slots) != len(slot_ids):
-            self.raise_not_found()
 
         table_from_other_cafe = any(table.cafe_id != cafe_id for table in tables)
         slot_from_other_cafe = any(slot.cafe_id != cafe_id for slot in slots)
@@ -207,11 +211,9 @@ class BookingService(CRUDBooking, BaseService):
         table_ids: set[uuid.UUID],
         session: AsyncSession,
     ) -> list[Table]:
-        """Вернет столы по ID или сообщит 404, если часть столов не найдена."""
-        tables = list(await table_crud.get_multi(session, Table.id.in_(table_ids)))
-        if len(tables) != len(table_ids):
-            self.raise_not_found()
-        return tables
+        """Вернет столы по ID."""
+        await self.ensure_ids_exist(table_crud, session, list(table_ids))
+        return list(await table_crud.get_multi(session, Table.id.in_(table_ids)))
 
     async def _build_booking_dishes(
         self,
@@ -224,12 +226,16 @@ class BookingService(CRUDBooking, BaseService):
         if not dish_quantities:
             return []
 
+        await self.ensure_ids_exist(
+            dish_crud,
+            session,
+            list(dish_quantities.keys()),
+        )
+
         result = await session.execute(
             select(Dish).options(selectinload(Dish.cafes)).where(Dish.id.in_(dish_quantities)),
         )
         dishes = list(result.scalars().all())
-        if len(dishes) != len(dish_quantities):
-            self.raise_not_found()
 
         for dish in dishes:
             dish_cafe_ids = {cafe.id for cafe in dish.cafes}
@@ -244,38 +250,20 @@ class BookingService(CRUDBooking, BaseService):
             for dish in dishes
         ]
 
-    async def _send_admin_notifications(
-        self,
-        booking: Booking,
-        action: str,
-    ) -> None:
-        """Отправит уведомления менеджерам кафе о бронировании."""
-        if not booking.cafe.managers:
-            return
-
-        for manager in booking.cafe.managers:
-            notify_admin.apply_async(
-                kwargs={
-                    'cafe_name': booking.cafe.name,
-                    'booking_date': str(booking.booking_date),
-                    'admin_email': manager.email,
-                    'username': booking.user.username,
-                    'user_email': booking.user.email,
-                    'user_phone': booking.user.phone,
-                    'action': action,
-                },
-                ignore_result=True,
-            )
-
     async def get_multi_booking(
         self,
         user: User,
         session: AsyncSession,
-        show_active: bool = True,
+        show_active: bool | None = None,
         cafe_id: uuid.UUID | None = None,
         user_id: uuid.UUID | None = None,
     ) -> list[schema.BookingInfo]:
         """Вернет список бронирований с учетом роли пользователя."""
+        if cafe_id is not None:
+            await self.ensure_ids_exist(cafe_crud, session, cafe_id)
+        if user_id is not None:
+            await self.ensure_ids_exist(user_crud, session, user_id)
+
         filters = []
 
         if user.role == UserRole.USER:
@@ -294,8 +282,9 @@ class BookingService(CRUDBooking, BaseService):
             if user_id is not None:
                 filters.append(Booking.user_id == user_id)
 
-            if show_active:
-                filters.append(Booking.is_active.is_(True))
+            filters.extend(
+                is_active_filters(user, show_active, Booking.is_active),
+            )
 
         bookings = await booking_crud.get_multi_with_details(session, *filters)
         self.log_info(

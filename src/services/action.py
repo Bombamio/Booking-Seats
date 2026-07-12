@@ -7,7 +7,7 @@ from src.core import constants as cs
 from src.crud import CRUDAction, action_crud, cafe_crud
 from src.models import Action, Cafe, User, UserRole
 from src.schemas import ActionCreate, ActionUpdate
-from src.services.base import BaseService
+from src.services.base import BaseService, is_active_filters
 
 
 class ActionService(CRUDAction, BaseService):
@@ -39,18 +39,12 @@ class ActionService(CRUDAction, BaseService):
         filters = []
 
         if cafe_id is not None:
+            await self.ensure_ids_exist(cafe_crud, session, cafe_id)
             filters.append(Action.cafes.any(Cafe.id == cafe_id))
 
-        if user.role == UserRole.USER or show_active or user.role == UserRole.MANAGER and show_active is None:
-            filters.append(Action.is_active.is_(True))
-
-        elif show_active is False and user.role == UserRole.MANAGER and cafe_id is not None:
-            filters.append(
-                Action.cafes.any(Cafe.managers.any(User.id == user.id)),
-            )
-
-        elif user.role != UserRole.USER and show_active is not None:
-            filters.append(Action.is_active.is_(show_active))
+        filters.extend(
+            is_active_filters(user, show_active, Action.is_active),
+        )
 
         actions = await self.get_multi(session, *filters)
         self.log_info(f'Пользователь {user.id} получил список из {len(actions)} акций.')
@@ -63,15 +57,16 @@ class ActionService(CRUDAction, BaseService):
         session: AsyncSession,
     ) -> Action:
         """Создать новую акцию."""
+        await self.ensure_ids_exist(
+            cafe_crud,
+            session,
+            action_create.cafes_id,
+        )
         cafes = await cafe_crud.get_multi(
             session,
             Cafe.id.in_(action_create.cafes_id),
         )
 
-        await self.ensure_cafes_len(
-            cafes=cafes,
-            cafes_id=action_create.cafes_id,
-        )
         await self.ensure_manajer_cafe_list_access(
             user=user,
             cafes_id=action_create.cafes_id,
@@ -135,14 +130,14 @@ class ActionService(CRUDAction, BaseService):
         relations = {}
 
         if action_update.cafes_id is not None:
+            await self.ensure_ids_exist(
+                cafe_crud,
+                session,
+                action_update.cafes_id,
+            )
             cafes = await cafe_crud.get_multi(
                 session,
                 Cafe.id.in_(action_update.cafes_id),
-            )
-
-            await self.ensure_cafes_len(
-                cafes=cafes,
-                cafes_id=action_update.cafes_id,
             )
 
             if user.role == UserRole.MANAGER:

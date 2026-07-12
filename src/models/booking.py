@@ -1,10 +1,23 @@
-import enum
+"""ORM-модели бронирования.
+
+Описывает таблицу `bookings`, статусы бронирования и связи с пользователем,
+кафе, столами, слотами и блюдами.
+
+Классы:
+   - `BookingStatus` — допустимые статусы бронирования.
+   - `Booking` — бронирование столика в кафе.
+
+Связи:
+   - `Booking.user` — пользователь, создавший бронирование.
+   - `Booking.cafe` — кафе бронирования.
+   - `Booking.booking_items` — пары стол-слот.
+   - `Booking.booking_dishes` — предзаказанные блюда.
+"""
+
 import uuid
 from datetime import date
-from typing import TYPE_CHECKING, Optional
-
-if TYPE_CHECKING:
-    from src.models import BookingDish, BookingItem, Cafe, Dish, User
+from enum import StrEnum
+from typing import TYPE_CHECKING
 
 from sqlalchemy import CheckConstraint, Date, Enum, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -12,8 +25,11 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.core import constants as ct
 from src.core.base_model import Base
 
+if TYPE_CHECKING:
+    from src.models import BookingDish, BookingItem, Cafe, Dish, User
 
-class BookingStatus(enum.Enum):
+
+class BookingStatus(StrEnum):
     """Статусы бронирования."""
 
     BOOKING = 'BOOKING'
@@ -23,7 +39,7 @@ class BookingStatus(enum.Enum):
 
 
 class Booking(Base):
-    """Модель Booking. Информация о бронировании."""
+    """ORM-модель бронирования."""
 
     __table_args__ = (CheckConstraint('booking_date >= current_date', name='check_booking_date'),)
 
@@ -42,12 +58,12 @@ class Booking(Base):
         Enum(BookingStatus),
         default=BookingStatus.BOOKING,
     )
-    note: Mapped[Optional[str]] = mapped_column(
+    note: Mapped[str | None] = mapped_column(
         String(ct.MAX_DESCRIPTION_LEN),
     )
     guest_number: Mapped[int] = mapped_column(default=ct.DEFAULT_GUEST_NUMBER)
-    reminder_task_id: Mapped[Optional[str]] = mapped_column(
-        String(36),
+    reminder_task_id: Mapped[str | None] = mapped_column(
+        String(ct.UUID_STRING_LEN),
         nullable=True,
     )
 
@@ -75,5 +91,5 @@ class Booking(Base):
     )
 
     def __repr__(self) -> str:
-        """Возвращает однозначное строковое представление бронирования."""
-        return f'Booking(id={self.id!r}, user={self.user_id!r}, date={self.booking_date!r})'
+        """Вернёт краткое строковое представление бронирования."""
+        return f'Booking(id={self.id!r}, user_id={self.user_id!r}, date={self.booking_date!r})'

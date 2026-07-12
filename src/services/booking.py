@@ -1,3 +1,15 @@
+"""Сервисный слой бронирований.
+
+Модуль описывает бизнес-логику создания и управления бронированиями.
+
+Классы:
+   - `BookingService` — создание, список, получение, обновление и отмена броней.
+
+Связанные слои:
+   - CRUD — в `src/crud/booking.py`;
+   - схемы — в `src/schemas/booking.py`.
+"""
+
 import uuid
 from datetime import date, datetime, timedelta
 
@@ -28,11 +40,11 @@ from src.tasks.reminders import send_reminder
 
 
 class BookingService(CRUDBooking, BaseService):
-    """Обработает операции с бронированиями."""
+    """Сервис бронирований: создание, список, чтение, обновление и отмена."""
 
     @staticmethod
     def _to_booking_info(booking: Booking) -> schema.BookingInfo:
-        """Соберет схему ответа бронирования со связанными объектами."""
+        """Соберёт ``BookingInfo`` из ORM-объекта со всеми связями для ответа API."""
         return schema.BookingInfo(
             id=booking.id,
             user=schema.UserShortInfo.model_validate(booking.user, from_attributes=True),
@@ -70,7 +82,10 @@ class BookingService(CRUDBooking, BaseService):
         self,
         tables_slots: list[schema.BookingTableSlotCreate],
     ) -> list[tuple[uuid.UUID, uuid.UUID]]:
-        """Вернет уникальные пары стол-слот из входной схемы."""
+        """Извлечёт уникальные пары ``(table_id, slot_id)`` из входной схемы.
+
+        Выбросит 422, если одна и та же пара стол-слот передана дважды.
+        """
         pairs = [(item.table_id, item.slot_id) for item in tables_slots]
         if len(pairs) != len(set(pairs)):
             self.raise_unprocessable_entity('Пары стол-слот не должны повторяться.')
@@ -119,7 +134,12 @@ class BookingService(CRUDBooking, BaseService):
         booking: Booking,
         user: User,
     ) -> None:
-        """Проверит доступ пользователя к бронированию."""
+        """Проверит доступ пользователя к конкретному бронированию.
+
+        ADMIN — любое бронирование.
+        MANAGER — только брони своего кафе.
+        USER — только свои брони.
+        """
         if user.role == UserRole.ADMIN:
             return
         if user.role == UserRole.MANAGER:
@@ -135,13 +155,11 @@ class BookingService(CRUDBooking, BaseService):
         user: User,
         session: AsyncSession,
     ) -> Cafe:
-        """Проверит существование, активность кафе и доступ менеджера."""
-        await self.ensure_ids_exist(cafe_crud, session, cafe_id)
-        cafe = await cafe_crud.get(
-            session,
-            Cafe.id == cafe_id,
-        )
-        await self.ensure_is_active(cafe)
+        """Проверит кафе: существует, активно, менеджер имеет к нему доступ.
+
+        Вернёт ORM-объект ``Cafe`` для дальнейшего использования.
+        """
+        cafe = await self._get_cafe(session, cafe_id, require_active=True)
         await self.ensure_manager_cafe_access(user, cafe.id)
         return cafe
 
@@ -153,7 +171,17 @@ class BookingService(CRUDBooking, BaseService):
         session: AsyncSession,
         exclude_booking_id: uuid.UUID | None = None,
     ) -> tuple[list[tuple[uuid.UUID, uuid.UUID]], list[Table]]:
-        """Проверит существование, принадлежность кафе и доступность пар."""
+        """Проверит пары стол-слот перед созданием или обновлением брони.
+
+        Шаги:
+        1. Уникальность пар в запросе.
+        2. Существование столов и слотов.
+        3. Принадлежность столов и слотов указанному кафе.
+        4. Активность столов и слотов.
+        5. Отсутствие конфликтующих броней на ту же дату.
+
+        Вернёт пары и список столов для проверки вместимости.
+        """
         pairs = self._pairs_from_tables_slots(tables_slots)
 
         table_ids = {table_id for table_id, _ in pairs}
@@ -199,7 +227,7 @@ class BookingService(CRUDBooking, BaseService):
         tables: list[Table],
         guest_number: int,
     ) -> None:
-        """Проверит, что выбранные столы вмещают всех гостей."""
+        """Проверит, что суммарная вместимость выбранных столов >= ``guest_number``."""
         seats_count = sum(table.seat_number for table in tables)
         if seats_count < guest_number:
             self.raise_unprocessable_entity(
@@ -258,7 +286,13 @@ class BookingService(CRUDBooking, BaseService):
         cafe_id: uuid.UUID | None = None,
         user_id: uuid.UUID | None = None,
     ) -> list[schema.BookingInfo]:
-        """Вернет список бронирований с учетом роли пользователя."""
+        """Вернёт список бронирований с учётом роли и query-параметров.
+
+        USER — только свои активные брони; ``show_active`` игнорируется.
+        MANAGER — брони своего кафе; ``cafe_id`` из query не расширяет доступ.
+        ADMIN — все брони с опциональными фильтрами ``cafe_id``, ``user_id``,
+        ``show_active``.
+        """
         if cafe_id is not None:
             await self.ensure_ids_exist(cafe_crud, session, cafe_id)
         if user_id is not None:
@@ -298,7 +332,16 @@ class BookingService(CRUDBooking, BaseService):
         user: User,
         session: AsyncSession,
     ) -> schema.BookingInfo:
-        """Создаст новое бронирование."""
+        """Создаст бронирование, поставит Celery-задачи уведомления и напоминания.
+
+        Последовательность:
+        1. Валидация даты (не в прошлом).
+        2. Проверка кафе, столов, слотов и предзаказа.
+        3. Сохранение в БД.
+        4. Постановка ``notify_admin`` и отложенного ``send_reminder``.
+
+        Ошибка Celery не отменяет бронь — только логируется.
+        """
         if booking_create.booking_date < date.today():
             self.raise_unprocessable_entity(
                 'Нельзя забронировать на прошедшую дату.',
@@ -361,7 +404,7 @@ class BookingService(CRUDBooking, BaseService):
 
     @staticmethod
     def _format_booking_slot_times(booking: Booking) -> str:
-        """Вернёт человекочитаемое время слотов бронирования."""
+        """Сформирует строку времени слотов для email-уведомлений."""
         slot_labels = [
             f'{item.slot.start_time.strftime("%H:%M")}-{item.slot.end_time.strftime("%H:%M")}'
             for item in booking.booking_items
@@ -369,7 +412,11 @@ class BookingService(CRUDBooking, BaseService):
         return ', '.join(slot_labels) if slot_labels else 'не указано'
 
     def _enqueue_booking_notifications(self, booking: Booking, event_type: str) -> None:
-        """Поставит уведомления менеджерам кафе о событии бронирования."""
+        """Поставит в очередь email каждому менеджеру кафе о событии бронирования.
+
+        ``event_type``: ``created``, ``updated`` или ``canceled``.
+        Менеджеры без email пропускаются с предупреждением в лог.
+        """
         slot_times = self._format_booking_slot_times(booking)
         for manager in booking.cafe.managers:
             if not manager.email:
@@ -392,7 +439,12 @@ class BookingService(CRUDBooking, BaseService):
             )
 
     def _enqueue_booking_reminder(self, booking: Booking) -> str | None:
-        """Поставит напоминание пользователю о бронировании."""
+        """Поставит отложенное напоминание пользователю перед началом слота.
+
+        ETA = ``booking_date`` + ``start_time`` первого слота
+        минус ``settings.reminder_minutes_before``.
+        Вернёт ID Celery-задачи или ``None``, если слотов нет.
+        """
         if not booking.booking_items:
             return None
 
@@ -419,7 +471,7 @@ class BookingService(CRUDBooking, BaseService):
         return self._enqueue_booking_reminder(created_booking)
 
     def _cancel_booking_reminder(self, booking: Booking) -> None:
-        """Отзовёт отложенное напоминание о бронировании."""
+        """Отзовёт Celery-напоминание при отмене или переносе бронирования."""
         if not booking.reminder_task_id:
             return
         try:
@@ -452,7 +504,18 @@ class BookingService(CRUDBooking, BaseService):
         user: User,
         session: AsyncSession,
     ) -> schema.BookingInfo:
-        """Обновит бронирование по ID."""
+        """Обновит бронирование: дату, столы, слоты, предзаказ, статус, активность.
+
+        Логика:
+        - Бронь на прошедшую дату изменять нельзя.
+        - ``tables_slots`` заменяет все пары стол-слот (с проверкой конфликтов).
+        - ``pre_ordered_dishes`` заменяет весь предзаказ.
+        - Смена только ``booking_date`` перепроверяет конфликты текущих пар.
+        - ``is_active=False`` отменяет бронь: статус CANCELED, soft_delete,
+          отзыв напоминания.
+        - После сохранения ставит уведомления менеджерам (кроме случая, когда
+          Celery недоступен — тогда только warning в лог).
+        """
         booking = await self._get_booking_or_raise(booking_id, session)
         await self._ensure_booking_access(booking, user)
 

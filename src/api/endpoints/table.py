@@ -1,11 +1,28 @@
+"""Эндпоинты столиков.
+
+Модуль описывает маршруты управления столиками кафе.
+
+Маршруты:
+   - `GET /` — список столов кафе;
+   - `POST /` — создание стола;
+   - `GET /{table_id}` — стол по ID;
+   - `PATCH /{table_id}` — обновление стола.
+"""
+
 import uuid
-from typing import Annotated, Optional
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api import error_responses as er
 from src.api import validators as vt
+from src.api.openapi_examples import (
+    SUCCESS_TABLES_LIST,
+    SUCCESS_TABLE_CREATED,
+    SUCCESS_TABLE_INFO,
+    merge_responses,
+)
 from src.core.db import get_session
 from src.models import User
 from src.schemas import table as schema
@@ -21,7 +38,7 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
     response_model=list[schema.TableInfo],
     response_model_exclude_none=True,
     summary='Получение списка столов в кафе',
-    responses=er.ERRORS_GET_MULTI_WITH_404,
+    responses=merge_responses(SUCCESS_TABLES_LIST, er.ERRORS_GET_MULTI_WITH_404),
     description=(
         'Получение списка доступных для бронирования столов в кафе.'
         'Для администраторов и менеджеров - все столы (с возможностью выбора),'
@@ -32,7 +49,7 @@ async def get_tables_list(
     cafe_id: uuid.UUID,
     user: Annotated[User, Depends(vt.current_user_is_active)],
     session: SessionDep,
-    show_active: Optional[bool] = Query(None),
+    show_active: bool | None = Query(None),
 ) -> list[schema.TableInfo]:
     """Получение списка столиков в кафе."""
     return await table_service.get_multi_by_cafe(
@@ -49,7 +66,7 @@ async def get_tables_list(
     response_model_exclude_none=True,
     status_code=status.HTTP_201_CREATED,
     summary='Новый стол в кафе',
-    responses=er.ERRORS_4XX_FULL,
+    responses=merge_responses(SUCCESS_TABLE_CREATED, er.ERRORS_4XX_FULL),
     description=('Создает новый стол кафе.Только для администраторов и менеджеров.'),
 )
 async def create_table(
@@ -72,7 +89,7 @@ async def create_table(
     response_model=schema.TableInfo,
     response_model_exclude_none=True,
     summary='Информация о столе в кафе по его ID',
-    responses=er.ERRORS_4XX_FULL,
+    responses=merge_responses(SUCCESS_TABLE_INFO, er.ERRORS_4XX_FULL),
     description=(
         'Получение информации о столе в кафе по его ID.'
         'Для администраторов и менеджеров - все столы,'
@@ -99,7 +116,7 @@ async def get_table(
     response_model=schema.TableInfo,
     response_model_exclude_none=True,
     summary='Обновление информации о столе в кафе по его ID',
-    responses=er.ERRORS_4XX_FULL,
+    responses=merge_responses(SUCCESS_TABLE_INFO, er.ERRORS_4XX_FULL),
     description=('Обновление информации о столе в кафе по его ID.Только для администраторов и менеджеров.'),
 )
 async def update_table(

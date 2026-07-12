@@ -1,5 +1,18 @@
+"""ORM-модель блюда.
+
+Описывает таблицу `dishes` и связи блюда с кафе и бронированиями.
+
+Классы:
+   - `Dish` — блюдо в меню.
+
+Связи:
+   - `Dish.cafes` — кафе, в которых доступно блюдо.
+   - `Dish.bookings` — бронирования с предзаказом блюда.
+   - `Dish.booking_dishes` — позиции предзаказа.
+"""
+
 import uuid
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -13,19 +26,7 @@ if TYPE_CHECKING:
 
 
 class Dish(Base):
-    """Модель Dish. Информация о блюдах в меню.
-
-    Поля:
-    * `id` - uuid4, primary_key;
-    * `name` - str, unique;
-    * `description` - str;
-    * `cafes` - list[Cafe], many-to-many;
-    * `photo_id` - uuid4;
-    * `price` - int;
-    * `created_at` - datetime;
-    * `updated_at` - datetime;
-    * `is_active` - boolean.
-    """
+    """ORM-модель блюда."""
 
     __tablename__ = 'dishes'
 
@@ -33,10 +34,10 @@ class Dish(Base):
         String(ct.MAX_NAME_LEN),
         unique=True,
     )
-    description: Mapped[Optional[str]] = mapped_column(
+    description: Mapped[str | None] = mapped_column(
         String(ct.MAX_DESCRIPTION_LEN),
     )
-    photo_id: Mapped[Optional[uuid.UUID]]
+    photo_id: Mapped[uuid.UUID | None]
     price: Mapped[int] = mapped_column(
         Integer,
     )
@@ -54,3 +55,7 @@ class Dish(Base):
     booking_dishes: Mapped[list['BookingDish']] = relationship(
         back_populates='dish',
     )
+
+    def __repr__(self) -> str:
+        """Вернёт краткое строковое представление блюда."""
+        return f'Dish(id={self.id!r}, name={self.name!r}, price={self.price!r})'

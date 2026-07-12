@@ -1,3 +1,9 @@
+"""ORM-модели проекта BookingSeats.
+
+Пакет экспортирует SQLAlchemy-модели и ассоциативные таблицы,
+используемые слоями CRUD, сервисов и API.
+"""
+
 from src.models.action import Action
 from src.models.association_tables import cafe_actions, cafe_dishes
 from src.models.booking import Booking, BookingStatus

@@ -1,11 +1,22 @@
+"""Сервисный слой кафе.
+
+Модуль описывает бизнес-логику управления кафе и привязкой менеджеров.
+
+Классы:
+   - `CafeService` — создание, список, получение и обновление кафе.
+
+Связанные слои:
+   - CRUD — в `src/crud/cafe.py`;
+   - схемы — в `src/schemas/cafe.py`.
+"""
+
 import uuid
 from typing import Annotated, Sequence
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.db import get_session
-from src.core.exceptions import BookingSeatsAppError
 from src.crud import cafe_crud, user_crud
 from src.models import Cafe, User, UserRole
 from src.schemas import CafeCreate, CafeUpdate
@@ -28,7 +39,7 @@ class CafeService(BaseService):
         self,
         cafe_in: CafeCreate,
     ) -> Cafe:
-        """Метод проверяет все парамерты и создает новое кафе."""
+        """Создаст кафе после проверки уникальности и валидности менеджеров."""
         await self._validate_unique_cafe_and_address(
             name=cafe_in.name,
             address=cafe_in.address,
@@ -60,7 +71,7 @@ class CafeService(BaseService):
         user: User,
         show_active: bool | None,
     ) -> Sequence[Cafe]:
-        """Метод возвращает список кафе, в зависимости от роли пользователя."""
+        """Вернёт список кафе с фильтром ``is_active`` по роли пользователя."""
         filters = is_active_filters(user, show_active, Cafe.is_active)
         return await cafe_crud.get_multi_with_managers(
             self.session,
@@ -72,25 +83,14 @@ class CafeService(BaseService):
         cafe_id: uuid.UUID,
         user: User,
     ) -> Cafe:
-        """Получение информации о кафе по его ID."""
+        """Вернёт кафе по ID; USER видит только активное."""
+        filters = [Cafe.id == cafe_id]
         if user.role == UserRole.USER:
-            cafe = await cafe_crud.get_with_managers(
-                self.session,
-                Cafe.id == cafe_id,
-                Cafe.is_active.is_(True),
-            )
-        else:
-            cafe = await cafe_crud.get_with_managers(
-                self.session,
-                Cafe.id == cafe_id,
-            )
+            filters.append(Cafe.is_active.is_(True))
 
+        cafe = await cafe_crud.get_with_managers(self.session, *filters)
         if not cafe:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f'Кафе с id:{cafe_id} не найдено',
-            )
-
+            self.raise_not_found(f'Кафе с id:{cafe_id} не найдено')
         return cafe
 
     async def update_cafe(
@@ -99,26 +99,20 @@ class CafeService(BaseService):
         cafe_in: CafeUpdate,
         current_user: User,
     ) -> Cafe:
-        """Обновление информации о кафе по его ID."""
+        """Обновит кафе: поля, менеджеров и активность."""
         if (
             current_user.role == UserRole.MANAGER
             and cafe_in.is_active is not None
             and cafe_in.is_active is False
         ):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail='Доступ запрещен',
-            )
+            self.raise_forbidden()
 
         cafe_old_db = await cafe_crud.get_with_managers(
             self.session,
             Cafe.id == cafe_id,
         )
         if not cafe_old_db:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f'Кафе с id:{cafe_id} не найдено',
-            )
+            self.raise_not_found(f'Кафе с id:{cafe_id} не найдено')
 
         await self._validate_unique_cafe_and_address(
             name=cafe_in.name or cafe_old_db.name,
@@ -132,11 +126,11 @@ class CafeService(BaseService):
                 managers=cafe_in.managers_id,
             )
             id_exist_managers = {manager.id for manager in cafe_old_db.managers}
-            new_managers = set(cafe_in.managers_id).difference(id_exist_managers)
-            unset_managers = id_exist_managers.difference(cafe_in.managers_id)
+            new_manager_ids = set(cafe_in.managers_id) - id_exist_managers
+            unset_manager_ids = id_exist_managers - set(cafe_in.managers_id)
 
-            new_managers_obj = [manager for manager in managers_objs if manager.id in new_managers]
-            unset_managers_obj = [manager for manager in cafe_old_db.managers if manager.id in unset_managers]
+            new_managers_obj = [m for m in managers_objs if m.id in new_manager_ids]
+            unset_managers_obj = [m for m in cafe_old_db.managers if m.id in unset_manager_ids]
 
             await user_crud.update_link_in_cafe(
                 self.session,
@@ -155,8 +149,7 @@ class CafeService(BaseService):
             session=self.session,
         )
 
-        await self.session.commit()  # коммитим все изменения за один раз
-        # обновляем relationships, чтобы подтянуть актуальные данные
+        await self.session.commit()
         await self.session.refresh(update_cafe, attribute_names=['managers'])
 
         return update_cafe
@@ -178,15 +171,12 @@ class CafeService(BaseService):
 
         for manager in managers_objs:
             if manager.role != UserRole.MANAGER:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f'Пользователь: {manager.username} не менеджер',
+                self.raise_bad_request(
+                    f'Пользователь: {manager.username} не менеджер',
                 )
-
             if manager.cafe_id:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail=(f'Пользователь: {manager.username} уже закреплен за кафе'),
+                self.raise_unprocessable_entity(
+                    f'Пользователь: {manager.username} уже закреплен за кафе',
                 )
 
         return managers_objs
@@ -207,12 +197,8 @@ class CafeService(BaseService):
         if exclude_id is not None:
             filters.append(Cafe.id != exclude_id)
 
-        if await cafe_crud.exists(
-            self.session,
-            *filters,
-        ):
-            raise BookingSeatsAppError(
-                status.HTTP_422_UNPROCESSABLE_ENTITY,
+        if await cafe_crud.exists(self.session, *filters):
+            self.raise_unprocessable_entity(
                 'На данном адресе уже существует кафе с таким названием.',
             )
 

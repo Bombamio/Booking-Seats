@@ -1,3 +1,14 @@
+"""ORM-модель позиции предзаказа блюда.
+
+Описывает таблицу `booking_dishes` — связь бронирования и блюда с количеством.
+
+Классы:
+   - `BookingDish` — предзаказанное блюдо в бронировании.
+
+Связи:
+   - `BookingDish.dish` — блюдо в предзаказе.
+"""
+
 import uuid
 from typing import TYPE_CHECKING
 
@@ -5,20 +16,16 @@ from sqlalchemy import CheckConstraint, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core import constants as ct
-from src.core.base_model import Base
+from src.core.base_model import LinkModelBase
 
 if TYPE_CHECKING:
     from src.models import Dish
 
 
-class BookingDish(Base):
-    """Модель BookingDish. Позиция предзаказа блюда в бронировании."""
+class BookingDish(LinkModelBase):
+    """ORM-модель позиции предзаказа блюда в бронировании."""
 
     __tablename__ = 'booking_dishes'
-    id = None
-    is_active = None
-    created_at = None
-    updated_at = None
 
     __table_args__ = (
         CheckConstraint(
@@ -41,3 +48,10 @@ class BookingDish(Base):
         back_populates='booking_dishes',
         lazy='selectin',
     )
+
+    def __repr__(self) -> str:
+        """Вернёт краткое строковое представление позиции предзаказа."""
+        return (
+            f'BookingDish(booking_id={self.booking_id!r}, '
+            f'dish_id={self.dish_id!r}, quantity={self.quantity!r})'
+        )

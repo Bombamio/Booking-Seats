@@ -1,3 +1,12 @@
+"""Исключения приложения BookingSeats.
+
+Модуль описывает базовые классы ошибок бизнес-логики и Celery.
+
+Классы:
+   - `BookingSeatsAppError` — ошибка с HTTP-кодом и сообщением;
+   - `BookingSeatsCeleryError` — недоступность очереди фоновых задач.
+"""
+
 from fastapi import status
 
 
@@ -5,7 +14,7 @@ class BookingSeatsAppError(Exception):
     """Базовое исключение проекта."""
 
     def __init__(self, code: int, message: str) -> None:
-        """Инициализирует исключение с кодом и сообщением."""
+        """Сохранит HTTP-код и сообщение ошибки."""
         self.code = code
         self.message = message
         super().__init__(message)

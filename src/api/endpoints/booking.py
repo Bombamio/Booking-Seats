@@ -1,11 +1,28 @@
+"""Эндпоинты бронирований.
+
+Модуль описывает маршруты создания и управления бронированиями.
+
+Маршруты:
+   - `GET /` — список бронирований;
+   - `POST /` — создание бронирования;
+   - `GET /{booking_id}` — бронирование по ID;
+   - `PATCH /{booking_id}` — обновление бронирования.
+"""
+
 import uuid
-from typing import Annotated, Optional
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api import error_responses as er
 from src.api import validators as vt
+from src.api.openapi_examples import (
+    SUCCESS_BOOKINGS_LIST,
+    SUCCESS_BOOKING_CREATED,
+    SUCCESS_BOOKING_INFO,
+    merge_responses,
+)
 from src.core.db import get_session
 from src.models import User
 from src.schemas import booking as schema
@@ -20,7 +37,7 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
     '',
     response_model=list[schema.BookingInfo],
     response_model_exclude_none=True,
-    responses=er.ERRORS_GET_MULTI,
+    responses=merge_responses(SUCCESS_BOOKINGS_LIST, er.ERRORS_GET_MULTI),
     summary='Получение списка бронирований',
     description=(
         'Получение списка бронирований. Для администраторов и менеджеров - '
@@ -31,7 +48,7 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 async def get_booking_list(
     user: Annotated[User, Depends(vt.current_user_is_active)],
     session: SessionDep,
-    show_active: Optional[bool] = Query(None),
+    show_active: bool | None = Query(None),
     cafe_id: uuid.UUID | None = None,
     user_id: uuid.UUID | None = None,
 ) -> list[schema.BookingInfo]:
@@ -50,7 +67,7 @@ async def get_booking_list(
     response_model=schema.BookingInfo,
     response_model_exclude_none=True,
     status_code=status.HTTP_201_CREATED,
-    responses=er.ERRORS_POST_BOOKING,
+    responses=merge_responses(SUCCESS_BOOKING_CREATED, er.ERRORS_POST_BOOKING),
     summary='Создание нового бронирования',
     description='Создает новое бронирование. Только для авторизированных пользователей.',
 )
@@ -71,7 +88,7 @@ async def create_booking(
     '/{booking_id}',
     response_model=schema.BookingInfo,
     response_model_exclude_none=True,
-    responses=er.ERRORS_4XX_FULL,
+    responses=merge_responses(SUCCESS_BOOKING_INFO, er.ERRORS_4XX_FULL),
     summary='Получение информации о бронировании по его ID',
     description=(
         'Получение информации о бронировании по его ID. Для администраторов '
@@ -95,7 +112,7 @@ async def get_booking(
     '/{booking_id}',
     response_model=schema.BookingInfo,
     response_model_exclude_none=True,
-    responses=er.ERRORS_4XX_FULL,
+    responses=merge_responses(SUCCESS_BOOKING_INFO, er.ERRORS_4XX_FULL),
     summary='Обновление информации о бронировании по его ID',
     description=(
         'Обновление информации о бронировании по его ID. Для администраторов '

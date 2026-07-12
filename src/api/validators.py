@@ -1,3 +1,13 @@
+"""Зависимости FastAPI для проверки прав доступа.
+
+Модуль описывает валидаторы авторизации и ролей пользователя.
+
+Функции:
+   - `current_user_is_active` — активный авторизованный пользователь;
+   - `current_admin` — только администратор;
+   - `current_admin_or_manager` — администратор или менеджер.
+"""
+
 from http import HTTPStatus
 
 from fastapi import Depends, HTTPException

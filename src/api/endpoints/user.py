@@ -1,3 +1,16 @@
+"""Эндпоинты пользователей.
+
+Модуль описывает маршруты управления учётными записями.
+
+Маршруты:
+   - `GET /` — список пользователей;
+   - `POST /` — создание пользователя;
+   - `GET /me` — текущий пользователь;
+   - `PATCH /me` — обновление текущего пользователя;
+   - `GET /{user_id}` — пользователь по ID;
+   - `PATCH /{user_id}` — обновление пользователя.
+"""
+
 from typing import Annotated, Sequence
 from uuid import UUID
 
@@ -5,6 +18,12 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api import error_responses as er
+from src.api.openapi_examples import (
+    SUCCESS_USERS_LIST,
+    SUCCESS_USER_CREATED,
+    SUCCESS_USER_INFO,
+    merge_responses,
+)
 from src.core.db import get_session
 from src.core.security import get_current_user, get_optional_current_user
 from src.models import User
@@ -20,7 +39,7 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
     '/',
     response_model=list[schema.UserInfo],
     summary='Получение списка пользователей',
-    responses=er.ERRORS_GET_MULTI_USERS,
+    responses=merge_responses(SUCCESS_USERS_LIST, er.ERRORS_GET_MULTI_USERS),
     description=('Возвращает информацию о всех пользователях.Только для администраторов или менеджеров'),
 )
 async def get_users_list(
@@ -37,7 +56,7 @@ async def get_users_list(
 @router.get(
     '/me',
     response_model=schema.UserInfo,
-    responses=er.ERRORS_GET_ME,
+    responses=merge_responses(SUCCESS_USER_INFO, er.ERRORS_GET_ME),
 )
 async def get_me(
     session: SessionDep,
@@ -50,7 +69,7 @@ async def get_me(
 @router.patch(
     '/me',
     response_model=schema.UserInfo,
-    responses=er.ERRORS_UPDATE_ME,
+    responses=merge_responses(SUCCESS_USER_INFO, er.ERRORS_UPDATE_ME),
 )
 async def update_me(
     session: SessionDep,
@@ -64,7 +83,7 @@ async def update_me(
 @router.get(
     '/{user_id}',
     response_model=schema.UserInfo,
-    responses=er.ERRORS_GET_USERS,
+    responses=merge_responses(SUCCESS_USER_INFO, er.ERRORS_GET_USERS),
 )
 async def get_user(
     session: SessionDep,
@@ -82,7 +101,7 @@ async def get_user(
     '/',
     response_model=schema.UserInfo,
     status_code=status.HTTP_201_CREATED,
-    responses=er.ERRORS_POST_USERS,
+    responses=merge_responses(SUCCESS_USER_CREATED, er.ERRORS_POST_USERS),
 )
 async def create_user(
     user_in: schema.UserCreate,
@@ -100,7 +119,7 @@ async def create_user(
 @router.patch(
     '/{user_id}',
     response_model=schema.UserInfo,
-    responses=er.ERRORS_4XX_FULL,
+    responses=merge_responses(SUCCESS_USER_INFO, er.ERRORS_4XX_FULL),
 )
 async def update_user(
     session: SessionDep,

@@ -1,11 +1,28 @@
+"""Эндпоинты акций.
+
+Модуль описывает маршруты управления акциями кафе.
+
+Маршруты:
+   - `GET /` — список акций;
+   - `POST /` — создание акции;
+   - `GET /{action_id}` — акция по ID;
+   - `PATCH /{action_id}` — обновление акции.
+"""
+
 import uuid
-from typing import Annotated, Optional, Sequence
+from typing import Annotated, Sequence
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api import error_responses as er
 from src.api import validators as vt
+from src.api.openapi_examples import (
+    SUCCESS_ACTIONS_LIST,
+    SUCCESS_ACTION_CREATED,
+    SUCCESS_ACTION_INFO,
+    merge_responses,
+)
 from src.core.db import get_session
 from src.models import Action, User
 from src.schemas import ActionCreate, ActionInfo, ActionUpdate
@@ -19,13 +36,13 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 @router.get(
     '/',
     response_model=list[ActionInfo],
-    responses=er.ERRORS_GET_MULTI,
+    responses=merge_responses(SUCCESS_ACTIONS_LIST, er.ERRORS_GET_MULTI),
 )
 async def get_actions(
     session: SessionDep,
-    show_active: Optional[bool] = Query(None),
-    cafe_id: Optional[uuid.UUID] = Query(None),
-    user: User = Depends(vt.current_user_is_active),
+    user: Annotated[User, Depends(vt.current_user_is_active)],
+    show_active: bool | None = Query(None),
+    cafe_id: uuid.UUID | None = Query(None),
 ) -> Sequence[Action]:
     """Вернет список акций с фильтрацией."""
     return await action_service.get_actions(
@@ -40,12 +57,12 @@ async def get_actions(
     '/',
     response_model=ActionInfo,
     status_code=status.HTTP_201_CREATED,
-    responses=er.ERRORS_POST,
+    responses=merge_responses(SUCCESS_ACTION_CREATED, er.ERRORS_POST),
 )
 async def create_action(
     action_in: ActionCreate,
     session: SessionDep,
-    user: User = Depends(vt.current_admin_or_manager),
+    user: Annotated[User, Depends(vt.current_admin_or_manager)],
 ) -> Action:
     """Создаст новую акцию."""
     return await action_service.create_action(
@@ -58,12 +75,12 @@ async def create_action(
 @router.get(
     '/{action_id}',
     response_model=ActionInfo,
-    responses=er.ERRORS_4XX_FULL,
+    responses=merge_responses(SUCCESS_ACTION_INFO, er.ERRORS_4XX_FULL),
 )
 async def get_action(
     action_id: uuid.UUID,
     session: SessionDep,
-    user: User = Depends(vt.current_user_is_active),
+    user: Annotated[User, Depends(vt.current_user_is_active)],
 ) -> Action:
     """Вернет акцию по идентификатору."""
     return await action_service.get_action_by_id(
@@ -76,13 +93,13 @@ async def get_action(
 @router.patch(
     '/{action_id}',
     response_model=ActionInfo,
-    responses=er.ERRORS_4XX_FULL,
+    responses=merge_responses(SUCCESS_ACTION_INFO, er.ERRORS_4XX_FULL),
 )
 async def update_action(
     action_id: uuid.UUID,
     action_in: ActionUpdate,
     session: SessionDep,
-    user: User = Depends(vt.current_admin_or_manager),
+    user: Annotated[User, Depends(vt.current_admin_or_manager)],
 ) -> Action:
     """Обновит данные существующей акции."""
     return await action_service.update_action(

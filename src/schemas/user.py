@@ -22,21 +22,13 @@
 """
 
 import uuid
-from enum import StrEnum
 from typing import ClassVar
 
 from pydantic import Field, model_validator
 
 from src.core import constants as ct
+from src.models.user import UserRole
 from src.schemas.base import BaseCreate, BaseInfo, BaseShortInfo, BaseUpdate
-
-
-class UserRole(StrEnum):
-    """Роли пользователей."""
-
-    ADMIN = 'ADMIN'
-    MANAGER = 'MANAGER'
-    USER = 'USER'
 
 
 class UserBaseMixin:

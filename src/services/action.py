@@ -1,13 +1,25 @@
+"""Сервисный слой акций.
+
+Модуль описывает бизнес-логику управления акциями кафе.
+
+Классы:
+   - `ActionService` — список, создание, получение и обновление акций.
+
+Связанные слои:
+   - CRUD — в `src/crud/action.py`;
+   - схемы — в `src/schemas/action.py`.
+"""
+
 import uuid
-from typing import Optional, Sequence
+from typing import Sequence
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core import constants as cs
-from src.crud import CRUDAction, action_crud, cafe_crud
-from src.models import Action, Cafe, User, UserRole
+from src.crud import CRUDAction, action_crud
+from src.models import Action, User, UserRole
 from src.schemas import ActionCreate, ActionUpdate
-from src.services.base import BaseService, is_active_filters
+from src.services.base import BaseService
 
 
 class ActionService(CRUDAction, BaseService):
@@ -32,18 +44,21 @@ class ActionService(CRUDAction, BaseService):
         self,
         session: AsyncSession,
         user: User,
-        show_active: Optional[bool],
-        cafe_id: Optional[uuid.UUID],
+        show_active: bool | None,
+        cafe_id: uuid.UUID | None,
     ) -> Sequence[Action]:
-        """Получить список акций с фильтрацией."""
-        filters = []
+        """Вернёт список акций с фильтрацией по кафе и ``show_active``.
 
-        if cafe_id is not None:
-            await self.ensure_ids_exist(cafe_crud, session, cafe_id)
-            filters.append(Action.cafes.any(Cafe.id == cafe_id))
-
-        filters.extend(
-            is_active_filters(user, show_active, Action.is_active),
+        Логика фильтрации ``is_active`` совпадает с блюдами и другими сущностями
+        через ``is_active_filters``.
+        """
+        filters = await self._filters_for_cafe_linked_entity(
+            session=session,
+            user=user,
+            show_active=show_active,
+            cafe_id=cafe_id,
+            entity_model=Action,
+            is_active_column=Action.is_active,
         )
 
         actions = await self.get_multi(session, *filters)
@@ -56,21 +71,15 @@ class ActionService(CRUDAction, BaseService):
         user: User,
         session: AsyncSession,
     ) -> Action:
-        """Создать новую акцию."""
-        await self.ensure_ids_exist(
-            cafe_crud,
+        """Создаст акцию и привяжет её к кафе из ``cafes_id``.
+
+        Проверяет существование кафе, доступ менеджера и уникальность описания.
+        """
+        cafes = await self._load_cafes_for_link(
             session,
             action_create.cafes_id,
-        )
-        cafes = await cafe_crud.get_multi(
-            session,
-            Cafe.id.in_(action_create.cafes_id),
-        )
-
-        await self.ensure_manajer_cafe_list_access(
-            user=user,
-            cafes_id=action_create.cafes_id,
-            check_len=True,
+            user,
+            check_manager_single=True,
         )
         await self._ensure_description_unique(
             description=action_create.description,
@@ -84,7 +93,6 @@ class ActionService(CRUDAction, BaseService):
         )
 
         self.log_info(f'Пользователь {user.id} создал акцию.')
-
         return result
 
     async def get_action_by_id(
@@ -93,7 +101,7 @@ class ActionService(CRUDAction, BaseService):
         session: AsyncSession,
         user: User,
     ) -> Action:
-        """Получить акцию по ID с проверкой прав доступа."""
+        """Вернёт акцию по ID с проверкой роли и доступа менеджера к её кафе."""
         filters = [Action.id == action_id]
         if user.role == UserRole.USER:
             filters.append(Action.is_active.is_(True))
@@ -104,13 +112,12 @@ class ActionService(CRUDAction, BaseService):
             *filters,
         )
 
-        await self.ensure_manajer_cafe_list_access(
+        await self.ensure_manager_cafe_list_access(
             user=user,
             cafes_id=[cafe.id for cafe in action.cafes],
         )
 
         self.log_info(f'Пользователь {user.id} получил информацию об акции {action_id}.')
-
         return action
 
     async def update_action(
@@ -120,7 +127,11 @@ class ActionService(CRUDAction, BaseService):
         user: User,
         session: AsyncSession,
     ) -> Action:
-        """Обновить существующую акцию."""
+        """Обновит акцию: поля, привязку к кафе и описание.
+
+        При смене ``cafes_id`` проверяет существование кафе и доступ менеджера.
+        При смене ``description`` проверяет уникальность среди других акций.
+        """
         action: Action = await self.get_or_raise(
             action_crud,
             session,
@@ -130,24 +141,12 @@ class ActionService(CRUDAction, BaseService):
         relations = {}
 
         if action_update.cafes_id is not None:
-            await self.ensure_ids_exist(
-                cafe_crud,
+            relations['cafes'] = await self._load_cafes_for_link(
                 session,
                 action_update.cafes_id,
+                user,
+                check_manager_single=True,
             )
-            cafes = await cafe_crud.get_multi(
-                session,
-                Cafe.id.in_(action_update.cafes_id),
-            )
-
-            if user.role == UserRole.MANAGER:
-                await self.ensure_manajer_cafe_list_access(
-                    user=user,
-                    cafes_id=action_update.cafes_id,
-                    check_len=True,
-                )
-
-            relations['cafes'] = cafes
 
         if action_update.description is not None:
             await self._ensure_description_unique(
@@ -164,7 +163,6 @@ class ActionService(CRUDAction, BaseService):
         )
 
         self.log_info(f'Пользователь {user.id} изменил информацию об акции {action_id}.')
-
         return result
 
 

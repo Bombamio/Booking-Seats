@@ -1,5 +1,16 @@
+"""Сервисный слой аутентификации.
+
+Модуль описывает проверку учётных данных и выдачу JWT-токена.
+
+Классы:
+   - `AuthService` — аутентификация по email или телефону.
+
+Связанные слои:
+   - CRUD — в `src/crud/user.py`;
+   - схемы — в `src/schemas/auth.py`.
+"""
+
 from datetime import timedelta
-from typing import Optional
 
 from sqlalchemy import or_
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,8 +31,8 @@ class AuthService(BaseService):
         session: AsyncSession,
         login: str,
         password: str,
-    ) -> Optional[AuthToken]:
-        """Аутентификация пользователя по email/phone."""
+    ) -> AuthToken:
+        """Проверит email/телефон и пароль, вернёт JWT-токен доступа."""
         filters = [or_(User.email == login, User.phone == login)]
         user = await user_crud.get(session, *filters)
 

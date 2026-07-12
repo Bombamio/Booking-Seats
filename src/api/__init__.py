@@ -1,3 +1,8 @@
+"""Пакет HTTP API проекта BookingSeats.
+
+Модуль реэкспортирует роутеры эндпоинтов для удобного импорта.
+"""
+
 from src.api.endpoints.actions import router as action_router
 from src.api.endpoints.auth import router as auth_router
 from src.api.endpoints.cafe import router as cafe_router

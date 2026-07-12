@@ -1,21 +1,40 @@
+"""Базовый CRUD-слой проекта BookingSeats.
+
+Модуль описывает универсальные операции чтения и записи для ORM-моделей.
+
+Классы:
+   - `CRUDBase` — базовый CRUD для всех сущностей.
+   - `CRUDWithCafesMixin` — CRUD для сущностей со связью many-to-many с кафе.
+
+Поведение:
+   - `get` / `get_multi` — выборка по SQLAlchemy-фильтрам с валидацией таблицы.
+   - `create` / `update` — запись в БД, поддержка связей many-to-many через `**relations`.
+   - `exists` — проверка наличия записи без загрузки объекта.
+
+Связанные слои:
+   - сервисы используют CRUD через `get_or_raise` и `ensure_ids_exist` в `src/services/base.py`.
+"""
+
 from typing import Any
 
 from sqlalchemy import exists, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.inspection import inspect
+from sqlalchemy.orm import selectinload
+from sqlalchemy.sql import Select
 from sqlalchemy.sql.elements import BinaryExpression, ColumnElement
 
 from src.core.logger import bookingseats_logger
 
 
 class CRUDBase:
-    """Базовый CRUD класс."""
+    """Базовый CRUD-класс для ORM-моделей."""
 
     def __init__(
         self,
         model: Any,
     ) -> None:
-        """Метаданные модели."""
+        """Сохранит метаданные модели для CRUD-операций."""
         self.model = model
         self.mapper = inspect(self.model)
         self.model_fields = set(self.mapper.columns.keys())
@@ -32,7 +51,7 @@ class CRUDBase:
         self,
         *filters: Any,
     ) -> None:
-        """Проверка простых бинарных выражений."""
+        """Проверит, что бинарные фильтры относятся к текущей модели."""
         table = self.model.__table__
 
         for filter_ in filters:
@@ -43,9 +62,12 @@ class CRUDBase:
                     )
 
     def _set_relation(self, entity: Any, relations: dict[str, Any]) -> None:
+        """Установит связи ORM-объекта по именам relationship-атрибутов.
+
+        Выбросит ``ValueError``, если передан неизвестный атрибут связи.
+        """
         for attr, value in relations.items():
             if attr not in self.relationships:
-                # Защита от опечаток.
                 raise ValueError(
                     f'{attr} is not a relationships of {self.model.__name__}',
                 )
@@ -114,7 +136,7 @@ class CRUDBase:
     ) -> Any:
         """POST-функция, добавляет объект в базу данных.
 
-        **Примечание!** Если у вас есть поле many-to-many - обязательно
+        **Примечание!** Если у вас есть поле many-to-many — обязательно
         впишите его в функцию.
 
         Пример:
@@ -152,7 +174,7 @@ class CRUDBase:
     ) -> Any:
         """PATCH-функция, обновляет информацю об объекте в базе данных.
 
-        **Примечание!** Если у вас есть поле many-to-many - обязательно
+        **Примечание!** Если у вас есть поле many-to-many — обязательно
         впишите его в функцию.
 
         Пример:
@@ -216,3 +238,72 @@ class CRUDBase:
         )
         self._check_filters(*filters)
         return bool(await session.scalar(select(exists().where(*filters))))
+
+
+class CRUDWithCafesMixin:
+    """Mixin CRUD для сущностей со связью ``cafes`` many-to-many."""
+
+    cafes_relationship: str = 'cafes'
+
+    def _stmt_with_cafes(self) -> Select[tuple[Any]]:
+        """Соберёт запрос с предзагрузкой связанных кафе."""
+        relation = getattr(self.model, self.cafes_relationship)
+        return select(self.model).options(selectinload(relation))
+
+    async def _reload_with_cafes(
+        self,
+        session: AsyncSession,
+        entity_id: Any,
+    ) -> Any:
+        """Пересчитает сущность из БД с предзагруженными кафе."""
+        result = await session.execute(
+            self._stmt_with_cafes().where(self.model.id == entity_id),
+        )
+        return result.scalars().one()
+
+    async def get(
+        self,
+        session: AsyncSession,
+        *filters: Any,
+    ) -> Any | None:
+        """Вернёт сущность с предзагруженными кафе."""
+        stmt = self._stmt_with_cafes()
+        if filters:
+            stmt = stmt.where(*filters)
+            self._check_filters(*filters)
+        result = await session.execute(stmt)
+        return result.scalars().first()
+
+    async def get_multi(
+        self,
+        session: AsyncSession,
+        *filters: Any,
+    ) -> Any:
+        """Вернёт список сущностей с предзагруженными кафе."""
+        stmt = self._stmt_with_cafes()
+        if filters:
+            stmt = stmt.where(*filters)
+            self._check_filters(*filters)
+        result = await session.execute(stmt)
+        return result.scalars().all()
+
+    async def create(
+        self,
+        create_data: Any,
+        session: AsyncSession,
+        **relations: Any,
+    ) -> Any:
+        """Создаст сущность и вернёт её с предзагруженными кафе."""
+        entity = await super().create(create_data, session, **relations)
+        return await self._reload_with_cafes(session, entity.id)
+
+    async def update(
+        self,
+        db_entity: Any,
+        update_data: Any,
+        session: AsyncSession,
+        **relations: Any,
+    ) -> Any:
+        """Обновит сущность и вернёт её с предзагруженными кафе."""
+        entity = await super().update(db_entity, update_data, session, **relations)
+        return await self._reload_with_cafes(session, entity.id)

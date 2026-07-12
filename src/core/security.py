@@ -1,3 +1,13 @@
+"""Безопасность и аутентификация.
+
+Модуль описывает хеширование паролей, JWT-токены и зависимости текущего пользователя.
+
+Функции:
+   - `hash_password`, `verify_password`, `needs_rehash` — Argon2;
+   - `create_access_token` — выпуск JWT;
+   - `get_current_user`, `get_optional_current_user` — FastAPI Depends.
+"""
+
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
@@ -28,12 +38,12 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 
 def hash_password(password: str) -> str:
-    """Хэширование пароля."""
+    """Захеширует пароль с помощью Argon2."""
     return ph.hash(password)
 
 
 def verify_password(password: str, hashed: str) -> bool:
-    """Проверка пароля."""
+    """Проверит соответствие пароля хешу."""
     try:
         ph.verify(hashed, password)
         return True
@@ -42,7 +52,7 @@ def verify_password(password: str, hashed: str) -> bool:
 
 
 def needs_rehash(hashed: str) -> bool:
-    """Проверка необходимости обновления хэша."""
+    """Проверит, нужно ли обновить параметры хеша пароля."""
     return ph.check_needs_rehash(hashed)
 
 
@@ -50,7 +60,7 @@ def create_access_token(
     data: dict,
     expires_delta: timedelta | None = None,
 ) -> str:
-    """Создание JWT токена."""
+    """Создаст JWT access token."""
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
@@ -66,7 +76,7 @@ async def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
     session: SessionDep,
 ) -> User:
-    """Получение текущего пользователя."""
+    """Вернёт текущего пользователя и запишет его в контекст логгера."""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail='Неверные имя пользователя или пароль',
@@ -83,7 +93,6 @@ async def get_current_user(
     user = await session.get(User, user_id)
     if user is None:
         raise credentials_exception
-    # Запишем текущего пользователя в контекст для логгера
     current_user_var.set(f'{user.username}({user.id})')
     return user
 
@@ -95,7 +104,7 @@ async def get_optional_current_user(
     ],
     session: SessionDep,
 ) -> User | None:
-    """Возвращает текущего пользователя или None для неавторизованных запросов."""
+    """Вернёт текущего пользователя или ``None`` для неавторизованных запросов."""
     if credentials is None:
         return None
     return await get_current_user(credentials, session)

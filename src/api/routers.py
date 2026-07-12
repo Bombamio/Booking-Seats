@@ -1,3 +1,8 @@
+"""Корневой роутер API v1.
+
+Модуль подключает все эндпоинты проекта под префиксом `/api/v1`.
+"""
+
 from fastapi import APIRouter
 
 from src.api.endpoints import (

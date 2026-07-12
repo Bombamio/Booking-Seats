@@ -1,10 +1,27 @@
+"""Эндпоинты временных слотов.
+
+Модуль описывает маршруты управления слотами бронирования в кафе.
+
+Маршруты:
+   - `GET /` — список слотов кафе;
+   - `POST /` — создание слота;
+   - `GET /{slot_id}` — слот по ID;
+   - `PATCH /{slot_id}` — обновление слота.
+"""
+
 import uuid
-from typing import Annotated, Optional, Sequence
+from typing import Annotated, Sequence
 
 from fastapi import APIRouter, Depends, Query, status
 
 from src.api import error_responses as er
 from src.api import validators as vt
+from src.api.openapi_examples import (
+    SUCCESS_SLOTS_LIST,
+    SUCCESS_SLOT_CREATED,
+    SUCCESS_SLOT_INFO,
+    merge_responses,
+)
 from src.models import Slot, User
 from src.schemas import slot as schema
 from src.services.slot import SlotService, get_slot_service
@@ -18,13 +35,13 @@ SlotServiceDep = Annotated[SlotService, Depends(get_slot_service)]
     '/',
     response_model=list[schema.TimeSlotInfo],
     summary='Получение списка временных слотов кафе',
-    responses=er.ERRORS_GET_MULTI_WITH_404,
+    responses=merge_responses(SUCCESS_SLOTS_LIST, er.ERRORS_GET_MULTI_WITH_404),
 )
 async def get_time_slots_list(
     cafe_id: uuid.UUID,
     service: SlotServiceDep,
     user: Annotated[User, Depends(vt.current_user_is_active)],
-    show_active: Optional[bool] = Query(None),
+    show_active: bool | None = Query(None),
 ) -> Sequence[Slot]:
     """Получение списка доступных для бронирования временных слотов в кафе."""
     return await service.get_slots(cafe_id, user, show_active)
@@ -35,7 +52,7 @@ async def get_time_slots_list(
     response_model=schema.TimeSlotInfo,
     summary='Создание нового временного слота в кафе',
     status_code=status.HTTP_201_CREATED,
-    responses=er.ERRORS_4XX_FULL,
+    responses=merge_responses(SUCCESS_SLOT_CREATED, er.ERRORS_4XX_FULL),
 )
 async def create_time_slot(
     cafe_id: uuid.UUID,
@@ -51,7 +68,7 @@ async def create_time_slot(
     '/{slot_id}',
     response_model=schema.TimeSlotInfo,
     summary='Получение информации о временном слоте по его ID',
-    responses=er.ERRORS_4XX_FULL,
+    responses=merge_responses(SUCCESS_SLOT_INFO, er.ERRORS_4XX_FULL),
 )
 async def get_time_slot_by_id(
     cafe_id: uuid.UUID,
@@ -67,7 +84,7 @@ async def get_time_slot_by_id(
     '/{slot_id}',
     response_model=schema.TimeSlotInfo,
     summary='Обновление информации о временном слоте по его ID',
-    responses=er.ERRORS_4XX_FULL,
+    responses=merge_responses(SUCCESS_SLOT_INFO, er.ERRORS_4XX_FULL),
 )
 async def update_time_slot(
     cafe_id: uuid.UUID,

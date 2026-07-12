@@ -1,12 +1,24 @@
+"""Сервисный слой блюд.
+
+Модуль описывает бизнес-логику управления блюдами кафе.
+
+Классы:
+   - `DishService` — список, создание, получение и обновление блюд.
+
+Связанные слои:
+   - CRUD — в `src/crud/dish.py`;
+   - схемы — в `src/schemas/dish.py`.
+"""
+
 import uuid
-from typing import Optional, Sequence
+from typing import Sequence
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.crud import CRUDDish, cafe_crud, dish_crud
-from src.models import Cafe, Dish, User, UserRole
+from src.crud import CRUDDish, dish_crud
+from src.models import Dish, User, UserRole
 from src.schemas import DishCreate, DishUpdate
-from src.services.base import BaseService, is_active_filters
+from src.services.base import BaseService
 
 
 class DishService(CRUDDish, BaseService):
@@ -24,33 +36,30 @@ class DishService(CRUDDish, BaseService):
             filters.append(Dish.id != exclude_id)
 
         if await self.exists(session, *filters):
-            self.log_warning(f'Блюдо с назанием {name} - уже существует.')
+            self.log_warning(f'Блюдо с названием {name} - уже существует.')
             self.raise_unprocessable_entity()
 
     async def get_multi_dishes(
         self,
-        cafe_id: Optional[uuid.UUID],
+        cafe_id: uuid.UUID | None,
         user: User,
         session: AsyncSession,
-        show_active: Optional[bool],
+        show_active: bool | None,
     ) -> Sequence[Dish]:
-        """Вернет список блюд с учётом роли пользователя.
+        """Вернёт список блюд с учётом роли и фильтра по кафе.
 
-        По умолчанию показывает:
-
-        * для пользователя - только активные блюда (всегда, в не зависимости
-        от значения параметра).
-        * для администратора - все блюда (и активные и не активные)
-        * для менеджера - активные блюда
+        Проверяет существование ``cafe_id``, если он передан.
+        Применяет ``is_active_filters``: USER видит только активные блюда,
+        ADMIN может запросить все/активные/неактивные, MANAGER — активные
+        или неактивные по ``show_active``.
         """
-        filters = []
-
-        if cafe_id is not None:
-            await self.ensure_ids_exist(cafe_crud, session, cafe_id)
-            filters.append(Dish.cafes.any(Cafe.id == cafe_id))
-
-        filters.extend(
-            is_active_filters(user, show_active, Dish.is_active),
+        filters = await self._filters_for_cafe_linked_entity(
+            session=session,
+            user=user,
+            show_active=show_active,
+            cafe_id=cafe_id,
+            entity_model=Dish,
+            is_active_column=Dish.is_active,
         )
 
         dishes = await self.get_multi(session, *filters)
@@ -63,24 +72,16 @@ class DishService(CRUDDish, BaseService):
         user: User,
         session: AsyncSession,
     ) -> Dish:
-        """Вернёт новое блюдо.
+        """Создаст блюдо и привяжет его к кафе из ``cafes_id``.
 
-        Только для администраторов и менеджеров.
+        Проверяет существование кафе, доступ менеджера к списку кафе
+        и уникальность названия блюда.
         """
-        await self.ensure_ids_exist(
-            cafe_crud,
+        cafes = await self._load_cafes_for_link(
             session,
             dish_create.cafes_id,
-        )
-        cafes = await cafe_crud.get_multi(
-            session,
-            Cafe.id.in_(dish_create.cafes_id),
-        )
-
-        await self.ensure_manajer_cafe_list_access(
-            user=user,
-            cafes_id=dish_create.cafes_id,
-            check_len=True,
+            user,
+            check_manager_single=True,
         )
         await self._ensure_name_unique(
             name=dish_create.name,
@@ -94,7 +95,6 @@ class DishService(CRUDDish, BaseService):
         )
 
         self.log_info(f'Пользователь {user.id} создал блюдо {dish_create.name}.')
-
         return result
 
     async def get_dish_by_id(
@@ -103,10 +103,10 @@ class DishService(CRUDDish, BaseService):
         user: User,
         session: AsyncSession,
     ) -> Dish:
-        """Получение информации о блюде по его ID.
+        """Вернёт блюдо по ID с учётом роли.
 
-        * для администраторов и менеджеров - все блюда
-        * для пользователей - только активные.
+        USER получает только активное блюдо.
+        MANAGER дополнительно проверяется на доступ к кафе блюда.
         """
         filters = [Dish.id == dish_id]
         if user.role == UserRole.USER:
@@ -118,13 +118,12 @@ class DishService(CRUDDish, BaseService):
             *filters,
         )
 
-        await self.ensure_manajer_cafe_list_access(
+        await self.ensure_manager_cafe_list_access(
             user=user,
             cafes_id=[cafe.id for cafe in dish.cafes],
         )
 
         self.log_info(f'Пользователь {user.id} получил информацию о блюде {dish_id}.')
-
         return dish
 
     async def update_dish(
@@ -134,9 +133,10 @@ class DishService(CRUDDish, BaseService):
         user: User,
         session: AsyncSession,
     ) -> Dish:
-        """Обновление информации о блюде по его ID.
+        """Обновит блюдо: поля, привязку к кафе и название.
 
-        Только для администраторов и менеджеров.
+        При смене ``cafes_id`` проверяет существование кафе и доступ менеджера.
+        При смене ``name`` проверяет уникальность среди других блюд.
         """
         dish: Dish = await self.get_or_raise(
             dish_crud,
@@ -147,24 +147,12 @@ class DishService(CRUDDish, BaseService):
         relations = {}
 
         if dish_update.cafes_id is not None:
-            await self.ensure_ids_exist(
-                cafe_crud,
+            relations['cafes'] = await self._load_cafes_for_link(
                 session,
                 dish_update.cafes_id,
+                user,
+                check_manager_single=True,
             )
-            cafes = await cafe_crud.get_multi(
-                session,
-                Cafe.id.in_(dish_update.cafes_id),
-            )
-
-            if user.role == UserRole.MANAGER:
-                await self.ensure_manajer_cafe_list_access(
-                    user=user,
-                    cafes_id=dish_update.cafes_id,
-                    check_len=True,
-                )
-
-            relations['cafes'] = cafes
 
         if dish_update.name is not None:
             await self._ensure_name_unique(
@@ -181,7 +169,6 @@ class DishService(CRUDDish, BaseService):
         )
 
         self.log_info(f'Пользователь {user.id} изменил информацию о блюде {dish_id}.')
-
         return result
 
 

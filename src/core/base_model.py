@@ -1,3 +1,15 @@
+"""Базовая ORM-модель SQLAlchemy.
+
+Модуль описывает общие поля и поведение всех таблиц проекта.
+
+Классы:
+   - `Base` — декларативная база с ``id``, ``is_active``, ``created_at``, ``updated_at``.
+   - `LinkModelBase` — база для связующих таблиц без общих полей ``Base``.
+
+Функции:
+   - `get_utc_now` — текущее время UTC для полей модели.
+"""
+
 import uuid
 from datetime import datetime, timezone
 
@@ -11,16 +23,16 @@ from sqlalchemy.orm import (
 
 
 def get_utc_now() -> datetime:
-    """Возвращает текущее дата/время UTC."""
+    """Вернёт текущие дату и время в UTC."""
     return datetime.now(timezone.utc)
 
 
 class Base(DeclarativeBase):
-    """Базовый класс для всех таблиц."""
+    """Базовый класс для всех ORM-таблиц."""
 
     @declared_attr.directive
     def __tablename__(cls) -> str:  # noqa: N805
-        """Возвращает имя таблицы на основе названия класса."""
+        """Вернёт имя таблицы на основе названия класса."""
         return f'{cls.__name__.lower()}s'
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -44,3 +56,10 @@ class Base(DeclarativeBase):
         onupdate=get_utc_now,
         server_onupdate=func.now(),
     )
+
+
+class LinkModelBase(DeclarativeBase):
+    """Базовый класс для связующих таблиц без ``id``, ``is_active`` и timestamps."""
+
+    metadata = Base.metadata
+    registry = Base.registry

@@ -1,5 +1,17 @@
+"""ORM-модель стола.
+
+Описывает таблицу `tables` и связи стола с кафе и бронированиями.
+
+Классы:
+   - `Table` — стол для бронирования в кафе.
+
+Связи:
+   - `Table.cafe` — кафе, в котором расположен стол.
+   - `Table.booking_items` — позиции бронирования с этим столом.
+"""
+
 import uuid
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -13,7 +25,7 @@ if TYPE_CHECKING:
 
 
 class Table(Base):
-    """Модель Table. Информация о столах для бронирования."""
+    """ORM-модель стола для бронирования."""
 
     __table_args__ = (
         CheckConstraint(
@@ -26,7 +38,7 @@ class Table(Base):
         index=True,
     )
     seat_number: Mapped[int]
-    description: Mapped[Optional[str]] = mapped_column(
+    description: Mapped[str | None] = mapped_column(
         String(ct.MAX_DESCRIPTION_LEN),
     )
 
@@ -36,5 +48,5 @@ class Table(Base):
     )
 
     def __repr__(self) -> str:
-        """Вернет краткое понятное описание объекта модели."""
-        return f'Table (id={self.id!r}, cafe={self.cafe_id!r})'
+        """Вернёт краткое строковое представление стола."""
+        return f'Table(id={self.id!r}, cafe_id={self.cafe_id!r}, seat_number={self.seat_number!r})'

@@ -1,3 +1,11 @@
+"""Начальные данные приложения.
+
+Модуль описывает создание дефолтных пользователей при старте.
+
+Функции:
+   - `create_first_users` — админ, менеджер и пользователь, если их ещё нет.
+"""
+
 import contextlib
 
 from sqlalchemy import select
@@ -7,14 +15,13 @@ from src.core.db import get_session
 from src.core.logger import bookingseats_logger
 from src.core.security import hash_password
 from src.core.settings import settings
-from src.models import User
-from src.schemas.user import UserRole
+from src.models import User, UserRole
 
 get_async_session_context = contextlib.asynccontextmanager(get_session)
 
 
 async def create_first_users() -> None:
-    """Создает админа, менеджера и обычного пользователя, если их нет."""
+    """Создаст админа, менеджера и обычного пользователя, если их нет."""
     if not settings.create_default_users:
         return
 

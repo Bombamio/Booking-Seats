@@ -22,7 +22,7 @@ from src.models import (
     User,
     UserRole,
 )
-from src.services.base import BaseService
+from src.services.base import BaseService, is_active_filters
 from src.tasks.notifications import notify_admin
 from src.tasks.reminders import send_reminder
 
@@ -254,7 +254,7 @@ class BookingService(CRUDBooking, BaseService):
         self,
         user: User,
         session: AsyncSession,
-        show_active: bool = True,
+        show_active: bool | None = None,
         cafe_id: uuid.UUID | None = None,
         user_id: uuid.UUID | None = None,
     ) -> list[schema.BookingInfo]:
@@ -282,8 +282,9 @@ class BookingService(CRUDBooking, BaseService):
             if user_id is not None:
                 filters.append(Booking.user_id == user_id)
 
-            if show_active:
-                filters.append(Booking.is_active.is_(True))
+            filters.extend(
+                is_active_filters(user, show_active, Booking.is_active),
+            )
 
         bookings = await booking_crud.get_multi_with_details(session, *filters)
         self.log_info(

@@ -9,7 +9,7 @@ from src.core.db import get_session
 from src.crud import CRUDSlot, cafe_crud, slot_crud
 from src.models import Cafe, Slot, User, UserRole
 from src.schemas.slot import TimeSlotCreate, TimeSlotUpdate
-from src.services.base import BaseService
+from src.services.base import BaseService, is_active_filters
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
@@ -53,16 +53,9 @@ class SlotService(CRUDSlot, BaseService):
         if cafe_id is not None:
             filters.append(Slot.cafe_id == cafe_id)
 
-        if user.role == UserRole.USER or show_active or user.role == UserRole.MANAGER and show_active is None:
-            filters.append(Slot.is_active.is_(True))
-
-        elif show_active is False and user.role == UserRole.MANAGER and cafe_id is not None:
-            filters.append(
-                Slot.cafe.has(Cafe.managers.any(User.id == user.id)),
-            )
-
-        elif user.role != UserRole.USER and show_active is not None:
-            filters.append(Slot.is_active.is_(show_active))
+        filters.extend(
+            is_active_filters(user, show_active, Slot.is_active),
+        )
 
         slots = await self.get_multi(
             self.session,

@@ -16,6 +16,34 @@ from src.crud.base import CRUDBase
 from src.models import User, UserRole
 
 
+def is_active_filters(
+    user: User,
+    show_active: bool | None,
+    is_active_column: Any,
+) -> list[Any]:
+    """Соберёт фильтры ``is_active`` по роли и параметру ``show_active``.
+
+    * USER — всегда только активные (``show_active`` игнорируется).
+    * ADMIN — без параметра все записи; ``true`` только активные;
+      ``false`` только неактивные.
+    * MANAGER — без параметра и ``true`` только активные;
+      ``false`` только неактивные.
+    """
+    if user.role == UserRole.USER:
+        return [is_active_column.is_(True)]
+
+    if user.role == UserRole.ADMIN:
+        if show_active is True:
+            return [is_active_column.is_(True)]
+        if show_active is False:
+            return [is_active_column.is_(False)]
+        return []
+
+    if show_active is False:
+        return [is_active_column.is_(False)]
+    return [is_active_column.is_(True)]
+
+
 class BaseService:
     """Базовый миксин сервисного слоя.
 

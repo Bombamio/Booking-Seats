@@ -1,7 +1,7 @@
 import uuid
-from typing import Annotated
+from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api import error_responses as er
@@ -32,7 +32,7 @@ async def get_tables_list(
     cafe_id: uuid.UUID,
     user: Annotated[User, Depends(vt.current_user_is_active)],
     session: SessionDep,
-    show_active: bool = True,
+    show_active: Optional[bool] = Query(None),
 ) -> list[schema.TableInfo]:
     """Получение списка столиков в кафе."""
     return await table_service.get_multi_by_cafe(

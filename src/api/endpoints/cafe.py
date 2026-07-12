@@ -1,7 +1,7 @@
 import uuid
-from typing import Annotated, Sequence
+from typing import Annotated, Optional, Sequence
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api import error_responses as er
@@ -26,7 +26,7 @@ CafeServiceDep = Annotated[CafeService, Depends(get_cafe_service)]
 async def get_cafes(
     service: CafeServiceDep,
     user: Annotated[User, Depends(vt.current_user_is_active)],
-    show_active: bool = True,
+    show_active: Optional[bool] = Query(None),
 ) -> Sequence[Cafe]:
     """Получение списка кафе.
 

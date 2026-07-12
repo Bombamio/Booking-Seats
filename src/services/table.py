@@ -7,7 +7,7 @@ from src.models import Cafe, Table, User, UserRole
 from src.schemas import TableCreate, TableUpdate
 from src.schemas.cafe import CafeShortInfo
 from src.schemas.table import TableInfo
-from src.services.base import BaseService
+from src.services.base import BaseService, is_active_filters
 
 
 # Допущения до рефакторинга базовых слоёв:
@@ -60,14 +60,9 @@ class TableService(CRUDBase, BaseService):
         cafe_id: uuid.UUID,
         session: AsyncSession,
         user: User,
-        show_active: bool = True,
+        show_active: bool | None = None,
     ) -> list[TableInfo]:
-        """Вернет список столиков кафе с учётом роли пользователя.
-
-        Пользователь всегда получит только активные столы.
-        Администратор и менеджер при ``show_active=True`` — только активные,
-        при ``show_active=False`` — все столы кафе.
-        """
+        """Вернет список столиков кафе с учётом роли пользователя."""
         await self.ensure_manager_cafe_access(user, cafe_id, session)
         await self.ensure_ids_exist(cafe_crud, session, cafe_id)
         cafe = await cafe_crud.get(
@@ -76,8 +71,9 @@ class TableService(CRUDBase, BaseService):
         )
 
         filters = [self.model.cafe_id == cafe_id]
-        if user.role == UserRole.USER or show_active:
-            filters.append(self.model.is_active.is_(True))
+        filters.extend(
+            is_active_filters(user, show_active, self.model.is_active),
+        )
 
         tables = list(await self.get_multi(session, *filters))
         self.log_info(

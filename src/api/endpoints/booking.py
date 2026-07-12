@@ -1,7 +1,7 @@
 import uuid
-from typing import Annotated
+from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api import error_responses as er
@@ -31,7 +31,7 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 async def get_booking_list(
     user: Annotated[User, Depends(vt.current_user_is_active)],
     session: SessionDep,
-    show_active: bool = True,
+    show_active: Optional[bool] = Query(None),
     cafe_id: uuid.UUID | None = None,
     user_id: uuid.UUID | None = None,
 ) -> list[schema.BookingInfo]:

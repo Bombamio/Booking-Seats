@@ -25,7 +25,7 @@ async def get_multi(
     user: Annotated[User, Depends(vt.current_user_is_active)],
     session: SessionDep,
     cafe_id: Optional[uuid.UUID] = Query(None),
-    show_active: bool = Query(True),
+    show_active: Optional[bool] = Query(None),
 ) -> Sequence[Dish]:
     """GET `/dishes` - Получение списка блюд."""
     return await dish_service.get_multi_dishes(

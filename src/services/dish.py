@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.crud import CRUDDish, cafe_crud, dish_crud
 from src.models import Cafe, Dish, User, UserRole
 from src.schemas import DishCreate, DishUpdate
-from src.services.base import BaseService
+from src.services.base import BaseService, is_active_filters
 
 
 class DishService(CRUDDish, BaseService):
@@ -49,16 +49,9 @@ class DishService(CRUDDish, BaseService):
             await self.ensure_ids_exist(cafe_crud, session, cafe_id)
             filters.append(Dish.cafes.any(Cafe.id == cafe_id))
 
-        if user.role == UserRole.USER or show_active or user.role == UserRole.MANAGER and show_active is None:
-            filters.append(Dish.is_active.is_(True))
-
-        elif show_active is False and user.role == UserRole.MANAGER and cafe_id is not None:
-            filters.append(
-                Dish.cafes.any(Cafe.managers.any(User.id == user.id)),
-            )
-
-        elif user.role != UserRole.USER and show_active is not None:
-            filters.append(Dish.is_active.is_(show_active))
+        filters.extend(
+            is_active_filters(user, show_active, Dish.is_active),
+        )
 
         dishes = await self.get_multi(session, *filters)
         self.log_info(f'Пользователь {user.id} получил список из {len(dishes)} блюд.')
@@ -164,7 +157,7 @@ class DishService(CRUDDish, BaseService):
                 Cafe.id.in_(dish_update.cafes_id),
             )
 
-            if user.role.MANAGER:
+            if user.role == UserRole.MANAGER:
                 await self.ensure_manajer_cafe_list_access(
                     user=user,
                     cafes_id=dish_update.cafes_id,

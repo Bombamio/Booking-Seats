@@ -4,6 +4,7 @@
 
 Классы:
    - `Base` — декларативная база с ``id``, ``is_active``, ``created_at``, ``updated_at``.
+   - `LinkModelBase` — база для связующих таблиц без общих полей ``Base``.
 
 Функции:
    - `get_utc_now` — текущее время UTC для полей модели.
@@ -55,3 +56,9 @@ class Base(DeclarativeBase):
         onupdate=get_utc_now,
         server_onupdate=func.now(),
     )
+
+
+class LinkModelBase(DeclarativeBase):
+    """Базовый класс для связующих таблиц без ``id``, ``is_active`` и timestamps."""
+
+    metadata = Base.metadata

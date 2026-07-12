@@ -11,8 +11,8 @@
    - `User.bookings` — бронирования пользователя.
 """
 
-import enum
 import uuid
+from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import CheckConstraint, Enum, ForeignKey, String, Text
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from src.models import Booking, Cafe
 
 
-class UserRole(enum.Enum):
+class UserRole(StrEnum):
     """Роли пользователей."""
 
     ADMIN = 'ADMIN'
@@ -101,13 +101,6 @@ class User(Base):
         if self.email is None and self.phone is None:
             raise ValueError(
                 'Хотя бы одно из полей email/phone должно быть заполнено.',
-            )
-
-    def validate_cafe_id(self) -> None:
-        """Проверит соответствие роли пользователя и привязки к кафе."""
-        if self.role != UserRole.MANAGER and self.cafe_id is not None:
-            raise ValueError(
-                'Кафе может быть назначено только менеджерам.',
             )
 
     def __repr__(self) -> str:

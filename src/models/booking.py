@@ -14,9 +14,9 @@
    - `Booking.booking_dishes` — предзаказанные блюда.
 """
 
-import enum
 import uuid
 from datetime import date
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import CheckConstraint, Date, Enum, ForeignKey, String
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from src.models import BookingDish, BookingItem, Cafe, Dish, User
 
 
-class BookingStatus(enum.Enum):
+class BookingStatus(StrEnum):
     """Статусы бронирования."""
 
     BOOKING = 'BOOKING'

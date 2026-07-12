@@ -1,3 +1,8 @@
+"""Пакет Pydantic-схем проекта BookingSeats.
+
+Модуль реэкспортирует входные и выходные схемы API для удобного импорта.
+"""
+
 from src.schemas.action import (
     ActionCreate,
     ActionInfo,

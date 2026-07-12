@@ -16,20 +16,16 @@ from sqlalchemy import CheckConstraint, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.core import constants as ct
-from src.core.base_model import Base
+from src.core.base_model import LinkModelBase
 
 if TYPE_CHECKING:
     from src.models import Dish
 
 
-class BookingDish(Base):
+class BookingDish(LinkModelBase):
     """ORM-модель позиции предзаказа блюда в бронировании."""
 
     __tablename__ = 'booking_dishes'
-    id = None
-    is_active = None
-    created_at = None
-    updated_at = None
 
     __table_args__ = (
         CheckConstraint(

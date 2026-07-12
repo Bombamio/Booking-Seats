@@ -15,8 +15,7 @@ from src.core.db import get_session
 from src.core.logger import bookingseats_logger
 from src.core.security import hash_password
 from src.core.settings import settings
-from src.models import User
-from src.schemas.user import UserRole
+from src.models import User, UserRole
 
 get_async_session_context = contextlib.asynccontextmanager(get_session)
 

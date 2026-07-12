@@ -1,11 +1,22 @@
-from __future__ import annotations
+"""ORM-модель кафе.
 
-from typing import TYPE_CHECKING, Optional
+Описывает таблицу `cafes` и связи кафе с менеджерами, столами, слотами,
+блюдами, акциями и бронированиями.
 
-if TYPE_CHECKING:
-    from src.models import Action, Booking, Dish, Slot, Table, User
+Классы:
+   - `Cafe` — кафе в системе бронирования.
+
+Связи:
+   - `Cafe.managers` — менеджеры кафе.
+   - `Cafe.tables` — столы кафе.
+   - `Cafe.slots` — временные слоты кафе.
+   - `Cafe.dishes` — блюда, доступные в кафе.
+   - `Cafe.actions` — акции кафе.
+   - `Cafe.bookings` — бронирования кафе.
+"""
 
 import uuid
+from typing import TYPE_CHECKING
 
 from sqlalchemy import String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -14,23 +25,13 @@ from src.core import constants as ct
 from src.core.base_model import Base
 from src.models.association_tables import cafe_actions, cafe_dishes
 
+if TYPE_CHECKING:
+    from src.models import Action, Booking, Dish, Slot, Table, User
+
 
 class Cafe(Base):
-    """Модель Cafe. Информация о кафе.
+    """ORM-модель кафе."""
 
-    Поля:
-    * `id` - uuid4, primary_key;
-    * `created_at` - datetime;
-    * `updated_at` - datetime;
-    * `is_active` - boolean;
-    * `name` - str;
-    * `address` - str;
-    * `photo_id` - uuid4;
-    * `description` - str;
-    * `managers_id` - uuid4;
-    """
-
-    # TODO: двойная валидация полей name и address.
     name: Mapped[str] = mapped_column(
         String(ct.MAX_NAME_LEN),
     )
@@ -40,29 +41,29 @@ class Cafe(Base):
     phone: Mapped[str] = mapped_column(
         String(ct.MAX_PHONE_LEN),
     )
-    description: Mapped[Optional[str]] = mapped_column(
+    description: Mapped[str | None] = mapped_column(
         String(ct.MAX_DESCRIPTION_LEN),
     )
-    photo_id: Mapped[Optional[uuid.UUID]]
+    photo_id: Mapped[uuid.UUID | None]
 
-    managers: Mapped[list[User]] = relationship(
+    managers: Mapped[list['User']] = relationship(
         back_populates='cafe',
     )
 
-    tables: Mapped[list[Table]] = relationship(
+    tables: Mapped[list['Table']] = relationship(
         back_populates='cafe',
     )
 
-    slots: Mapped[list[Slot]] = relationship(
+    slots: Mapped[list['Slot']] = relationship(
         back_populates='cafe',
     )
 
-    dishes: Mapped[list[Dish]] = relationship(
+    dishes: Mapped[list['Dish']] = relationship(
         secondary=cafe_dishes,
         back_populates='cafes',
     )
 
-    actions: Mapped[list[Action]] = relationship(
+    actions: Mapped[list['Action']] = relationship(
         secondary=cafe_actions,
         back_populates='cafes',
     )
@@ -72,3 +73,7 @@ class Cafe(Base):
     )
 
     __table_args__ = (UniqueConstraint('name', 'address', name='uq_cafe_name_address'),)
+
+    def __repr__(self) -> str:
+        """Вернёт краткое строковое представление кафе."""
+        return f'Cafe(id={self.id!r}, name={self.name!r})'

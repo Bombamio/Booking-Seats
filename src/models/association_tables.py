@@ -1,3 +1,12 @@
+"""Ассоциативные таблицы many-to-many.
+
+Описывает связующие таблицы между кафе и блюдами, а также между кафе и акциями.
+
+Таблицы:
+   - `cafe_dishes` — связь кафе и блюд.
+   - `cafe_actions` — связь кафе и акций.
+"""
+
 from sqlalchemy import Column, ForeignKey, Table
 
 from src.core.base_model import Base

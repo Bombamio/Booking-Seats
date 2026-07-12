@@ -1,6 +1,19 @@
+"""ORM-модель пользователя.
+
+Описывает таблицу `users`, роли пользователей и связи с кафе и бронированиями.
+
+Классы:
+   - `UserRole` — роли пользователей системы.
+   - `User` — учётная запись пользователя.
+
+Связи:
+   - `User.cafe` — кафе менеджера.
+   - `User.bookings` — бронирования пользователя.
+"""
+
 import enum
 import uuid
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import CheckConstraint, Enum, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -21,24 +34,24 @@ class UserRole(enum.Enum):
 
 
 class User(Base):
-    """Модель пользователя."""
+    """ORM-модель пользователя."""
 
     username: Mapped[str] = mapped_column(
         String(ct.MAX_USERNAME_LEN),
         unique=True,
     )
 
-    email: Mapped[Optional[str]] = mapped_column(
+    email: Mapped[str | None] = mapped_column(
         String(ct.MAX_EMAIL_LEN),
         unique=True,
     )
 
-    phone: Mapped[Optional[str]] = mapped_column(
+    phone: Mapped[str | None] = mapped_column(
         String(ct.MAX_PHONE_LEN),
         unique=True,
     )
 
-    tg_id: Mapped[Optional[str]] = mapped_column(
+    tg_id: Mapped[str | None] = mapped_column(
         String(ct.MAX_TG_ID_LEN),
         unique=True,
     )
@@ -52,7 +65,7 @@ class User(Base):
         default=UserRole.USER,
     )
 
-    cafe_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    cafe_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey('cafes.id', ondelete='RESTRICT'),
     )
 
@@ -60,7 +73,7 @@ class User(Base):
         back_populates='managers',
     )
 
-    bookings: Mapped[List['Booking']] = relationship(
+    bookings: Mapped[list['Booking']] = relationship(
         back_populates='user',
     )
 
@@ -76,9 +89,7 @@ class User(Base):
     )
 
     def __init__(self, **kwargs: Any) -> None:
-        """Проверка после создания объекта,
-        когда все поля уже существуют.
-        """  # noqa: D205
+        """Проверит контактные данные после инициализации объекта."""
         super().__init__(**kwargs)
 
         if self.email:
@@ -93,8 +104,12 @@ class User(Base):
             )
 
     def validate_cafe_id(self) -> None:
-        """Проверка связи кафе и роли."""
+        """Проверит соответствие роли пользователя и привязки к кафе."""
         if self.role != UserRole.MANAGER and self.cafe_id is not None:
             raise ValueError(
                 'Кафе может быть назначено только менеджерам.',
             )
+
+    def __repr__(self) -> str:
+        """Вернёт краткое строковое представление пользователя."""
+        return f'User(id={self.id!r}, username={self.username!r}, role={self.role!r})'

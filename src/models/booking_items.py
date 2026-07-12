@@ -1,3 +1,15 @@
+"""ORM-модель позиции бронирования стол-слот.
+
+Описывает таблицу `bookingitems` — связь бронирования со столом и слотом.
+
+Классы:
+   - `BookingItem` — пара стол-слот в бронировании.
+
+Связи:
+   - `BookingItem.table` — забронированный стол.
+   - `BookingItem.slot` — выбранный временной слот.
+"""
+
 import uuid
 from typing import TYPE_CHECKING
 
@@ -11,7 +23,7 @@ if TYPE_CHECKING:
 
 
 class BookingItem(Base):
-    """Модель BookingItem. Связка пар стол-слот при бронировании."""
+    """ORM-модель связки стол-слот в бронировании."""
 
     __table_args__ = (
         UniqueConstraint(
@@ -51,10 +63,8 @@ class BookingItem(Base):
     )
 
     def __repr__(self) -> str:
-        """Вернет краткое представление связки бронирования."""
+        """Вернёт краткое строковое представление связки бронирования."""
         return (
-            f'BookingItem(id={self.id!r}, '
-            f'booking_id={self.booking_id!r}, '
-            f'table_id={self.table_id!r}, '
-            f'slot_id={self.slot_id!r})'
+            f'BookingItem(id={self.id!r}, booking_id={self.booking_id!r}, '
+            f'table_id={self.table_id!r}, slot_id={self.slot_id!r})'
         )

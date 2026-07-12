@@ -1,3 +1,14 @@
+"""ORM-модель позиции предзаказа блюда.
+
+Описывает таблицу `booking_dishes` — связь бронирования и блюда с количеством.
+
+Классы:
+   - `BookingDish` — предзаказанное блюдо в бронировании.
+
+Связи:
+   - `BookingDish.dish` — блюдо в предзаказе.
+"""
+
 import uuid
 from typing import TYPE_CHECKING
 
@@ -12,7 +23,7 @@ if TYPE_CHECKING:
 
 
 class BookingDish(Base):
-    """Модель BookingDish. Позиция предзаказа блюда в бронировании."""
+    """ORM-модель позиции предзаказа блюда в бронировании."""
 
     __tablename__ = 'booking_dishes'
     id = None
@@ -41,3 +52,10 @@ class BookingDish(Base):
         back_populates='booking_dishes',
         lazy='selectin',
     )
+
+    def __repr__(self) -> str:
+        """Вернёт краткое строковое представление позиции предзаказа."""
+        return (
+            f'BookingDish(booking_id={self.booking_id!r}, '
+            f'dish_id={self.dish_id!r}, quantity={self.quantity!r})'
+        )

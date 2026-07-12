@@ -61,6 +61,7 @@ class MediaService(BaseService):
                     self.log_warning(
                         f'Пользователь {user.id} попытался загрузить файл, превышающий допустимый размер',
                     )
+                    await file.close()
                     raise BookingSeatsAppError(
                         status.HTTP_422_UNPROCESSABLE_ENTITY,
                         'Размер файла превышает допустимый',

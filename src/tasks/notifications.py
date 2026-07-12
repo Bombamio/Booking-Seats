@@ -1,3 +1,11 @@
+"""Celery-задача уведомления администратора о бронировании.
+
+Модуль описывает отправку email менеджеру при создании, изменении или отмене брони.
+
+Задачи:
+   - `notify_admin` — письмо с деталями события бронирования.
+"""
+
 from celery import Task
 
 from src.core.celery_app import celery_app
@@ -23,7 +31,7 @@ def notify_admin(
     user_email: str | None,
     user_phone: str | None,
 ) -> None:
-    """Задача для уведомления менеджера кафе о событии бронирования."""
+    """Отправит менеджеру кафе email о событии бронирования."""
     title = _BOOKING_EVENT_TITLES.get(event_type, 'Событие бронирования')
     text_message = (
         f'{title}\n'

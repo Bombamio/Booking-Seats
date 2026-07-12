@@ -1,3 +1,11 @@
+"""Подключение к базе данных и сессии SQLAlchemy.
+
+Модуль описывает async engine, session maker и зависимость FastAPI ``get_session``.
+
+Функции:
+   - `get_session` — сессия с commit, rollback и обработкой ошибок БД.
+"""
+
 from typing import AsyncIterator
 
 from fastapi import HTTPException
@@ -23,7 +31,7 @@ session_maker: async_sessionmaker[AsyncSession] = async_sessionmaker(
 
 
 async def get_session() -> AsyncIterator[AsyncSession]:
-    """Получение асинхронной сессии для FastAPI Depends."""
+    """Вернёт асинхронную сессию для FastAPI Depends."""
     async with session_maker() as session:
         try:
             yield session  # noqa: ASYNC119

@@ -1,3 +1,11 @@
+"""Конфигурация Celery worker.
+
+Модуль описывает приложение Celery, брокер RabbitMQ и единое логирование.
+
+Классы:
+   - `CeleryConfig` — часовой пояс и параметры worker.
+"""
+
 from celery import Celery
 from celery.signals import setup_logging
 
@@ -7,7 +15,7 @@ from src.core.settings import settings
 
 
 class CeleryConfig:
-    """Конфигурация celery."""
+    """Конфигурация Celery worker."""
 
     enable_utc = True
     timezone = 'Europe/Moscow'
@@ -24,7 +32,6 @@ def configure_celery_logging(**kwargs: object) -> None:
 celery_app = Celery(
     'booking_seats',
     broker=settings.rabbitmq_url,
-    # backend=settings.redis_url,
     include=['src.tasks.notifications', 'src.tasks.reminders'],
 )
 

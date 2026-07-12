@@ -1,3 +1,8 @@
+"""Точка входа FastAPI-приложения BookingSeats.
+
+Модуль описывает создание приложения, middleware, роутеры и жизненный цикл.
+"""
+
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 

@@ -1,3 +1,8 @@
+"""Модели для Alembic autogenerate.
+
+Модуль импортирует все ORM-модели и association tables для миграций.
+"""
+
 from src.core.base_model import Base
 from src.models import (
     Action,

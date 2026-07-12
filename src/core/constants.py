@@ -1,12 +1,23 @@
+"""Константы проекта BookingSeats.
+
+Модуль описывает лимиты валидации, параметры безопасности, медиа, логирования
+и дефолтных пользователей.
+
+Разделы:
+   - аутентификация и JWT;
+   - лимиты полей сущностей;
+   - параметры Argon2;
+   - медиафайлы;
+   - логирование;
+   - пользователи по умолчанию для сида.
+"""
+
 from pathlib import Path
 
 PHONE_NUMBER_PATTERN = r'^\+?[0-9]{7,15}$'
 USER_PHONE_PATTERN = r'^\+\d{1,15}$'
 USER_EMAIL_PATTERN = r'^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-# Основные числа: 1, 8, 16, 32, 64, 128, 256, 512, 1024, и т.д.
 SECRET_KEY = 'bd125ffa58cbb4303de365029c44cdda23830f7181e18d158cc3e95d6b55c963'
-# Пока будет здесь, сгенерирован с помощью команды в терминале:
-# openssl rand -hex 32
 ALGORITHM = 'HS256'
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 DEFAULT_GUEST_NUMBER = 1
@@ -62,7 +73,7 @@ MAX_PHONE_LEN = 16
 MAX_TG_ID_LEN = 32
 
 HASH_TIME_COST = 1
-HASH_MEMORY_COST = 51200  # 50 MB
+HASH_MEMORY_COST = 51200
 HASH_PARALLELISM = 2
 HASH_SALT_LEN = 16
 
@@ -77,15 +88,10 @@ MIN_DESCRIPTION_LEN = 1
 MAX_ADDRESS_LEN = 256
 MIN_ADDRESS_LEN = 5
 
-MAX_FILE_SIZE = 5242880  # 5 мб.
+MAX_FILE_SIZE = 5 * 1024 * 1024
 ACTION_REPR_DESCRIPTION_PREVIEW_LEN = 30
 
 MAX_DSC_LOG_LEN = 20
-
-
-###############################################################################
-# Параметры для работы с медиа-файлами                                        #
-###############################################################################
 
 MEDIA_CHUNK_SIZE = 64 * 1024
 MEDIA_FILE_EXTENSION = '.jpg'
@@ -103,15 +109,11 @@ ALLOWED_MEDIA_FORMATS = sorted({
 MEDIA_DIR = Path(__file__).resolve().parent.parent / 'media'
 MEDIA_DIR.mkdir(parents=True, exist_ok=True)
 
-###############################################################################
-# Настройки логгера приложения.                                               #
-###############################################################################
-
 LOG_DIR = Path(__file__).resolve().parent.parent / 'logs'
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 LOG_FILE = LOG_DIR / 'app.log'
 LOG_FILE_BACKUP_COUNT = 5
-LOG_FILE_MAX_SIZE = 1024 * 1024 * 5  # 5 мб.
+LOG_FILE_MAX_SIZE = 5 * 1024 * 1024
 LOG_LEVEL = 'DEBUG'
 LOG_FORMAT = (
     '<green>{time:YYYY-MM-DD HH:mm:ss}</green> | '
@@ -134,10 +136,6 @@ STDLIB_LOGGER_NAMES = (
     'kombu',
     'amqp',
 )
-
-###############################################################################
-# Дефолтные пользователи.                                                     #
-###############################################################################
 
 FIRST_SUPERUSER_USERNAME = 'admin_1'
 FIRST_SUPERUSER_EMAIL = 'admin@example.com'

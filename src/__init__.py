@@ -1,3 +1,8 @@
+"""Пакет приложения BookingSeats.
+
+Подавляет предупреждение Pydantic о затенении полей родительских миксинов в схемах.
+"""
+
 import warnings
 
 warnings.filterwarnings(

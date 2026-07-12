@@ -63,7 +63,7 @@ class Booking(Base):
     )
     guest_number: Mapped[int] = mapped_column(default=ct.DEFAULT_GUEST_NUMBER)
     reminder_task_id: Mapped[str | None] = mapped_column(
-        String(36),
+        String(ct.UUID_STRING_LEN),
         nullable=True,
     )
 

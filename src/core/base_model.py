@@ -62,3 +62,4 @@ class LinkModelBase(DeclarativeBase):
     """Базовый класс для связующих таблиц без ``id``, ``is_active`` и timestamps."""
 
     metadata = Base.metadata
+    registry = Base.registry

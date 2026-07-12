@@ -41,5 +41,6 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         finally:
             duration_ms = (time.perf_counter() - start_time) * ct.MILLISECONDS_IN_SECOND
             bookingseats_logger.info(
-                f'{request.method} {request.url.path} | status={status_code} | {duration_ms:.2f}ms',
+                f'{request.method} {request.url.path} | status={status_code} | '
+                f'{duration_ms:.{ct.REQUEST_DURATION_DECIMAL_PLACES}f}ms',
             )

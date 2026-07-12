@@ -55,6 +55,7 @@ from contextvars import ContextVar
 from loguru import logger
 
 from src.core.constants import (
+    LOGURU_INTERCEPT_STACK_DEPTH,
     LOG_FILE,
     LOG_FILE_BACKUP_COUNT,
     LOG_FILE_MAX_SIZE,
@@ -85,7 +86,7 @@ class InterceptHandler(logging.Handler):
         except ValueError:
             level = 'INFO'
         frame = logging.currentframe()
-        depth = 2
+        depth = LOGURU_INTERCEPT_STACK_DEPTH
         while frame and frame.f_code.co_filename == logging.__file__:
             frame = frame.f_back
             depth += 1

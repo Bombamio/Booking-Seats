@@ -9,7 +9,9 @@ from typing import AsyncGenerator
 import uvicorn
 from fastapi import FastAPI
 
+from src.api.openapi_examples import SUCCESS_INDEX
 from src.api.routers import main_router
+from src.core import constants as ct
 from src.core.cache import cache
 from src.core.constants import OPENAPI_TAGS
 from src.core.error_handlers import register_error_handlers
@@ -47,6 +49,7 @@ app.include_router(main_router)
 @app.get(
     path='/',
     response_model=dict,
+    responses=SUCCESS_INDEX,
 )
 async def index() -> dict:
     """Основная страница."""
@@ -58,4 +61,9 @@ async def index() -> dict:
 
 
 if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8000, access_log=False)
+    uvicorn.run(
+        app,
+        host=ct.UVICORN_HOST,
+        port=ct.UVICORN_PORT,
+        access_log=False,
+    )

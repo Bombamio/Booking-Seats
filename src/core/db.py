@@ -8,7 +8,7 @@
 
 from typing import AsyncIterator
 
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
@@ -44,14 +44,14 @@ async def get_session() -> AsyncIterator[AsyncSession]:
             if 'users_phone' in err or 'users_email' in err or 'phone' in err or 'email' in err:
                 detail = 'Пользователь с таким email/phone уже существует'
             raise HTTPException(
-                status_code=422,
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=detail,
             )
         except SQLAlchemyError as exc:
             await session.rollback()
             bookingseats_logger.error(exc)
             raise HTTPException(
-                status_code=500,
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail='Ошибка при работе с БД',
             )
         finally:

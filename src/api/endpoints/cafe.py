@@ -17,6 +17,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api import error_responses as er
 from src.api import validators as vt
+from src.api.openapi_examples import (
+    SUCCESS_CAFES_LIST,
+    SUCCESS_CAFE_CREATED,
+    SUCCESS_CAFE_INFO,
+    merge_responses,
+)
 from src.core.db import get_session
 from src.models import Cafe, User
 from src.schemas import CafeCreate, CafeInfo, CafeUpdate
@@ -32,7 +38,7 @@ CafeServiceDep = Annotated[CafeService, Depends(get_cafe_service)]
     '/',
     response_model=list[CafeInfo],
     summary='Получение списка кафе',
-    responses=er.ERRORS_GET_MULTI,
+    responses=merge_responses(SUCCESS_CAFES_LIST, er.ERRORS_GET_MULTI),
 )
 async def get_cafes(
     service: CafeServiceDep,
@@ -52,7 +58,7 @@ async def get_cafes(
     response_model=CafeInfo,
     status_code=status.HTTP_201_CREATED,
     summary='Создание нового кафе',
-    responses=er.ERRORS_POST_CAFE,
+    responses=merge_responses(SUCCESS_CAFE_CREATED, er.ERRORS_POST_CAFE),
     dependencies=[Depends(vt.current_admin_or_manager)],
 )
 async def create_cafe(
@@ -70,7 +76,7 @@ async def create_cafe(
     '/{cafe_id}',
     response_model=CafeInfo,
     summary='Получение информации о кафе по его ID',
-    responses=er.ERRORS_4XX_FULL,
+    responses=merge_responses(SUCCESS_CAFE_INFO, er.ERRORS_4XX_FULL),
 )
 async def get_cafe(
     cafe_id: uuid.UUID,
@@ -89,7 +95,7 @@ async def get_cafe(
     '/{cafe_id}',
     response_model=CafeInfo,
     summary='Обновление информации о кафе по его ID',
-    responses=er.ERRORS_4XX_FULL_WITH_409,
+    responses=merge_responses(SUCCESS_CAFE_INFO, er.ERRORS_4XX_FULL),
     dependencies=[Depends(vt.current_admin_or_manager)],
 )
 async def update_cafe(

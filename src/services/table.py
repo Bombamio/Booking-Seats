@@ -18,7 +18,7 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.crud import CRUDBase, cafe_crud
+from src.crud import CRUDBase
 from src.models import Cafe, Table, User, UserRole
 from src.schemas import TableCreate, TableUpdate
 from src.schemas.cafe import CafeShortInfo
@@ -39,21 +39,6 @@ class TableService(CRUDBase, BaseService):
         table_info.cafe = CafeShortInfo.model_validate(cafe, from_attributes=True)
         return table_info
 
-    async def ensure_manager_cafe_access(
-        self,
-        user: User,
-        cafe_id: uuid.UUID,
-        session: AsyncSession,
-    ) -> None:
-        """Проверит, что менеджер привязан к указанному кафе."""
-        if user.role != UserRole.MANAGER:
-            return
-        if user.cafe_id is None or user.cafe_id != cafe_id:
-            self.log_warning(
-                f'Пользователь {user.id} попытался получить доступ ккафе {cafe_id} без разрешения',
-            )
-            self.raise_forbidden('Доступ запрещен')
-
     def _apply_fields_update(
         self,
         table_entity: Table,
@@ -73,22 +58,22 @@ class TableService(CRUDBase, BaseService):
         user: User,
         show_active: bool | None = None,
     ) -> list[TableInfo]:
-        """Вернет список столиков кафе с учётом роли пользователя."""
-        await self.ensure_manager_cafe_access(user, cafe_id, session)
-        await self.ensure_ids_exist(cafe_crud, session, cafe_id)
-        cafe = await cafe_crud.get(
-            session,
-            Cafe.id == cafe_id,
-        )
+        """Вернёт список столиков кафе с учётом роли и ``show_active``.
 
-        filters = [self.model.cafe_id == cafe_id]
-        filters.extend(
-            is_active_filters(user, show_active, self.model.is_active),
-        )
+        Проверяет доступ менеджера, существование кафе и собирает фильтры
+        ``is_active`` по роли пользователя.
+        """
+        await self.ensure_manager_cafe_access(user, cafe_id)
+        cafe = await self._get_cafe(session, cafe_id)
+
+        filters = [
+            self.model.cafe_id == cafe_id,
+            *is_active_filters(user, show_active, self.model.is_active),
+        ]
 
         tables = list(await self.get_multi(session, *filters))
         self.log_info(
-            f'Пользователь {user.id} получил список из {len(tables)}столов для кафе {cafe_id}',
+            f'Пользователь {user.id} получил список из {len(tables)} столов для кафе {cafe_id}',
         )
         return [self._to_table_info(table, cafe) for table in tables]
 
@@ -99,14 +84,13 @@ class TableService(CRUDBase, BaseService):
         session: AsyncSession,
         user: User,
     ) -> TableInfo:
-        """Создаст столик, привязанный к указанному кафе."""
-        await self.ensure_ids_exist(cafe_crud, session, cafe_id)
-        cafe = await cafe_crud.get(
-            session,
-            Cafe.id == cafe_id,
-        )
-        await self.ensure_is_active(cafe)
-        await self.ensure_manager_cafe_access(user, cafe.id, session)
+        """Создаст столик в активном кафе и вернёт ответ API.
+
+        Проверяет существование кафе, его активность и доступ менеджера.
+        Commit выполняется в этом методе.
+        """
+        cafe = await self._get_cafe(session, cafe_id, require_active=True)
+        await self.ensure_manager_cafe_access(user, cafe.id)
 
         table = self.model(
             cafe_id=cafe.id,
@@ -126,13 +110,12 @@ class TableService(CRUDBase, BaseService):
         session: AsyncSession,
         user: User,
     ) -> TableInfo:
-        """Вернет столик кафе по его ID."""
-        await self.ensure_manager_cafe_access(user, cafe_id, session)
-        await self.ensure_ids_exist(cafe_crud, session, cafe_id)
-        cafe = await cafe_crud.get(
-            session,
-            Cafe.id == cafe_id,
-        )
+        """Вернёт столик кафе по ID с проверкой принадлежности и роли.
+
+        USER получает только активный стол.
+        """
+        await self.ensure_manager_cafe_access(user, cafe_id)
+        cafe = await self._get_cafe(session, cafe_id)
         table = await self.get_or_raise(
             self,
             session,
@@ -144,7 +127,7 @@ class TableService(CRUDBase, BaseService):
             await self.ensure_is_active(table)
 
         self.log_info(
-            f'Пользователь {user.id} получил информацию о столе {table.id}из кафе {cafe_id}',
+            f'Пользователь {user.id} получил информацию о столе {table.id} из кафе {cafe_id}',
         )
         return self._to_table_info(table, cafe)
 
@@ -162,18 +145,14 @@ class TableService(CRUDBase, BaseService):
         ``BaseService``: стол и связанные ``booking_items`` получат
         ``is_active=False`` по каскаду дочерних связей.
         """
-        await self.ensure_ids_exist(cafe_crud, session, cafe_id)
-        cafe = await cafe_crud.get(
-            session,
-            Cafe.id == cafe_id,
-        )
+        cafe = await self._get_cafe(session, cafe_id)
         table = await self.get_or_raise(
             self,
             session,
             self.model.id == table_id,
         )
         self.ensure_belongs_to_cafe(table, cafe.id)
-        await self.ensure_manager_cafe_access(user, cafe.id, session)
+        await self.ensure_manager_cafe_access(user, cafe.id)
 
         update_data = table_update.model_dump(exclude_unset=True)
         deactivate = update_data.pop('is_active', None) is False
@@ -190,7 +169,7 @@ class TableService(CRUDBase, BaseService):
 
         await session.commit()
         self.log_info(
-            f'Пользователь {user.id} обновил стол {table_id} вкафе {cafe_id} (деактивирован: {deactivate})',
+            f'Пользователь {user.id} обновил стол {table_id} в кафе {cafe_id} (деактивирован: {deactivate})',
         )
         return self._to_table_info(table, cafe)
 

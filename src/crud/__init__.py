@@ -1,3 +1,8 @@
+"""Пакет CRUD-слоя проекта BookingSeats.
+
+Модуль реэкспортирует базовые классы, специализированные CRUD и готовые экземпляры.
+"""
+
 from src.crud.action import CRUDAction, action_crud
 from src.crud.base import CRUDBase
 from src.crud.booking import CRUDBooking, booking_crud

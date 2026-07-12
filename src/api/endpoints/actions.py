@@ -17,6 +17,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api import error_responses as er
 from src.api import validators as vt
+from src.api.openapi_examples import (
+    SUCCESS_ACTIONS_LIST,
+    SUCCESS_ACTION_CREATED,
+    SUCCESS_ACTION_INFO,
+    merge_responses,
+)
 from src.core.db import get_session
 from src.models import Action, User
 from src.schemas import ActionCreate, ActionInfo, ActionUpdate
@@ -30,7 +36,7 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 @router.get(
     '/',
     response_model=list[ActionInfo],
-    responses=er.ERRORS_GET_MULTI,
+    responses=merge_responses(SUCCESS_ACTIONS_LIST, er.ERRORS_GET_MULTI),
 )
 async def get_actions(
     session: SessionDep,
@@ -51,7 +57,7 @@ async def get_actions(
     '/',
     response_model=ActionInfo,
     status_code=status.HTTP_201_CREATED,
-    responses=er.ERRORS_POST,
+    responses=merge_responses(SUCCESS_ACTION_CREATED, er.ERRORS_POST),
 )
 async def create_action(
     action_in: ActionCreate,
@@ -69,7 +75,7 @@ async def create_action(
 @router.get(
     '/{action_id}',
     response_model=ActionInfo,
-    responses=er.ERRORS_4XX_FULL,
+    responses=merge_responses(SUCCESS_ACTION_INFO, er.ERRORS_4XX_FULL),
 )
 async def get_action(
     action_id: uuid.UUID,
@@ -87,7 +93,7 @@ async def get_action(
 @router.patch(
     '/{action_id}',
     response_model=ActionInfo,
-    responses=er.ERRORS_4XX_FULL,
+    responses=merge_responses(SUCCESS_ACTION_INFO, er.ERRORS_4XX_FULL),
 )
 async def update_action(
     action_id: uuid.UUID,

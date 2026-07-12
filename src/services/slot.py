@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.db import get_session
 from src.crud import CRUDSlot, cafe_crud, slot_crud
-from src.models import Cafe, Slot, User, UserRole
+from src.models import Slot, User, UserRole
 from src.schemas.slot import TimeSlotCreate, TimeSlotUpdate
 from src.services.base import BaseService, is_active_filters
 
@@ -41,7 +41,7 @@ class SlotService(CRUDSlot, BaseService):
         end_time: time,
         exclude_id: uuid.UUID | None = None,
     ) -> None:
-        """Проверяет пересечение временных слотов в кафе."""
+        """Проверит пересечение временных слотов в кафе."""
         if await slot_crud.exists_overlapping(
             cafe_id=cafe_id,
             start_time=start_time,
@@ -58,21 +58,13 @@ class SlotService(CRUDSlot, BaseService):
         user: User,
         show_active: bool | None,
     ) -> Sequence[Slot]:
-        """Возвращает список временных слотов кафе."""
+        """Вернёт список временных слотов кафе с учётом роли и ``show_active``."""
         await self.ensure_ids_exist(cafe_crud, self.session, cafe_id)
-        filters = []
-
-        if cafe_id is not None:
-            filters.append(Slot.cafe_id == cafe_id)
-
-        filters.extend(
-            is_active_filters(user, show_active, Slot.is_active),
-        )
-
-        slots = await self.get_multi(
-            self.session,
-            *filters,
-        )
+        filters = [
+            Slot.cafe_id == cafe_id,
+            *is_active_filters(user, show_active, Slot.is_active),
+        ]
+        slots = await self.get_multi(self.session, *filters)
         self.log_info(
             f'Пользователь {user.id} получил список из {len(slots)} временных слотов.',
         )
@@ -87,16 +79,10 @@ class SlotService(CRUDSlot, BaseService):
         """Возвращает временной слот по ID."""
         await self.ensure_ids_exist(cafe_crud, self.session, cafe_id)
         filters = [Slot.id == slot_id, Slot.cafe_id == cafe_id]
-
         if user.role == UserRole.USER:
             filters.append(Slot.is_active.is_(True))
 
-        slot = await self.get_or_raise(
-            slot_crud,
-            self.session,
-            *filters,
-        )
-
+        slot = await self.get_or_raise(slot_crud, self.session, *filters)
         self.log_info(
             f'Пользователь {user.id} получил информацию о временном слоте {slot_id} в кафе {cafe_id}',
         )
@@ -108,18 +94,9 @@ class SlotService(CRUDSlot, BaseService):
         slot_in: TimeSlotCreate,
         user: User,
     ) -> Slot:
-        """Создаёт новый временной слот в кафе."""
-        await self.ensure_manager_cafe_access(
-            user=user,
-            cafe_id=cafe_id,
-        )
-
-        await self.ensure_ids_exist(cafe_crud, self.session, cafe_id)
-        cafe = await cafe_crud.get(
-            self.session,
-            Cafe.id == cafe_id,
-        )
-        await self.ensure_is_active(cafe)
+        """Создаст слот в активном кафе после проверки доступа и пересечений."""
+        await self.ensure_manager_cafe_access(user=user, cafe_id=cafe_id)
+        cafe = await self._get_cafe(self.session, cafe_id, require_active=True)
 
         await self._check_slot_overlap(
             cafe_id=cafe_id,

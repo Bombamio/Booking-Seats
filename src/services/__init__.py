@@ -1,3 +1,8 @@
+"""Пакет сервисного слоя проекта BookingSeats.
+
+Модуль реэкспортирует сервисы сущностей и фабрики зависимостей FastAPI.
+"""
+
 from src.services.action import ActionService, action_service
 from src.services.auth import AuthService
 from src.services.base import BaseService

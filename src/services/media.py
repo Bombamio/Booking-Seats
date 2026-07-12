@@ -38,7 +38,7 @@ class MediaService(BaseService):
         """
         with Image.open(BytesIO(content)) as image:
             if image.mode in ('RGBA', 'LA'):
-                rgb_image = Image.new('RGB', image.size, (255, 255, 255))
+                rgb_image = Image.new('RGB', image.size, ct.MEDIA_RGB_WHITE)
                 rgb_image.paste(image, mask=image.split()[-1])
                 image = rgb_image
             else:

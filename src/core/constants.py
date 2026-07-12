@@ -9,10 +9,22 @@
    - параметры Argon2;
    - медиафайлы;
    - логирование;
+   - Celery и напоминания;
    - пользователи по умолчанию для сида.
 """
 
 from pathlib import Path
+
+BYTES_PER_KB = 1024
+BYTES_PER_MB = 1024 * BYTES_PER_KB
+UUID_STRING_LEN = 36
+CELERY_TASK_MAX_RETRIES = 3
+CELERY_TASK_RETRY_COUNTDOWN_SECONDS = 60
+MEDIA_RGB_WHITE = (255, 255, 255)
+LOGURU_INTERCEPT_STACK_DEPTH = 2
+REQUEST_DURATION_DECIMAL_PLACES = 2
+UVICORN_HOST = '0.0.0.0'
+UVICORN_PORT = 8000
 
 PHONE_NUMBER_PATTERN = r'^\+?[0-9]{7,15}$'
 USER_PHONE_PATTERN = r'^\+\d{1,15}$'
@@ -88,12 +100,12 @@ MIN_DESCRIPTION_LEN = 1
 MAX_ADDRESS_LEN = 256
 MIN_ADDRESS_LEN = 5
 
-MAX_FILE_SIZE = 5 * 1024 * 1024
+MAX_FILE_SIZE = 5 * BYTES_PER_MB
 ACTION_REPR_DESCRIPTION_PREVIEW_LEN = 30
 
 MAX_DSC_LOG_LEN = 20
 
-MEDIA_CHUNK_SIZE = 64 * 1024
+MEDIA_CHUNK_SIZE = 64 * BYTES_PER_KB
 MEDIA_FILE_EXTENSION = '.jpg'
 MEDIA_OUTPUT_TYPE = 'image/jpeg'
 MEDIA_IMAGE_SIGNATURES = {
@@ -113,7 +125,7 @@ LOG_DIR = Path(__file__).resolve().parent.parent / 'logs'
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 LOG_FILE = LOG_DIR / 'app.log'
 LOG_FILE_BACKUP_COUNT = 5
-LOG_FILE_MAX_SIZE = 5 * 1024 * 1024
+LOG_FILE_MAX_SIZE = 5 * BYTES_PER_MB
 LOG_LEVEL = 'DEBUG'
 LOG_FORMAT = (
     '<green>{time:YYYY-MM-DD HH:mm:ss}</green> | '

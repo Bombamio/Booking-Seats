@@ -32,8 +32,9 @@ from sqlalchemy.sql import select
 
 from src.core.exceptions import BookingSeatsAppError
 from src.core.logger import bookingseats_logger
+from src.crud import cafe_crud
 from src.crud.base import CRUDBase
-from src.models import User, UserRole
+from src.models import Cafe, User, UserRole
 
 
 def is_active_filters(
@@ -52,15 +53,13 @@ def is_active_filters(
     if user.role == UserRole.USER:
         return [is_active_column.is_(True)]
 
-    if user.role == UserRole.ADMIN:
-        if show_active is True:
-            return [is_active_column.is_(True)]
-        if show_active is False:
-            return [is_active_column.is_(False)]
-        return []
-
+    if show_active is True:
+        return [is_active_column.is_(True)]
     if show_active is False:
         return [is_active_column.is_(False)]
+
+    if user.role == UserRole.ADMIN:
+        return []
     return [is_active_column.is_(True)]
 
 
@@ -273,6 +272,59 @@ class BaseService:
                 f'Пользователь {user.id} попытался получить доступ к кафе {cafes_id} без разрешения.',
             )
             self.raise_forbidden()
+
+    async def _get_cafe(
+        self,
+        session: AsyncSession,
+        cafe_id: uuid.UUID,
+        *,
+        require_active: bool = False,
+    ) -> Cafe:
+        """Проверит ``cafe_id`` из запроса и вернёт кафе.
+
+        Отсутствующий ID — ошибка 400 через ``ensure_ids_exist``.
+        Неактивное кафе при ``require_active=True`` — ошибка 422.
+        """
+        await self.ensure_ids_exist(cafe_crud, session, cafe_id)
+        cafe = await cafe_crud.get(session, Cafe.id == cafe_id)
+        if require_active:
+            await self.ensure_is_active(cafe)
+        return cafe
+
+    async def _load_cafes_for_link(
+        self,
+        session: AsyncSession,
+        cafe_ids: list[uuid.UUID],
+        user: User,
+        *,
+        check_manager_single: bool = False,
+    ) -> list[Cafe]:
+        """Проверит ID кафе, доступ менеджера и вернёт ORM-объекты для привязки."""
+        await self.ensure_ids_exist(cafe_crud, session, cafe_ids)
+        cafes = list(await cafe_crud.get_multi(session, Cafe.id.in_(cafe_ids)))
+        await self.ensure_manager_cafe_list_access(
+            user=user,
+            cafes_id=cafe_ids,
+            check_len=check_manager_single,
+        )
+        return cafes
+
+    async def _filters_for_cafe_linked_entity(
+        self,
+        session: AsyncSession,
+        user: User,
+        show_active: bool | None,
+        cafe_id: uuid.UUID | None,
+        entity_model: type[Any],
+        is_active_column: Any,
+    ) -> list[Any]:
+        """Соберёт SQLAlchemy-фильтры для списка сущностей, привязанных к кафе."""
+        filters: list[Any] = []
+        if cafe_id is not None:
+            await self.ensure_ids_exist(cafe_crud, session, cafe_id)
+            filters.append(entity_model.cafes.any(Cafe.id == cafe_id))
+        filters.extend(is_active_filters(user, show_active, is_active_column))
+        return filters
 
     def _child_filters_for_relationship(
         self,

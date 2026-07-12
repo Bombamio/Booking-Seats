@@ -32,7 +32,7 @@ class AuthService(BaseService):
         login: str,
         password: str,
     ) -> AuthToken:
-        """Аутентификация пользователя по email/phone."""
+        """Проверит email/телефон и пароль, вернёт JWT-токен доступа."""
         filters = [or_(User.email == login, User.phone == login)]
         user = await user_crud.get(session, *filters)
 

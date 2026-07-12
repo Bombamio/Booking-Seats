@@ -24,6 +24,11 @@ from src.services.base import BaseService
 class UserService(CRUDUser, BaseService):
     """Обработка операций с пользователями."""
 
+    def _ensure_staff(self, user: User) -> None:
+        """Разрешит операцию только ADMIN и MANAGER."""
+        if user.role not in (UserRole.ADMIN, UserRole.MANAGER):
+            self.raise_forbidden('Доступ запрещен')
+
     def _check_role_change(
         self,
         user_in: schema.UserUpdate,
@@ -37,24 +42,39 @@ class UserService(CRUDUser, BaseService):
         if current_user.role != UserRole.ADMIN or target_user_id == current_user.id:
             self.raise_forbidden('Доступ запрещен')
 
+    async def _ensure_unique_contacts(
+        self,
+        session: AsyncSession,
+        *,
+        email: str | None,
+        phone: str | None,
+        exclude_id: UUID | None = None,
+    ) -> None:
+        """Проверит уникальность email и телефона среди пользователей."""
+        if not email and not phone:
+            return
+        if await user_crud.duplicate_contact(
+            session,
+            email=email,
+            phone=phone,
+            exclude_id=exclude_id,
+        ):
+            self.raise_unprocessable_entity('Пользователь с таким email/phone уже существует')
+
     async def create_user(
         self,
         session: AsyncSession,
         user_in: schema.UserCreate,
         current_user: User | None = None,
     ) -> User:
-        """Создание нового пользователя."""
-        if current_user is not None and current_user.role not in (
-            UserRole.ADMIN,
-            UserRole.MANAGER,
-        ):
-            self.raise_forbidden('Доступ запрещен')
-        if await user_crud.duplicate_contact(
+        """Создаст пользователя с проверкой прав и уникальности контактов."""
+        if current_user is not None:
+            self._ensure_staff(current_user)
+        await self._ensure_unique_contacts(
             session,
             email=user_in.email,
             phone=user_in.phone,
-        ):
-            self.raise_unprocessable_entity('Пользователь с таким email/phone уже существует')
+        )
         return await self.create(user_in, session)
 
     async def get_user(
@@ -63,22 +83,17 @@ class UserService(CRUDUser, BaseService):
         user_id: UUID,
         current_user: User,
     ) -> User:
-        """Получение пользователя по ID."""
-        if current_user.role not in [UserRole.ADMIN, UserRole.MANAGER]:
-            self.raise_forbidden('Доступ запрещен')
-        user = await self.get(session, User.id == user_id)
-        if not user:
-            self.raise_not_found()
-        return user
+        """Вернёт пользователя по ID (только для ADMIN и MANAGER)."""
+        self._ensure_staff(current_user)
+        return await self.get_or_raise(self, session, User.id == user_id)
 
     async def get_users_list(
         self,
         session: AsyncSession,
         current_user: User,
     ) -> Sequence[User]:
-        """Получение списка пользователей."""
-        if current_user.role not in [UserRole.ADMIN, UserRole.MANAGER]:
-            self.raise_forbidden('Доступ запрещен')
+        """Вернёт список пользователей (только для ADMIN и MANAGER)."""
+        self._ensure_staff(current_user)
         return await self.get_multi(session)
 
     async def update_user(
@@ -88,9 +103,8 @@ class UserService(CRUDUser, BaseService):
         user_in: schema.UserUpdate,
         current_user: User,
     ) -> User:
-        """Обновление информации о пользователе."""
-        if current_user.role not in [UserRole.ADMIN, UserRole.MANAGER]:
-            self.raise_forbidden('Доступ запрещен')
+        """Обновит пользователя с проверкой прав, роли и уникальности контактов."""
+        self._ensure_staff(current_user)
 
         if (
             current_user.role == UserRole.MANAGER
@@ -99,10 +113,7 @@ class UserService(CRUDUser, BaseService):
         ):
             self.raise_forbidden('Доступ запрещен')
 
-        user = await self.get(session, User.id == user_id)
-        if not user:
-            self.raise_not_found()
-
+        user = await self.get_or_raise(self, session, User.id == user_id)
         self._check_role_change(user_in, current_user=current_user, target_user_id=user_id)
 
         update_data = user_in.model_dump(exclude_unset=True)
@@ -112,14 +123,12 @@ class UserService(CRUDUser, BaseService):
         check_phone = (
             update_data['phone'] if 'phone' in update_data and update_data['phone'] != user.phone else None
         )
-        if check_email or check_phone:
-            if await user_crud.duplicate_contact(
-                session,
-                email=check_email,
-                phone=check_phone,
-                exclude_id=user_id,
-            ):
-                self.raise_unprocessable_entity('Пользователь с таким email/phone уже существует')
+        await self._ensure_unique_contacts(
+            session,
+            email=check_email,
+            phone=check_phone,
+            exclude_id=user_id,
+        )
 
         return await self.update(user, user_in, session)
 
@@ -128,7 +137,7 @@ class UserService(CRUDUser, BaseService):
         session: AsyncSession,
         current_user: User,
     ) -> User:
-        """Получение информации о текущем пользователе."""
+        """Вернёт текущего авторизованного пользователя."""
         return current_user
 
     async def update_me(
@@ -137,7 +146,7 @@ class UserService(CRUDUser, BaseService):
         user_in: schema.UserUpdate,
         current_user: User,
     ) -> User:
-        """Обновление информации о текущем пользователе."""
+        """Обновит профиль текущего пользователя."""
         if (
             current_user.role == UserRole.USER
             and user_in.is_active is not None

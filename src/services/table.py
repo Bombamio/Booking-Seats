@@ -69,8 +69,8 @@ class TableService(CRUDTable, BaseService):
         при ``show_active=False`` — все столы кафе.
         """
         await self.ensure_manager_cafe_access(user, cafe_id, session)
-        cafe = await self.get_or_raise(
-            cafe_crud,
+        await self.ensure_ids_exist(cafe_crud, session, cafe_id)
+        cafe = await cafe_crud.get(
             session,
             Cafe.id == cafe_id,
         )
@@ -93,8 +93,8 @@ class TableService(CRUDTable, BaseService):
         user: User,
     ) -> TableInfo:
         """Создаст столик, привязанный к указанному кафе."""
-        cafe = await self.get_or_raise(
-            cafe_crud,
+        await self.ensure_ids_exist(cafe_crud, session, cafe_id)
+        cafe = await cafe_crud.get(
             session,
             Cafe.id == cafe_id,
         )
@@ -121,8 +121,8 @@ class TableService(CRUDTable, BaseService):
     ) -> TableInfo:
         """Вернет столик кафе по его ID."""
         await self.ensure_manager_cafe_access(user, cafe_id, session)
-        cafe = await self.get_or_raise(
-            cafe_crud,
+        await self.ensure_ids_exist(cafe_crud, session, cafe_id)
+        cafe = await cafe_crud.get(
             session,
             Cafe.id == cafe_id,
         )
@@ -155,8 +155,8 @@ class TableService(CRUDTable, BaseService):
         ``BaseService``: стол и связанные ``booking_items`` получат
         ``is_active=False`` по каскаду дочерних связей.
         """
-        cafe = await self.get_or_raise(
-            cafe_crud,
+        await self.ensure_ids_exist(cafe_crud, session, cafe_id)
+        cafe = await cafe_crud.get(
             session,
             Cafe.id == cafe_id,
         )

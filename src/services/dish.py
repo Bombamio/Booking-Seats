@@ -46,6 +46,7 @@ class DishService(CRUDDish, BaseService):
         filters = []
 
         if cafe_id is not None:
+            await self.ensure_ids_exist(cafe_crud, session, cafe_id)
             filters.append(Dish.cafes.any(Cafe.id == cafe_id))
 
         if user.role == UserRole.USER or show_active or user.role == UserRole.MANAGER and show_active is None:
@@ -73,15 +74,16 @@ class DishService(CRUDDish, BaseService):
 
         Только для администраторов и менеджеров.
         """
+        await self.ensure_ids_exist(
+            cafe_crud,
+            session,
+            dish_create.cafes_id,
+        )
         cafes = await cafe_crud.get_multi(
             session,
             Cafe.id.in_(dish_create.cafes_id),
         )
 
-        await self.ensure_cafes_len(
-            cafes=cafes,
-            cafes_id=dish_create.cafes_id,
-        )
         await self.ensure_manajer_cafe_list_access(
             user=user,
             cafes_id=dish_create.cafes_id,
@@ -152,14 +154,14 @@ class DishService(CRUDDish, BaseService):
         relations = {}
 
         if dish_update.cafes_id is not None:
+            await self.ensure_ids_exist(
+                cafe_crud,
+                session,
+                dish_update.cafes_id,
+            )
             cafes = await cafe_crud.get_multi(
                 session,
                 Cafe.id.in_(dish_update.cafes_id),
-            )
-
-            await self.ensure_cafes_len(
-                cafes=cafes,
-                cafes_id=dish_update.cafes_id,
             )
 
             if user.role.MANAGER:

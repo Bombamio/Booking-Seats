@@ -47,6 +47,7 @@ class SlotService(CRUDSlot, BaseService):
         show_active: Optional[bool],
     ) -> Sequence[Slot]:
         """Возвращает список временных слотов кафе."""
+        await self.ensure_ids_exist(cafe_crud, self.session, cafe_id)
         filters = []
 
         if cafe_id is not None:
@@ -79,14 +80,8 @@ class SlotService(CRUDSlot, BaseService):
         user: User,
     ) -> Slot:
         """Возвращает временной слот по ID."""
-        filters = [Slot.id == slot_id]
-
-        await self.ensure_exists(
-            cafe_crud,
-            self.session,
-            Cafe.id == cafe_id,
-        )
-        filters.append(Slot.cafe_id == cafe_id)
+        await self.ensure_ids_exist(cafe_crud, self.session, cafe_id)
+        filters = [Slot.id == slot_id, Slot.cafe_id == cafe_id]
 
         if user.role == UserRole.USER:
             filters.append(Slot.is_active.is_(True))
@@ -97,7 +92,9 @@ class SlotService(CRUDSlot, BaseService):
             *filters,
         )
 
-        self.log_info(f'Пользователь {user.id} получил информацию о временном слоте {slot_id}')
+        self.log_info(
+            f'Пользователь {user.id} получил информацию о временном слоте {slot_id} в кафе {cafe_id}',
+        )
         return slot
 
     async def create_slot(
@@ -112,12 +109,12 @@ class SlotService(CRUDSlot, BaseService):
             cafe_id=cafe_id,
         )
 
-        cafe = await self.get_or_raise(
-            cafe_crud,
+        await self.ensure_ids_exist(cafe_crud, self.session, cafe_id)
+        cafe = await cafe_crud.get(
             self.session,
             Cafe.id == cafe_id,
-            Cafe.is_active.is_(True),
         )
+        await self.ensure_is_active(cafe)
 
         await self._check_slot_overlap(
             cafe_id=cafe_id,
@@ -148,11 +145,7 @@ class SlotService(CRUDSlot, BaseService):
             cafe_id=cafe_id,
         )
 
-        cafe = await self.get_or_raise(
-            cafe_crud,
-            self.session,
-            Cafe.id == cafe_id,
-        )
+        await self.ensure_ids_exist(cafe_crud, self.session, cafe_id)
         slot = await self.get_or_raise(
             slot_crud,
             self.session,
@@ -172,7 +165,6 @@ class SlotService(CRUDSlot, BaseService):
             db_entity=slot,
             update_data=slot_in,
             session=self.session,
-            cafe=cafe,
         )
         self.log_info(f'Пользователь {user.id} изменил информацию о временном слоте {slot_id}.')
         return result

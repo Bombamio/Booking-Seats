@@ -39,6 +39,7 @@ class ActionService(CRUDAction, BaseService):
         filters = []
 
         if cafe_id is not None:
+            await self.ensure_ids_exist(cafe_crud, session, cafe_id)
             filters.append(Action.cafes.any(Cafe.id == cafe_id))
 
         if user.role == UserRole.USER or show_active or user.role == UserRole.MANAGER and show_active is None:
@@ -63,15 +64,16 @@ class ActionService(CRUDAction, BaseService):
         session: AsyncSession,
     ) -> Action:
         """Создать новую акцию."""
+        await self.ensure_ids_exist(
+            cafe_crud,
+            session,
+            action_create.cafes_id,
+        )
         cafes = await cafe_crud.get_multi(
             session,
             Cafe.id.in_(action_create.cafes_id),
         )
 
-        await self.ensure_cafes_len(
-            cafes=cafes,
-            cafes_id=action_create.cafes_id,
-        )
         await self.ensure_manajer_cafe_list_access(
             user=user,
             cafes_id=action_create.cafes_id,
@@ -135,14 +137,14 @@ class ActionService(CRUDAction, BaseService):
         relations = {}
 
         if action_update.cafes_id is not None:
+            await self.ensure_ids_exist(
+                cafe_crud,
+                session,
+                action_update.cafes_id,
+            )
             cafes = await cafe_crud.get_multi(
                 session,
                 Cafe.id.in_(action_update.cafes_id),
-            )
-
-            await self.ensure_cafes_len(
-                cafes=cafes,
-                cafes_id=action_update.cafes_id,
             )
 
             if user.role == UserRole.MANAGER:

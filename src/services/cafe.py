@@ -9,11 +9,12 @@ from src.core.exceptions import BookingSeatsAppError
 from src.crud import cafe_crud, user_crud
 from src.models import Cafe, User, UserRole
 from src.schemas import CafeCreate, CafeUpdate
+from src.services.base import BaseService
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 
-class CafeService:
+class CafeService(BaseService):
     """Сервис для работы бизнес логики кафе."""
 
     def __init__(
@@ -172,19 +173,12 @@ class CafeService:
         if not managers:
             return []
 
+        await self.ensure_ids_exist(user_crud, self.session, managers)
+
         managers_objs = await user_crud.get_multi(
             self.session,
             User.id.in_(managers),
         )
-
-        id_exist_managers = {manager.id for manager in managers_objs}
-        missing_ids = set(managers).difference(id_exist_managers)
-
-        if missing_ids:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f'Пользователи: {missing_ids} не найдены',
-            )
 
         for manager in managers_objs:
             if manager.role != UserRole.MANAGER:

@@ -9,7 +9,7 @@ import src.schemas as schema
 from src.core.celery_dispatch import dispatch_celery_task, revoke_celery_task
 from src.core.exceptions import BookingSeatsCeleryError
 from src.core.settings import settings
-from src.crud import CRUDBooking, booking_crud, cafe_crud, slot_crud, table_crud
+from src.crud import CRUDBooking, booking_crud, cafe_crud, dish_crud, slot_crud, table_crud, user_crud
 from src.models import (
     Booking,
     BookingDish,
@@ -136,8 +136,8 @@ class BookingService(CRUDBooking, BaseService):
         session: AsyncSession,
     ) -> Cafe:
         """Проверит существование, активность кафе и доступ менеджера."""
-        cafe = await self.get_or_raise(
-            cafe_crud,
+        await self.ensure_ids_exist(cafe_crud, session, cafe_id)
+        cafe = await cafe_crud.get(
             session,
             Cafe.id == cafe_id,
         )
@@ -159,6 +159,13 @@ class BookingService(CRUDBooking, BaseService):
         table_ids = {table_id for table_id, _ in pairs}
         slot_ids = {slot_id for _, slot_id in pairs}
 
+        await self.ensure_ids_exist(
+            table_crud,
+            session,
+            dict(pairs),
+            related_crud=slot_crud,
+        )
+
         tables = await table_crud.get_multi(
             session,
             Table.id.in_(table_ids),
@@ -167,9 +174,6 @@ class BookingService(CRUDBooking, BaseService):
             session,
             Slot.id.in_(slot_ids),
         )
-
-        if len(tables) != len(table_ids) or len(slots) != len(slot_ids):
-            self.raise_not_found()
 
         table_from_other_cafe = any(table.cafe_id != cafe_id for table in tables)
         slot_from_other_cafe = any(slot.cafe_id != cafe_id for slot in slots)
@@ -207,11 +211,9 @@ class BookingService(CRUDBooking, BaseService):
         table_ids: set[uuid.UUID],
         session: AsyncSession,
     ) -> list[Table]:
-        """Вернет столы по ID или сообщит 404, если часть столов не найдена."""
-        tables = list(await table_crud.get_multi(session, Table.id.in_(table_ids)))
-        if len(tables) != len(table_ids):
-            self.raise_not_found()
-        return tables
+        """Вернет столы по ID."""
+        await self.ensure_ids_exist(table_crud, session, list(table_ids))
+        return list(await table_crud.get_multi(session, Table.id.in_(table_ids)))
 
     async def _build_booking_dishes(
         self,
@@ -224,12 +226,16 @@ class BookingService(CRUDBooking, BaseService):
         if not dish_quantities:
             return []
 
+        await self.ensure_ids_exist(
+            dish_crud,
+            session,
+            list(dish_quantities.keys()),
+        )
+
         result = await session.execute(
             select(Dish).options(selectinload(Dish.cafes)).where(Dish.id.in_(dish_quantities)),
         )
         dishes = list(result.scalars().all())
-        if len(dishes) != len(dish_quantities):
-            self.raise_not_found()
 
         for dish in dishes:
             dish_cafe_ids = {cafe.id for cafe in dish.cafes}
@@ -276,6 +282,11 @@ class BookingService(CRUDBooking, BaseService):
         user_id: uuid.UUID | None = None,
     ) -> list[schema.BookingInfo]:
         """Вернет список бронирований с учетом роли пользователя."""
+        if cafe_id is not None:
+            await self.ensure_ids_exist(cafe_crud, session, cafe_id)
+        if user_id is not None:
+            await self.ensure_ids_exist(user_crud, session, user_id)
+
         filters = []
 
         if user.role == UserRole.USER:

@@ -1,16 +1,16 @@
-"""nullable rem.
+"""slots error.
 
-Revision ID: 60db81819c57
-Revises: f51226158a61
-Create Date: 2026-07-09 11:00:25.033408
+Revision ID: 59d61384e268
+Revises: 60db81819c57
+Create Date: 2026-07-12 19:21:57.823780
 
 """
 
 from typing import Sequence, Union
 
 # revision identifiers, used by Alembic.
-revision: str = '60db81819c57'
-down_revision: Union[str, Sequence[str], None] = 'b2c3d4e5f6a7'
+revision: str = '59d61384e268'
+down_revision: Union[str, Sequence[str], None] = '60db81819c57'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

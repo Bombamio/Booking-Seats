@@ -23,9 +23,9 @@ class Settings(BaseSettings):
         'Предоставляет REST API для управления данными о кафе, блюдах, столах и бронированиях.'
     )
 
-    postgres_user: str
-    postgres_password: str
-    postgres_db: str
+    postgres_user: str = 'postgres'
+    postgres_password: str = 'postgres'
+    postgres_db: str = 'db'
     postgres_server: str = 'localhost'
     postgres_port: int = 5432
 

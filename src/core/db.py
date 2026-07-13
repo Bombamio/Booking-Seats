@@ -44,7 +44,7 @@ async def get_session() -> AsyncIterator[AsyncSession]:
             if 'users_phone' in err or 'users_email' in err or 'phone' in err or 'email' in err:
                 detail = 'Пользователь с таким email/phone уже существует'
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=detail,
             )
         except SQLAlchemyError as exc:

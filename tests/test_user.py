@@ -2,6 +2,7 @@ import uuid
 from typing import Any
 
 import pytest
+from sqlalchemy.exc import IntegrityError
 
 from src.core.security import hash_password, verify_password
 from src.crud.user import user_crud
@@ -9,7 +10,8 @@ from src.models.user import User, UserRole
 from src.schemas import user as schema
 
 
-def test_validate_cafe_id_user_with_cafe_raises() -> None:
+@pytest.mark.asyncio
+async def test_validate_cafe_id_user_with_cafe_raises(db_session: Any) -> None:
     """Проверяет, что обычный пользователь (USER) не может иметь кафе."""
     user = User(
         username='user',
@@ -19,11 +21,14 @@ def test_validate_cafe_id_user_with_cafe_raises() -> None:
         role=UserRole.USER,
         cafe_id=uuid.uuid4(),
     )
-    with pytest.raises(ValueError, match='Кафе может быть назначено только менеджерам.'):
-        user.validate_cafe_id()
+    db_session.add(user)
+
+    with pytest.raises(IntegrityError):
+        await db_session.commit()
 
 
-def test_validate_cafe_id_admin_with_cafe_raises() -> None:
+@pytest.mark.asyncio
+async def test_validate_cafe_id_admin_with_cafe_raises(db_session: Any) -> None:
     """Проверяет, что администратор (ADMIN) не может иметь кафе."""
     user = User(
         username='admin',
@@ -33,8 +38,10 @@ def test_validate_cafe_id_admin_with_cafe_raises() -> None:
         role=UserRole.ADMIN,
         cafe_id=uuid.uuid4(),
     )
-    with pytest.raises(ValueError, match='Кафе может быть назначено только менеджерам.'):
-        user.validate_cafe_id()
+    db_session.add(user)
+
+    with pytest.raises(IntegrityError):
+        await db_session.commit()
 
 
 @pytest.mark.asyncio

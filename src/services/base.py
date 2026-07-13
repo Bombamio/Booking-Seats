@@ -120,7 +120,7 @@ class BaseService:
     ) -> NoReturn:
         """Сообщит об ошибке валидации данных с кодом 422."""
         raise BookingSeatsAppError(
-            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
             message,
         )
 

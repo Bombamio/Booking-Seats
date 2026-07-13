@@ -51,19 +51,19 @@ ERROR_404 = {
     },
 }
 ERROR_422 = {
-    status.HTTP_422_UNPROCESSABLE_ENTITY: {
+    status.HTTP_422_UNPROCESSABLE_CONTENT: {
         'model': CustomError,
         'description': 'Ошибка валидации данных',
     },
 }
 ERROR_422_MEDIA_SAVE = {
-    status.HTTP_422_UNPROCESSABLE_ENTITY: {
+    status.HTTP_422_UNPROCESSABLE_CONTENT: {
         'model': CustomError,
         'description': 'Ошибка сохранения файла',
     },
 }
 ERROR_422_AUTH = {
-    status.HTTP_422_UNPROCESSABLE_ENTITY: {
+    status.HTTP_422_UNPROCESSABLE_CONTENT: {
         'model': CustomError,
         'description': 'Неверные имя пользователя или пароль',
     },

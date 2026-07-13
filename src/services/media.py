@@ -60,7 +60,7 @@ class MediaService(BaseService):
             first_chunk = await file.read(ct.MEDIA_SIGNATURE_CHECK_SIZE)
             if not first_chunk:
                 raise BookingSeatsAppError(
-                    status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    status.HTTP_422_UNPROCESSABLE_CONTENT,
                     'Файл не передан',
                 )
 
@@ -76,7 +76,7 @@ class MediaService(BaseService):
                     )
                     await file.close()
                     raise BookingSeatsAppError(
-                        status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        status.HTTP_422_UNPROCESSABLE_CONTENT,
                         'Размер файла превышает допустимый',
                     )
                 content.extend(chunk)
@@ -92,7 +92,7 @@ class MediaService(BaseService):
                 return media_type
         formats = ', '.join(ct.ALLOWED_MEDIA_FORMATS)
         raise BookingSeatsAppError(
-            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
             f'Поддерживаются только форматы {formats}',
         )
 
@@ -118,7 +118,7 @@ class MediaService(BaseService):
                 f'Пользователь {user.id} не смог загрузить изображение: {exc}',
             )
             raise BookingSeatsAppError(
-                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
                 'Ошибка сохранения файла',
             ) from exc
 

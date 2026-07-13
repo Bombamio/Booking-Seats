@@ -2,7 +2,6 @@ import uuid
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from fastapi import HTTPException
 
 from src.core.exceptions import BookingSeatsAppError
 from src.models import Cafe, User, UserRole
@@ -69,9 +68,9 @@ async def test_get_cafe_not_found(cafe_service: CafeService) -> None:
     cafe_id = uuid.uuid4()
     user = User(role=UserRole.ADMIN, email='admin@example.com')
     with patch('src.services.cafe.cafe_crud.get_with_managers', new=AsyncMock(return_value=None)):
-        with pytest.raises(HTTPException) as exc:
+        with pytest.raises(BookingSeatsAppError) as exc:
             await cafe_service.get_cafe(cafe_id, user)
-        assert exc.value.status_code == 404
+        assert exc.value.code == 404
 
 
 @pytest.mark.asyncio

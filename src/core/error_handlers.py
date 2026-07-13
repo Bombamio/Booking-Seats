@@ -61,7 +61,7 @@ async def validation_error_handler(
     bookingseats_logger.warning(
         f'RequestValidationError: {message} | URL: {request.url}',
     )
-    return build_error_response(status.HTTP_422_UNPROCESSABLE_ENTITY, message)
+    return build_error_response(status.HTTP_422_UNPROCESSABLE_CONTENT, message)
 
 
 async def internal_server_error_handler(
